@@ -1,0 +1,148 @@
+[{
+    "given":
+        {"foo": {"bar": ["zero", "one", "two"]}},
+     "cases": [
+         {
+            "expression": "foo.bar[0]",
+            "result": ["zero"]
+         },
+         {
+            "expression": "foo.bar[1]",
+            "result": ["one"]
+         },
+         {
+            "expression": "foo.bar[2]",
+            "result": ["two"]
+         },
+         {
+            "expression": "foo.bar[3]",
+            "result": []
+         },
+         {
+            "expression": "foo.bar[-1]",
+            "result": ["two"]
+         },
+         {
+            "expression": "foo.bar[-2]",
+            "result": ["one"]
+         },
+         {
+            "expression": "foo.bar[-3]",
+            "result": ["zero"]
+         },
+         {
+            "expression": "foo.bar[-4]",
+            "result": []
+         }
+     ]
+},
+{
+    "given":
+        {"foo": [{"bar": "one"}, {"bar": "two"}, {"bar": "three"}, {"notbar": "four"}]},
+     "cases": [
+         {
+            "expression": "foo.bar",
+            "result": []
+         },
+         {
+            "expression": "foo[0].bar",
+            "result": ["one"]
+         },
+         {
+            "expression": "foo[1].bar",
+            "result": ["two"]
+         },
+         {
+            "expression": "foo[2].bar",
+            "result": ["three"]
+         },
+         {
+            "expression": "foo[3].notbar",
+            "result": ["four"]
+         },
+         {
+            "expression": "foo[3].bar",
+            "result": []
+         }
+     ]
+},
+{
+    "given":
+        {"foo": [{"bar": "one"}, {"bar": "two"}, {"bar": "three"}, {"notbar": "four"}]},
+     "cases": [
+         {
+            "expression": "foo[*].bar",
+            "result": ["one", "two", "three"]
+         },
+         {
+            "expression": "foo[*].notbar",
+            "result": ["four"]
+         }
+     ]
+},
+{
+    "given": {
+        "foo": {
+            "bar": [
+                {"baz": ["one", "two", "three"]},
+                {"baz": ["four", "five", "six"]},
+                {"baz": ["seven", "eight", "nine"]}
+            ]
+        }
+    },
+     "cases": [
+         {
+            "expression": "foo.bar[*].baz",
+            "result": [["one", "two", "three"], ["four", "five", "six"], ["seven", "eight", "nine"]]
+         },
+         {
+            "expression": "foo.bar[*].baz[0]",
+            "result": ["one", "four", "seven"]
+         },
+         {
+            "expression": "foo.bar[*].baz[1]",
+            "result": ["two", "five", "eight"]
+         },
+         {
+            "expression": "foo.bar[*].baz[2]",
+            "result": ["three", "six", "nine"]
+         },
+         {
+            "expression": "foo.bar[*].baz[3]",
+            "result": []
+         }
+     ]
+},
+{
+    "given": {
+        "foo": {
+            "bar": [["one", "two"], ["three", "four"]]
+        }
+    },
+     "cases": [
+         {
+            "expression": "foo.bar[*]",
+            "result": [["one", "two"], ["three", "four"]]
+         },
+         {
+            "expression": "foo.bar[0]",
+            "result": [["one", "two"]]
+         },
+         {
+            "expression": "foo.bar[0][0]",
+            "result": ["one"]
+         },
+         {
+            "expression": "foo.bar[0][0][0]",
+            "result": []
+         },
+         {
+            "expression": "foo.bar[0][0][0][0]",
+            "result": []
+         },
+         {
+            "expression": "foo[0][0]",
+            "result": []
+         }
+     ]
+}]

@@ -1,0 +1,132 @@
+Created by PLY version 3.4 (http://www.dabeaz.com/ply)
+
+Grammar
+
+Rule 0     S' -> jmspath
+Rule 1     jmspath -> jmspath DOT jmspath
+Rule 2     jmspath -> jmspath LBRACKET NUMBER RBRACKET
+Rule 3     jmspath -> jmspath LBRACKET STAR RBRACKET
+Rule 4     jmspath -> IDENTIFIER
+
+Terminals, with rules where they appear
+
+DOT                  : 1
+IDENTIFIER           : 4
+LBRACKET             : 2 3
+NUMBER               : 2
+RBRACKET             : 2 3
+STAR                 : 3
+error                : 
+
+Nonterminals, with rules where they appear
+
+jmspath              : 1 1 2 3 0
+
+Parsing method: LALR
+
+state 0
+
+    (0) S' -> . jmspath
+    (1) jmspath -> . jmspath DOT jmspath
+    (2) jmspath -> . jmspath LBRACKET NUMBER RBRACKET
+    (3) jmspath -> . jmspath LBRACKET STAR RBRACKET
+    (4) jmspath -> . IDENTIFIER
+
+    IDENTIFIER      shift and go to state 2
+
+    jmspath                        shift and go to state 1
+
+state 1
+
+    (0) S' -> jmspath .
+    (1) jmspath -> jmspath . DOT jmspath
+    (2) jmspath -> jmspath . LBRACKET NUMBER RBRACKET
+    (3) jmspath -> jmspath . LBRACKET STAR RBRACKET
+
+    DOT             shift and go to state 4
+    LBRACKET        shift and go to state 3
+
+
+state 2
+
+    (4) jmspath -> IDENTIFIER .
+
+    DOT             reduce using rule 4 (jmspath -> IDENTIFIER .)
+    LBRACKET        reduce using rule 4 (jmspath -> IDENTIFIER .)
+    $end            reduce using rule 4 (jmspath -> IDENTIFIER .)
+
+
+state 3
+
+    (2) jmspath -> jmspath LBRACKET . NUMBER RBRACKET
+    (3) jmspath -> jmspath LBRACKET . STAR RBRACKET
+
+    NUMBER          shift and go to state 5
+    STAR            shift and go to state 6
+
+
+state 4
+
+    (1) jmspath -> jmspath DOT . jmspath
+    (1) jmspath -> . jmspath DOT jmspath
+    (2) jmspath -> . jmspath LBRACKET NUMBER RBRACKET
+    (3) jmspath -> . jmspath LBRACKET STAR RBRACKET
+    (4) jmspath -> . IDENTIFIER
+
+    IDENTIFIER      shift and go to state 2
+
+    jmspath                        shift and go to state 7
+
+state 5
+
+    (2) jmspath -> jmspath LBRACKET NUMBER . RBRACKET
+
+    RBRACKET        shift and go to state 8
+
+
+state 6
+
+    (3) jmspath -> jmspath LBRACKET STAR . RBRACKET
+
+    RBRACKET        shift and go to state 9
+
+
+state 7
+
+    (1) jmspath -> jmspath DOT jmspath .
+    (1) jmspath -> jmspath . DOT jmspath
+    (2) jmspath -> jmspath . LBRACKET NUMBER RBRACKET
+    (3) jmspath -> jmspath . LBRACKET STAR RBRACKET
+
+  ! shift/reduce conflict for DOT resolved as shift
+  ! shift/reduce conflict for LBRACKET resolved as shift
+    $end            reduce using rule 1 (jmspath -> jmspath DOT jmspath .)
+    DOT             shift and go to state 4
+    LBRACKET        shift and go to state 3
+
+  ! DOT             [ reduce using rule 1 (jmspath -> jmspath DOT jmspath .) ]
+  ! LBRACKET        [ reduce using rule 1 (jmspath -> jmspath DOT jmspath .) ]
+
+
+state 8
+
+    (2) jmspath -> jmspath LBRACKET NUMBER RBRACKET .
+
+    DOT             reduce using rule 2 (jmspath -> jmspath LBRACKET NUMBER RBRACKET .)
+    LBRACKET        reduce using rule 2 (jmspath -> jmspath LBRACKET NUMBER RBRACKET .)
+    $end            reduce using rule 2 (jmspath -> jmspath LBRACKET NUMBER RBRACKET .)
+
+
+state 9
+
+    (3) jmspath -> jmspath LBRACKET STAR RBRACKET .
+
+    DOT             reduce using rule 3 (jmspath -> jmspath LBRACKET STAR RBRACKET .)
+    LBRACKET        reduce using rule 3 (jmspath -> jmspath LBRACKET STAR RBRACKET .)
+    $end            reduce using rule 3 (jmspath -> jmspath LBRACKET STAR RBRACKET .)
+
+WARNING: 
+WARNING: Conflicts:
+WARNING: 
+WARNING: shift/reduce conflict for DOT in state 7 resolved as shift
+WARNING: shift/reduce conflict for LBRACKET in state 7 resolved as shift
