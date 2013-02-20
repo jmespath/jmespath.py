@@ -27,6 +27,26 @@ Negative indexing is also supported (-1 refers to the last element
 in the list).  Given the data above, the expression
 "foo.bar[-1].name" will return ["two"].
 
+The '*' can also be used for hash types::
+
+   {"foo": {"bar": {"name": "one"}, "baz": {"name": "two"}}}
+
+The expression: "foo.*.name" will return ["one", "two"].
+
+
+Grammar
+=======
+
+::
+
+    expression : expression '.' expression
+               | expression '[' (number|star) ']
+               | expression '.' star
+               | identifier
+    star : '*'
+    identifier : [a-zA-Z_][a-zA-Z0-9']+
+    number : -?[0-9]+
+
 
 Testing
 =======
