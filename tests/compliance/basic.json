@@ -45,4 +45,22 @@
             "result": [["one", "two", "three"]]
          }
     ]
-}]
+},
+{
+    "given": ["one", "two", "three"],
+    "cases": [
+        {
+            "expression": "one",
+            "result": []
+        },
+        {
+            "expression": "two",
+            "result": []
+        },
+        {
+            "expression": "three",
+            "result": []
+        }
+    ]
+}
+]

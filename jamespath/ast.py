@@ -25,7 +25,10 @@ class Field(object):
 
     def search(self, value):
         if self.name in value:
-            return [value.get(self.name)]
+            try:
+                return [value.get(self.name)]
+            except AttributeError:
+                return []
         else:
             return []
 
