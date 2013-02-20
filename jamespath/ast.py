@@ -61,3 +61,14 @@ class WildcardIndex(object):
 
     def __repr__(self):
         return "WildcardIndex(*)"
+
+
+class Wildcard(object):
+    def search(self, value):
+        if isinstance(value, dict):
+            return value.values()
+        else:
+            return []
+
+    def __repr__(self):
+        return "Wildcard(*)"

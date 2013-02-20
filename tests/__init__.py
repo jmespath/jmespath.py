@@ -6,7 +6,11 @@ import sys
 # version unittest2.
 if sys.version_info[:2] == (2, 6):
     import unittest2 as unittest
+    import simplejson as json
+    from ordereddict import OrderedDict
 else:
     import unittest
+    import json
+    from collections import OrderedDict
 
 

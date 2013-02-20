@@ -1,5 +1,6 @@
 import os
-import json
+from tests import OrderedDict
+from tests import json
 
 from nose.tools import assert_equal
 
@@ -21,7 +22,7 @@ def test_compliance():
 
 
 def _load_cases(full_path):
-    all_test_data = json.load(open(full_path))
+    all_test_data = json.load(open(full_path), object_pairs_hook=OrderedDict)
     for test_data in all_test_data:
         given = test_data['given']
         for case in test_data['cases']:

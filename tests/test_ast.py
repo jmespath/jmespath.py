@@ -110,6 +110,17 @@ class TestAST(unittest.TestCase):
         self.assertEqual(first.search(data), ['one'])
         self.assertEqual(second.search(data), ['one'])
 
+    def test_wildcard_on_dict(self):
+        data = {'foo': {'bar': {'get': 'one'}, 'baz': {'get': 'two'}}}
+        # ast for "foo.*.get"
+        expression = ast.SubExpression(
+            ast.SubExpression(
+                ast.Field('foo'),
+                ast.Wildcard()),
+            ast.Field('get'))
+        match = expression.search(data)
+        self.assertEqual(sorted(match), ['one', 'two'])
+
 
 if __name__ == '__main__':
     unittest.main()

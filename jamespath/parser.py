@@ -51,6 +51,10 @@ class Parser(object):
         else:
             p[0] = ast.SubExpression(p[1], ast.Index(p[3]))
 
+    def p_jamespath_wildcard(self, p):
+        """jamespath : jamespath DOT STAR"""
+        p[0] = ast.SubExpression(p[1], ast.Wildcard())
+
     def p_jamespath_identifier(self, p):
         """jamespath : IDENTIFIER"""
         p[0] = ast.Field(p[1])
