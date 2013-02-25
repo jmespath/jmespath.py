@@ -56,8 +56,10 @@ class Parser(object):
         p[0] = ast.SubExpression(p[1], ast.Wildcard())
 
     def p_jmespath_identifier(self, p):
-        """expression : IDENTIFIER"""
-        p[0] = ast.Field(p[1])
+        """expression : IDENTIFIER
+                      | NUMBER
+        """
+        p[0] = ast.Field(str(p[1]))
 
     def p_error(self, t):
         raise ValueError(
