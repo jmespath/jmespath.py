@@ -19,7 +19,6 @@ setup(
     install_requires=[
         'ply==3.4',
     ],
-    license=open("LICENSE.txt").read(),
     classifiers=(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
