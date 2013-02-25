@@ -1,9 +1,9 @@
 class AST(object):
-    def search(self):
+    def search(self, value):
         pass
 
 
-class SubExpression(object):
+class SubExpression(AST):
     def __init__(self, parent, child):
         self.parent = parent
         self.child = child
@@ -17,7 +17,7 @@ class SubExpression(object):
         return "SubExpression(%r, %s)" % (self.parent, self.child)
 
 
-class Field(object):
+class Field(AST):
     def __init__(self, name):
         self.name = name
 
@@ -35,7 +35,7 @@ class Field(object):
         return "Field(%s)" % self.name
 
 
-class Index(object):
+class Index(AST):
     def __init__(self, index):
         self.index = index
 
@@ -54,7 +54,7 @@ class Index(object):
         return "Index(%s)" % self.index
 
 
-class WildcardIndex(object):
+class WildcardIndex(AST):
     def search(self, value):
         return _MultiMatch(value)
 
@@ -62,7 +62,7 @@ class WildcardIndex(object):
         return "WildcardIndex(*)"
 
 
-class Wildcard(object):
+class Wildcard(AST):
     def search(self, value):
         if isinstance(value, dict):
             return _MultiMatch(value.values())
