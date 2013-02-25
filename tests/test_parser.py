@@ -11,22 +11,22 @@ class TestParser(unittest.TestCase):
 
     def test_field(self):
         parsed = self.parser.parse('foo')
-        self.assertEqual(parsed.search({'foo': 'bar'}), ['bar'])
+        self.assertEqual(parsed.search({'foo': 'bar'}), 'bar')
 
     def test_dot_syntax(self):
         parsed = self.parser.parse('foo.bar')
-        self.assertEqual(parsed.search({'foo': {'bar': 'baz'}}), ['baz'])
+        self.assertEqual(parsed.search({'foo': {'bar': 'baz'}}), 'baz')
 
     def test_multiple_dots(self):
         parsed = self.parser.parse('foo.bar.baz')
         self.assertEqual(
-            parsed.search({'foo': {'bar': {'baz': 'correct'}}}), ['correct'])
+            parsed.search({'foo': {'bar': {'baz': 'correct'}}}), 'correct')
 
     def test_index(self):
         parsed = self.parser.parse('foo[1]')
         self.assertEqual(
             parsed.search({'foo': ['zero', 'one', 'two']}),
-            ['one'])
+            'one')
 
     def test_wildcard(self):
         parsed = self.parser.parse('foo[*]')

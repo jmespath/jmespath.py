@@ -10,13 +10,11 @@ class SubExpression(object):
 
     def search(self, value):
         sub_value = self.parent.search(value)
-        found = []
-        for child in sub_value:
-            found.extend(self.child.search(child))
+        found = self.child.search(sub_value)
         return found
 
     def __repr__(self):
-        return "Child(%r, %s)" % (self.parent, self.child)
+        return "SubExpression(%r, %s)" % (self.parent, self.child)
 
 
 class Field(object):
@@ -24,13 +22,14 @@ class Field(object):
         self.name = name
 
     def search(self, value):
-        if self.name in value:
-            try:
-                return [value.get(self.name)]
-            except AttributeError:
-                return []
+        if value is None:
+            return None
+        try:
+            return value.get(self.name)
+        except AttributeError:
+            return None
         else:
-            return []
+            return None
 
     def __repr__(self):
         return "Field(%s)" % self.name
@@ -45,11 +44,11 @@ class Index(object):
         # want to support that.
         if isinstance(value, list):
             try:
-                return [value[self.index]]
+                return value[self.index]
             except IndexError:
-                return []
+                return None
         else:
-            return []
+            return None
 
     def __repr__(self):
         return "Index(%s)" % self.index
@@ -57,7 +56,7 @@ class Index(object):
 
 class WildcardIndex(object):
     def search(self, value):
-        return value
+        return _MultiMatch(value)
 
     def __repr__(self):
         return "WildcardIndex(*)"
@@ -66,9 +65,24 @@ class WildcardIndex(object):
 class Wildcard(object):
     def search(self, value):
         if isinstance(value, dict):
-            return value.values()
+            return _MultiMatch(value.values())
+        elif isinstance(value, _MultiMatch):
+            return None
         else:
-            return []
+            return None
 
     def __repr__(self):
         return "Wildcard(*)"
+
+
+class _MultiMatch(list):
+    def __init__(self, elements):
+        self.extend(elements)
+
+    def get(self, value):
+        results = []
+        for element in self:
+            result = element.get(value)
+            if result is not None:
+                results.append(result)
+        return results

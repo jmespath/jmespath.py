@@ -33,11 +33,11 @@
          },
          {
             "expression": "foo.*.notbaz[0]",
-            "result": ["a", "d"]
+            "result": ["a", "b", "c"]
          },
          {
             "expression": "foo.*.notbaz[-1]",
-            "result": ["c", "f"]
+            "result": ["d", "e", "f"]
          },
          {
             "expression": "foo.*",
@@ -45,15 +45,15 @@
          },
          {
             "expression": "foo.*.*",
-            "result": ["one", "two", "three", ["a", "b", "c"], ["d", "e", "f"]]
+            "result": null
          },
          {
             "expression": "foo.*.*.*",
-            "result": []
+            "result": null
          },
          {
             "expression": "foo.*.*.*.*",
-            "result": []
+            "result": null
          }
     ]
 }]

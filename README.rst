@@ -8,7 +8,7 @@ For example, given this document::
 
     {"foo": {"bar": "baz"}}
 
-The jamespath expression "foo.bar" will return ["baz"].
+The jamespath expression "foo.bar" will return "baz".
 
 Jamespath also supports:
 
@@ -16,7 +16,7 @@ Referencing elements in a list.  Given the data::
 
     {"foo": {"bar": ["one", "two"]}}
 
-The expression: "foo.bar[0]" will return ["one"].
+The expression: "foo.bar[0]" will return "one".
 You can also reference all the items in a list using the '*'
 syntax::
 
@@ -66,7 +66,7 @@ and give it the jamespath expression and the data::
 
     >>> import jamespath
     >>> path = jamespath.search('foo.bar', {'foo': {'bar': 'baz'}})
-    ['baz']
+    'baz'
 
 Similar to the ``re`` module, you can store the compiled expressions
 and reuse them to perform repeated searches::
@@ -74,9 +74,9 @@ and reuse them to perform repeated searches::
     >>> import jamespath
     >>> path = jamespath.compile('foo.bar')
     >>> path.search({'foo': {'bar': 'baz'}})
-    ['baz']
+    'baz'
     >>> path.search({'foo': {'bar': 'other'}})
-    ['other']
+    'other'
 
 You can also use the ``jamespath.parser.Parser`` class directly
 if you want more control.
