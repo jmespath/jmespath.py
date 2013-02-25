@@ -8,7 +8,7 @@ For example, given this document::
 
     {"foo": {"bar": "baz"}}
 
-The jmespath expression "foo.bar" will return "baz".
+The jmespath expression ``foo.bar`` will return "baz".
 
 JMESPath also supports:
 
@@ -16,22 +16,22 @@ Referencing elements in a list.  Given the data::
 
     {"foo": {"bar": ["one", "two"]}}
 
-The expression: "foo.bar[0]" will return "one".
-You can also reference all the items in a list using the '*'
+The expression: ``foo.bar[0]`` will return "one".
+You can also reference all the items in a list using the ``*``
 syntax::
 
    {"foo": {"bar": [{"name": "one"}, {"name": "two"}]}}
 
-The expression: "foo.bar[*].name" will return ["one", "two"].
+The expression: ``foo.bar[*].name`` will return ["one", "two"].
 Negative indexing is also supported (-1 refers to the last element
 in the list).  Given the data above, the expression
-"foo.bar[-1].name" will return ["two"].
+``foo.bar[-1].name`` will return ["two"].
 
-The '*' can also be used for hash types::
+The ``*`` can also be used for hash types::
 
    {"foo": {"bar": {"name": "one"}, "baz": {"name": "two"}}}
 
-The expression: "foo.*.name" will return ["one", "two"].
+The expression: ``foo.*.name`` will return ["one", "two"].
 
 
 Grammar
