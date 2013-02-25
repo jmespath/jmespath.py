@@ -28,10 +28,3 @@ class LexerDefinition(object):
 
     def t_error(self, t):
         raise ValueError("Illegal character '%s'" % t.value[0])
-
-
-def create_lexer(definition=None, debug=False):
-    if definition is None:
-        definition = LexerDefinition()
-    lexer = ply.lex.lex(module=definition, debug=debug)
-    return lexer
