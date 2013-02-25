@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 setup(
     name='jmespath',
     version='0.0.1',
-    description='JSON aggregate matching expression selectors',
+    description='JSON Matching Expressions',
     long_description=open('README.rst').read(),
     author='James Saryerwinnie',
     author_email='js@jamesls.com',
