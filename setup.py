@@ -7,13 +7,13 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name='jamespath',
+    name='jmespath',
     version='0.0.1',
     description='JSON aggregate matching expression selectors',
     long_description=open('README.rst').read(),
     author='James Saryerwinnie',
     author_email='js@jamesls.com',
-    url='https://github.com/boto/jamespath',
+    url='https://github.com/boto/jmespath',
     scripts=[],
     packages=find_packages(),
     install_requires=[

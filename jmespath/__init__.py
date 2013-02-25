@@ -1,4 +1,4 @@
-from jamespath import parser
+from jmespath import parser
 
 __version__ = '0.0.1'
 

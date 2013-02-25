@@ -1,16 +1,16 @@
-JamesPath
-=========
+JMESPath
+========
 
-JamesPath allows you to declaratively specify how to extract
+JMESPath allows you to declaratively specify how to extract
 elements from a JSON document.
 
 For example, given this document::
 
     {"foo": {"bar": "baz"}}
 
-The jamespath expression "foo.bar" will return "baz".
+The jmespath expression "foo.bar" will return "baz".
 
-Jamespath also supports:
+JMESPath also supports:
 
 Referencing elements in a list.  Given the data::
 
@@ -51,7 +51,7 @@ Grammar
 Testing
 =======
 
-In addition to the unit tests for the jamespath modules,
+In addition to the unit tests for the jmespath modules,
 there is a ``tests/compliance`` directory that contains
 .json files with test cases.  This allows other implementations
 to verify they are producing the correct output.  Each json
@@ -62,21 +62,21 @@ Python Library
 
 The included python implementation has two convenience functions
 that operate on python data structures.  You can use ``search``
-and give it the jamespath expression and the data::
+and give it the jmespath expression and the data::
 
-    >>> import jamespath
-    >>> path = jamespath.search('foo.bar', {'foo': {'bar': 'baz'}})
+    >>> import jmespath
+    >>> path = jmespath.search('foo.bar', {'foo': {'bar': 'baz'}})
     'baz'
 
 Similar to the ``re`` module, you can store the compiled expressions
 and reuse them to perform repeated searches::
 
-    >>> import jamespath
-    >>> path = jamespath.compile('foo.bar')
+    >>> import jmespath
+    >>> path = jmespath.compile('foo.bar')
     >>> path.search({'foo': {'bar': 'baz'}})
     'baz'
     >>> path.search({'foo': {'bar': 'other'}})
     'other'
 
-You can also use the ``jamespath.parser.Parser`` class directly
+You can also use the ``jmespath.parser.Parser`` class directly
 if you want more control.
