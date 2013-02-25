@@ -1,4 +1,5 @@
 import os
+from pprint import pformat
 from tests import OrderedDict
 from tests import json
 
@@ -18,7 +19,7 @@ def test_compliance():
             if filename.endswith('.json'):
                 full_path = os.path.join(root, filename)
                 for given, expression, result in _load_cases(full_path):
-                    yield _test_expression, given, expression, result
+                    yield _test_expression, given, expression, result, filename
 
 
 def _load_cases(full_path):
@@ -29,9 +30,11 @@ def _load_cases(full_path):
             yield given, case['expression'], case['result']
 
 
-def _test_expression(given, expression, expected):
+def _test_expression(given, expression, expected, filename):
     parsed = jamespath.compile(expression)
     actual = parsed.search(given)
-    error_msg = ("\nThe expression '%s' was suppose to give: %s.\n"
-                 "Instead it matched: %s" % (expression, expected, actual))
+    expected_repr = json.dumps(expected, indent=4)
+    actual_repr = json.dumps(actual, indent=4)
+    error_msg = ("\n(%s) The expression '%s' was suppose to give: %s.\n"
+                 "Instead it matched: %s" % (filename, expression, expected_repr, actual_repr))
     assert_equal(actual, expected, error_msg)

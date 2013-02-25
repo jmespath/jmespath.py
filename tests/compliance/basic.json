@@ -4,31 +4,31 @@
      "cases": [
          {
             "expression": "foo",
-            "result": [{"bar": {"baz": "correct"}}]
+            "result": {"bar": {"baz": "correct"}}
          },
          {
             "expression": "foo.bar",
-            "result": [{"baz": "correct"}]
+            "result": {"baz": "correct"}
          },
          {
             "expression": "foo.bar.baz",
-            "result": ["correct"]
+            "result": "correct"
          },
          {
             "expression": "foo.bar.baz.bad",
-            "result": []
+            "result": null
          },
          {
             "expression": "foo.bar.bad",
-            "result": []
+            "result": null
          },
          {
             "expression": "foo.bad",
-            "result": []
+            "result": null
          },
          {
             "expression": "bad",
-            "result": []
+            "result": null
          }
      ]
 },
@@ -38,11 +38,11 @@
     "cases": [
          {
             "expression": "foo",
-            "result": [{"bar": ["one", "two", "three"]}]
+            "result": {"bar": ["one", "two", "three"]}
          },
          {
             "expression": "foo.bar",
-            "result": [["one", "two", "three"]]
+            "result": ["one", "two", "three"]
          }
     ]
 },
@@ -51,15 +51,15 @@
     "cases": [
         {
             "expression": "one",
-            "result": []
+            "result": null
         },
         {
             "expression": "two",
-            "result": []
+            "result": null
         },
         {
             "expression": "three",
-            "result": []
+            "result": null
         }
     ]
 }
