@@ -5,7 +5,7 @@ from tests import json
 
 from nose.tools import assert_equal
 
-import jamespath
+import jmespath
 
 
 TEST_DIR = os.path.join(
@@ -31,7 +31,7 @@ def _load_cases(full_path):
 
 
 def _test_expression(given, expression, expected, filename):
-    parsed = jamespath.compile(expression)
+    parsed = jmespath.compile(expression)
     actual = parsed.search(given)
     expected_repr = json.dumps(expected, indent=4)
     actual_repr = json.dumps(actual, indent=4)
