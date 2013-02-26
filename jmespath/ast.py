@@ -57,7 +57,7 @@ class Index(AST):
         # want to support that.
         if isinstance(value, _MultiMatch):
             try:
-                return _MultiMatch([el[self.index] for el in value])
+                return value.get_index(self.index)
             except IndexError:
                 return None
         elif isinstance(value, list):
@@ -69,25 +69,31 @@ class Index(AST):
             return None
 
 
-class WildcardIndex(AST):
-    def search(self, value):
-        return _MultiMatch(value)
+class ValuesBranch(AST):
+    def __init__(self, node):
+        self.node = node
 
     def pretty_print(self, indent=''):
-        return "%sWildcardIndent(*)" % indent
+        return "%sValuesBranch(%s)" % (indent, self.node)
 
-
-class Wildcard(AST):
     def search(self, value):
-        if isinstance(value, dict):
-            return _MultiMatch(value.values())
-        elif isinstance(value, _MultiMatch):
+        response = self.node.search(value)
+        try:
+            return _MultiMatch(response.values())
+        except AttributeError:
             return None
-        else:
-            return None
+
+
+class ElementsBranch(AST):
+    def __init__(self, node):
+        self.node = node
 
     def pretty_print(self, indent=''):
-        return "%sWildcard(*)" % indent
+        return "%sElementsBranch(%s)" % (indent, self.node)
+
+    def search(self, value):
+        response = self.node.search(value)
+        return _MultiMatch(response)
 
 
 class _MultiMatch(list):
@@ -103,3 +109,9 @@ class _MultiMatch(list):
                     result = _MultiMatch(result)
                 results.append(result)
         return results
+
+    def get_index(self, index):
+        try:
+            return _MultiMatch([el[index] for el in self])
+        except IndexError:
+            return None

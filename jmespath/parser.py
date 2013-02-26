@@ -20,13 +20,13 @@ class Grammar(object):
                       | expression LBRACKET STAR RBRACKET
         """
         if p[3] == '*':
-            p[0] = ast.SubExpression(p[1], ast.WildcardIndex())
+            p[0] = ast.ElementsBranch(p[1])
         else:
             p[0] = ast.SubExpression(p[1], ast.Index(p[3]))
 
     def p_jmespath_wildcard(self, p):
         """expression : expression DOT STAR"""
-        p[0] = ast.SubExpression(p[1], ast.Wildcard())
+        p[0] = ast.ValuesBranch(p[1])
 
     def p_jmespath_identifier(self, p):
         """expression : IDENTIFIER

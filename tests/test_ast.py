@@ -85,21 +85,10 @@ class TestAST(unittest.TestCase):
         self.assertEqual(match, 'one')
 
     def test_index_with_star(self):
-        child = ast.SubExpression(ast.Field('foo'), ast.WildcardIndex())
+        child = ast.ElementsBranch(ast.Field('foo'))
         match = child.search({'foo': ['one', 'two']})
         self.assertEqual(match, ['one', 'two'])
 
-    def test_wildcard_subchild(self):
-        # foo[*].bar
-        child = ast.SubExpression(
-            ast.SubExpression(
-                ast.Field('foo'),
-                ast.WildcardIndex()),
-            ast.Field('bar'))
-        match = child.search(
-            {'foo': [{'bar': 'one'}, {'bar': 'two'}]})
-        self.assertTrue(isinstance(match, list))
-        self.assertEqual(match, ['one', 'two'])
 
     def test_associative(self):
         data = {'foo': {'bar': ['one']}}
@@ -112,16 +101,37 @@ class TestAST(unittest.TestCase):
         self.assertEqual(first.search(data), 'one')
         self.assertEqual(second.search(data), 'one')
 
-    def test_wildcard_on_dict(self):
+    def test_wildcard_branches_on_dict_values(self):
         data = {'foo': {'bar': {'get': 'one'}, 'baz': {'get': 'two'}}}
         # ast for "foo.*.get"
         expression = ast.SubExpression(
-            ast.SubExpression(
-                ast.Field('foo'),
-                ast.Wildcard()),
+            ast.ValuesBranch(ast.Field('foo')),
             ast.Field('get'))
         match = expression.search(data)
         self.assertEqual(sorted(match), ['one', 'two'])
+        self.assertEqual(expression.search({'foo': [{'bar': 'one'}]}), None)
+
+    def test_wildcard_branches_with_index(self):
+        # foo[*].bar
+        child = ast.SubExpression(
+            ast.ElementsBranch(ast.Field('foo')),
+            ast.Field('bar')
+        )
+        match = child.search(
+            {'foo': [{'bar': 'one'}, {'bar': 'two'}]})
+        self.assertTrue(isinstance(match, list))
+        self.assertEqual(match, ['one', 'two'])
+
+    def test_index_with_multi_match(self):
+        # foo[*].bar[0]
+        child = ast.SubExpression(
+            ast.ElementsBranch(ast.Field('foo')),
+            ast.SubExpression(
+                ast.Field('bar'),
+                ast.Index(0)))
+        data = {'foo': [{'bar': ['one', 'two']}, {'bar': ['three', 'four']}]}
+        match = child.search(data)
+        self.assertEqual(match, ['one', 'three'])
 
 
 if __name__ == '__main__':
