@@ -7,19 +7,18 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name='jamespath',
+    name='jmespath',
     version='0.0.1',
-    description='JSON aggregate matching expression selectors',
+    description='JSON Matching Expressions',
     long_description=open('README.rst').read(),
     author='James Saryerwinnie',
     author_email='js@jamesls.com',
-    url='https://github.com/boto/jamespath',
+    url='https://github.com/boto/jmespath',
     scripts=[],
     packages=find_packages(),
     install_requires=[
         'ply==3.4',
     ],
-    license=open("LICENSE.txt").read(),
     classifiers=(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',

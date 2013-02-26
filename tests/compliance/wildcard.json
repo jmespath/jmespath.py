@@ -45,15 +45,15 @@
          },
          {
             "expression": "foo.*.*",
-            "result": ["one", "two", "three", ["a", "b", "c"], ["d", "e", "f"]]
+            "result": null
          },
          {
             "expression": "foo.*.*.*",
-            "result": []
+            "result": null
          },
          {
             "expression": "foo.*.*.*.*",
-            "result": []
+            "result": null
          }
     ]
 }]

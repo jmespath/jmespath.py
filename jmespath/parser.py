@@ -2,13 +2,17 @@ import random
 
 import ply.yacc
 
-from jamespath import ast
-from jamespath import lexer
+from jmespath import ast
+from jmespath import lexer
 
 
 class Parser(object):
     precedence = (
-        ('left', 'DOT', 'LBRACKET'),
+        ('right', 'DOT', 'LBRACKET'),
+        #('right', 'DOT'),
+        #('right', 'LBRACKET'),
+        #('right', 'DOT', 'LBRACKET'),
+        #('left', 'LBRACKET'),
     )
     _cache = {}
     _max_size = 64
@@ -38,26 +42,28 @@ class Parser(object):
         for key in random.sample(self._cache.keys(), self._max_size / 2):
             del self._cache[key]
 
-    def p_jamespath_expression(self, p):
-        """jamespath : jamespath DOT jamespath"""
+    def p_jmespath_expression(self, p):
+        """ expression : expression DOT expression"""
         p[0] = ast.SubExpression(p[1], p[3])
 
-    def p_jamespath_index(self, p):
-        """jamespath : jamespath LBRACKET NUMBER RBRACKET
-                     | jamespath LBRACKET STAR RBRACKET
+    def p_jmespath_index(self, p):
+        """expression : expression LBRACKET NUMBER RBRACKET
+                     | expression LBRACKET STAR RBRACKET
         """
         if p[3] == '*':
             p[0] = ast.SubExpression(p[1], ast.WildcardIndex())
         else:
             p[0] = ast.SubExpression(p[1], ast.Index(p[3]))
 
-    def p_jamespath_wildcard(self, p):
-        """jamespath : jamespath DOT STAR"""
+    def p_jmespath_wildcard(self, p):
+        """expression : expression DOT STAR"""
         p[0] = ast.SubExpression(p[1], ast.Wildcard())
 
-    def p_jamespath_identifier(self, p):
-        """jamespath : IDENTIFIER"""
-        p[0] = ast.Field(p[1])
+    def p_jmespath_identifier(self, p):
+        """expression : IDENTIFIER
+                      | NUMBER
+        """
+        p[0] = ast.Field(str(p[1]))
 
     def p_error(self, t):
         raise ValueError(

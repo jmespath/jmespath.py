@@ -4,35 +4,35 @@
      "cases": [
          {
             "expression": "foo.bar[0]",
-            "result": ["zero"]
+            "result": "zero"
          },
          {
             "expression": "foo.bar[1]",
-            "result": ["one"]
+            "result": "one"
          },
          {
             "expression": "foo.bar[2]",
-            "result": ["two"]
+            "result": "two"
          },
          {
             "expression": "foo.bar[3]",
-            "result": []
+            "result": null
          },
          {
             "expression": "foo.bar[-1]",
-            "result": ["two"]
+            "result": "two"
          },
          {
             "expression": "foo.bar[-2]",
-            "result": ["one"]
+            "result": "one"
          },
          {
             "expression": "foo.bar[-3]",
-            "result": ["zero"]
+            "result": "zero"
          },
          {
             "expression": "foo.bar[-4]",
-            "result": []
+            "result": null
          }
      ]
 },
@@ -42,27 +42,27 @@
      "cases": [
          {
             "expression": "foo.bar",
-            "result": []
+            "result": null
          },
          {
             "expression": "foo[0].bar",
-            "result": ["one"]
+            "result": "one"
          },
          {
             "expression": "foo[1].bar",
-            "result": ["two"]
+            "result": "two"
          },
          {
             "expression": "foo[2].bar",
-            "result": ["three"]
+            "result": "three"
          },
          {
             "expression": "foo[3].notbar",
-            "result": ["four"]
+            "result": "four"
          },
          {
             "expression": "foo[3].bar",
-            "result": []
+            "result": null
          }
      ]
 },
@@ -109,7 +109,7 @@
          },
          {
             "expression": "foo.bar[*].baz[3]",
-            "result": []
+            "result": null
          }
      ]
 },
@@ -126,23 +126,43 @@
          },
          {
             "expression": "foo.bar[0]",
-            "result": [["one", "two"]]
+            "result": ["one", "two"]
          },
          {
             "expression": "foo.bar[0][0]",
-            "result": ["one"]
+            "result": "one"
          },
          {
             "expression": "foo.bar[0][0][0]",
-            "result": []
+            "result": null
          },
          {
             "expression": "foo.bar[0][0][0][0]",
-            "result": []
+            "result": null
          },
          {
             "expression": "foo[0][0]",
-            "result": []
+            "result": null
          }
      ]
-}]
+},
+{
+    "given": {
+        "foo": [
+            {"bar": [{"kind": "basic"}, {"kind": "intermediate"}]},
+            {"bar": [{"kind": "advanced"}, {"kind": "expert"}]}
+        ]
+
+     },
+     "cases": [
+         {
+            "expression": "foo[*].bar[*].kind",
+            "result": [["basic", "intermediate"], ["advanced", "expert"]]
+         },
+         {
+            "expression": "foo[*].bar[0].kind",
+            "result": ["basic", "advanced"]
+         }
+     ]
+}
+]
