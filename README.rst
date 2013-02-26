@@ -33,6 +33,10 @@ The ``*`` can also be used for hash types::
 
 The expression: ``foo.*.name`` will return ["one", "two"].
 
+**NOTE: jmespath is being actively developed.  There are a number
+of features it does not currently support that may be added in the
+future.**
+
 
 Grammar
 =======
