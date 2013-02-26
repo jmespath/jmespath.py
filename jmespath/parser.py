@@ -8,7 +8,11 @@ from jmespath import lexer
 
 class Parser(object):
     precedence = (
-        ('left', 'DOT', 'LBRACKET'),
+        ('right', 'DOT', 'LBRACKET'),
+        #('right', 'DOT'),
+        #('right', 'LBRACKET'),
+        #('right', 'DOT', 'LBRACKET'),
+        #('left', 'LBRACKET'),
     )
     _cache = {}
     _max_size = 64

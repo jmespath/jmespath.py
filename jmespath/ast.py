@@ -2,6 +2,12 @@ class AST(object):
     def search(self, value):
         pass
 
+    def pretty_print(self, indent=''):
+        pass
+
+    def __repr__(self):
+        return self.pretty_print()
+
 
 class SubExpression(AST):
     def __init__(self, parent, child):
@@ -13,13 +19,20 @@ class SubExpression(AST):
         found = self.child.search(sub_value)
         return found
 
-    def __repr__(self):
-        return "SubExpression(%r, %s)" % (self.parent, self.child)
+    def pretty_print(self, indent=''):
+        sub_indent = indent + ' ' * 4
+        return "%sSubExpression(\n%s%s,\n%s%s)" % (
+            indent,
+            sub_indent, self.parent.pretty_print(sub_indent),
+            sub_indent, self.child.pretty_print(sub_indent))
 
 
 class Field(AST):
     def __init__(self, name):
         self.name = name
+
+    def pretty_print(self, indent=''):
+        return "%sField(%s)" % (indent, self.name)
 
     def search(self, value):
         if value is None:
@@ -31,18 +44,23 @@ class Field(AST):
         else:
             return None
 
-    def __repr__(self):
-        return "Field(%s)" % self.name
-
 
 class Index(AST):
     def __init__(self, index):
         self.index = index
 
+    def pretty_print(self, indent=''):
+        return "%sIndex(%s)" % (indent, self.index)
+
     def search(self, value):
         # Even though we can index strings, we don't
         # want to support that.
-        if isinstance(value, list):
+        if isinstance(value, _MultiMatch):
+            try:
+                return _MultiMatch([el[self.index] for el in value])
+            except IndexError:
+                return None
+        elif isinstance(value, list):
             try:
                 return value[self.index]
             except IndexError:
@@ -50,16 +68,13 @@ class Index(AST):
         else:
             return None
 
-    def __repr__(self):
-        return "Index(%s)" % self.index
-
 
 class WildcardIndex(AST):
     def search(self, value):
         return _MultiMatch(value)
 
-    def __repr__(self):
-        return "WildcardIndex(*)"
+    def pretty_print(self, indent=''):
+        return "%sWildcardIndent(*)" % indent
 
 
 class Wildcard(AST):
@@ -71,8 +86,8 @@ class Wildcard(AST):
         else:
             return None
 
-    def __repr__(self):
-        return "Wildcard(*)"
+    def pretty_print(self, indent=''):
+        return "%sWildcard(*)" % indent
 
 
 class _MultiMatch(list):
@@ -80,9 +95,11 @@ class _MultiMatch(list):
         self.extend(elements)
 
     def get(self, value):
-        results = []
+        results = _MultiMatch([])
         for element in self:
             result = element.get(value)
             if result is not None:
+                if isinstance(result, list):
+                    result = _MultiMatch(result)
                 results.append(result)
         return results

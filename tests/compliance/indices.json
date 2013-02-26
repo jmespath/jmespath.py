@@ -97,15 +97,15 @@
          },
          {
             "expression": "foo.bar[*].baz[0]",
-            "result": ["one", "two", "three"]
+            "result": ["one", "four", "seven"]
          },
          {
             "expression": "foo.bar[*].baz[1]",
-            "result": ["four", "five", "six"]
+            "result": ["two", "five", "eight"]
          },
          {
             "expression": "foo.bar[*].baz[2]",
-            "result": ["seven", "eight", "nine"]
+            "result": ["three", "six", "nine"]
          },
          {
             "expression": "foo.bar[*].baz[3]",
@@ -145,4 +145,24 @@
             "result": null
          }
      ]
-}]
+},
+{
+    "given": {
+        "foo": [
+            {"bar": [{"kind": "basic"}, {"kind": "intermediate"}]},
+            {"bar": [{"kind": "advanced"}, {"kind": "expert"}]}
+        ]
+
+     },
+     "cases": [
+         {
+            "expression": "foo[*].bar[*].kind",
+            "result": [["basic", "intermediate"], ["advanced", "expert"]]
+         },
+         {
+            "expression": "foo[*].bar[0].kind",
+            "result": ["basic", "advanced"]
+         }
+     ]
+}
+]
