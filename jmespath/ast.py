@@ -4,7 +4,6 @@ class AST(object):
     def search(self, value):
         pass
 
-
     def _get_value_method(self, value):
         for method_name in self.VALUE_METHODS:
             method = getattr(value, method_name, None)
