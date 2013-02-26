@@ -177,6 +177,21 @@
          {
             "expression": "foo[*].bar[1]",
             "result": ["two", "four"]
+         },
+         {
+            "expression": "foo[*].bar[2]",
+            "result": null
+         }
+     ]
+},
+{
+    "given": {
+        "foo": [{"bar": []}, {"bar": []}, {"bar": []}]
+     },
+     "cases": [
+         {
+            "expression": "foo[*].bar[0]",
+            "result": null
          }
      ]
 }
