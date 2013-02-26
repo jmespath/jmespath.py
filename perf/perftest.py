@@ -2,7 +2,7 @@
 """Generate performance diagnostics.
 
 The purpose of this script is to generate performance diagnostics for
-various jamespath expressions to be able to track the performance
+various jmespath expressions to be able to track the performance
 over time.  The test files are data driven similar to the
 compliance tests.
 """
@@ -10,8 +10,9 @@ import argparse
 import time
 import os
 import json
+import sys
 
-from jamespath.parser import Parser
+from jmespath.parser import Parser
 
 
 DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)))
@@ -25,10 +26,11 @@ def run_tests(tests):
         expression = test['expression']
         parse_time = _parse_time(expression)
         search_time = _search_time(expression, given)
-        print("parse_time: %.8fms, search_time: %.8fms" % (
-                1000 * parse_time, 1000 * search_time), end='')
-        print(" description:", test['description'], end='')
-        print("name:", test['name'])
+        sys.stdout.write(
+            "parse_time: %.8fms, search_time: %.8fms" % (
+            1000 * parse_time, 1000 * search_time))
+        sys.stdout.write(" description: %s" % test['description'])
+        sys.stdout.write("name: %s\n" % test['name'])
 
 
 def _search_time(expression, given):
