@@ -1,6 +1,14 @@
 class AST(object):
+    VALUE_METHODS = []
+
     def search(self, value):
         pass
+
+    def _get_value_method(self, value):
+        for method_name in self.VALUE_METHODS:
+            method = getattr(value, method_name, None)
+            if method is not None:
+                return method
 
     def pretty_print(self, indent=''):
         pass
@@ -28,6 +36,8 @@ class SubExpression(AST):
 
 
 class Field(AST):
+    VALUE_METHODS = ['get']
+
     def __init__(self, name):
         self.name = name
 
@@ -35,17 +45,14 @@ class Field(AST):
         return "%sField(%s)" % (indent, self.name)
 
     def search(self, value):
-        if value is None:
-            return None
-        try:
-            return value.get(self.name)
-        except AttributeError:
-            return None
-        else:
-            return None
+        method = self._get_value_method(value)
+        if method is not None:
+            return method(self.name)
 
 
 class Index(AST):
+    VALUE_METHODS = ['get_index', '__getitem__']
+
     def __init__(self, index):
         self.index = index
 
@@ -55,39 +62,41 @@ class Index(AST):
     def search(self, value):
         # Even though we can index strings, we don't
         # want to support that.
-        if isinstance(value, _MultiMatch):
-            try:
-                return _MultiMatch([el[self.index] for el in value])
-            except IndexError:
-                return None
-        elif isinstance(value, list):
-            try:
-                return value[self.index]
-            except IndexError:
-                return None
-        else:
+        if not isinstance(value, list):
             return None
+        method = self._get_value_method(value)
+        if method is not None:
+            try:
+                return method(self.index)
+            except IndexError:
+                pass
 
 
-class WildcardIndex(AST):
-    def search(self, value):
-        return _MultiMatch(value)
+class ValuesBranch(AST):
+    def __init__(self, node):
+        self.node = node
 
     def pretty_print(self, indent=''):
-        return "%sWildcardIndent(*)" % indent
+        return "%sValuesBranch(%s)" % (indent, self.node)
 
-
-class Wildcard(AST):
     def search(self, value):
-        if isinstance(value, dict):
-            return _MultiMatch(value.values())
-        elif isinstance(value, _MultiMatch):
+        response = self.node.search(value)
+        try:
+            return _MultiMatch(response.values())
+        except AttributeError:
             return None
-        else:
-            return None
+
+
+class ElementsBranch(AST):
+    def __init__(self, node):
+        self.node = node
 
     def pretty_print(self, indent=''):
-        return "%sWildcard(*)" % indent
+        return "%sElementsBranch(%s)" % (indent, self.node)
+
+    def search(self, value):
+        response = self.node.search(value)
+        return _MultiMatch(response)
 
 
 class _MultiMatch(list):
@@ -103,3 +112,13 @@ class _MultiMatch(list):
                     result = _MultiMatch(result)
                 results.append(result)
         return results
+
+    def get_index(self, index):
+        matches = []
+        for el in self:
+            try:
+                matches.append(el[index])
+            except IndexError:
+                pass
+        if matches:
+            return _MultiMatch(matches)

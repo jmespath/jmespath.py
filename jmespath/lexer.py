@@ -1,5 +1,3 @@
-import ply.lex
-
 class LexerDefinition(object):
     tokens = (
         'STAR',

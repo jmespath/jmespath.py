@@ -164,5 +164,35 @@
             "result": ["basic", "advanced"]
          }
      ]
+},
+{
+    "given": {
+        "foo": [{"bar": ["one", "two"]}, {"bar": ["three", "four"]}, {"bar": ["five"]}]
+     },
+     "cases": [
+         {
+            "expression": "foo[*].bar[0]",
+            "result": ["one", "three", "five"]
+         },
+         {
+            "expression": "foo[*].bar[1]",
+            "result": ["two", "four"]
+         },
+         {
+            "expression": "foo[*].bar[2]",
+            "result": null
+         }
+     ]
+},
+{
+    "given": {
+        "foo": [{"bar": []}, {"bar": []}, {"bar": []}]
+     },
+     "cases": [
+         {
+            "expression": "foo[*].bar[0]",
+            "result": null
+         }
+     ]
 }
 ]

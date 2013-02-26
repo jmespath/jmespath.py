@@ -52,14 +52,14 @@ class TestParserWildcards(unittest.TestCase):
         self.data = {
             'foo': [
                 {'bar': [{'baz': 'one'}, {'baz': 'two'}]},
-                {'bar': [{'baz': 'three'}, {'baz': 'four'}]},
+                {'bar': [{'baz': 'three'}, {'baz': 'four'}, {'baz': 'five'}]},
             ]
         }
 
     def test_multiple_index_wildcards(self):
         parsed = self.parser.parse('foo[*].bar[*].baz')
         self.assertEqual(parsed.search(self.data),
-                         [['one', 'two'], ['three', 'four']])
+                         [['one', 'two'], ['three', 'four', 'five']])
 
     def test_wildcard_mix_with_indices(self):
         parsed = self.parser.parse('foo[*].bar[0].baz')
@@ -70,6 +70,11 @@ class TestParserWildcards(unittest.TestCase):
         parsed = self.parser.parse('foo[0].bar[*].baz')
         self.assertEqual(parsed.search(self.data),
                          ['one', 'two'])
+
+    def test_indices_out_of_bounds(self):
+        parsed = self.parser.parse('foo[*].bar[2].baz')
+        self.assertEqual(parsed.search(self.data),
+                         ['five'])
 
 
 if __name__ == '__main__':
