@@ -2,7 +2,7 @@
 
 from tests import unittest
 
-from jmespath import parser
+from jamespath import parser
 
 
 class TestParser(unittest.TestCase):

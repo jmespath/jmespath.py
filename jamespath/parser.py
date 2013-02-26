@@ -2,8 +2,8 @@ import random
 
 import ply.yacc
 
-from jmespath import ast
-from jmespath import lexer
+from jamespath import ast
+from jamespath import lexer
 
 
 class Parser(object):
@@ -38,11 +38,11 @@ class Parser(object):
         for key in random.sample(self._cache.keys(), self._max_size / 2):
             del self._cache[key]
 
-    def p_jmespath_expression(self, p):
+    def p_jamespath_expression(self, p):
         """ expression : expression DOT expression"""
         p[0] = ast.SubExpression(p[1], p[3])
 
-    def p_jmespath_index(self, p):
+    def p_jamespath_index(self, p):
         """expression : expression LBRACKET NUMBER RBRACKET
                      | expression LBRACKET STAR RBRACKET
         """
@@ -51,11 +51,11 @@ class Parser(object):
         else:
             p[0] = ast.SubExpression(p[1], ast.Index(p[3]))
 
-    def p_jmespath_wildcard(self, p):
+    def p_jamespath_wildcard(self, p):
         """expression : expression DOT STAR"""
         p[0] = ast.SubExpression(p[1], ast.Wildcard())
 
-    def p_jmespath_identifier(self, p):
+    def p_jamespath_identifier(self, p):
         """expression : IDENTIFIER
                       | NUMBER
         """
