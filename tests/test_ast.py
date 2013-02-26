@@ -2,7 +2,7 @@
 
 import unittest
 
-from jmespath import ast
+from jamespath import ast
 
 
 class TestAST(unittest.TestCase):
