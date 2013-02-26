@@ -1,6 +1,7 @@
 import random
 
 import ply.yacc
+import ply.lex
 
 from jmespath import ast
 from jmespath import lexer

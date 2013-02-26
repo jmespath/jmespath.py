@@ -114,7 +114,11 @@ class _MultiMatch(list):
         return results
 
     def get_index(self, index):
-        try:
-            return _MultiMatch([el[index] for el in self])
-        except IndexError:
-            return None
+        matches = []
+        for el in self:
+            try:
+                matches.append(el[index])
+            except IndexError:
+                pass
+        if matches:
+            return _MultiMatch(matches)
