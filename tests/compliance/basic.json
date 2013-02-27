@@ -4,31 +4,31 @@
      "cases": [
          {
             "expression": "foo",
-            "result": [{"bar": {"baz": "correct"}}]
+            "result": {"bar": {"baz": "correct"}}
          },
          {
             "expression": "foo.bar",
-            "result": [{"baz": "correct"}]
+            "result": {"baz": "correct"}
          },
          {
             "expression": "foo.bar.baz",
-            "result": ["correct"]
+            "result": "correct"
          },
          {
             "expression": "foo.bar.baz.bad",
-            "result": []
+            "result": null
          },
          {
             "expression": "foo.bar.bad",
-            "result": []
+            "result": null
          },
          {
             "expression": "foo.bad",
-            "result": []
+            "result": null
          },
          {
             "expression": "bad",
-            "result": []
+            "result": null
          }
      ]
 },
@@ -38,11 +38,47 @@
     "cases": [
          {
             "expression": "foo",
-            "result": [{"bar": ["one", "two", "three"]}]
+            "result": {"bar": ["one", "two", "three"]}
          },
          {
             "expression": "foo.bar",
-            "result": [["one", "two", "three"]]
+            "result": ["one", "two", "three"]
          }
     ]
-}]
+},
+{
+    "given": ["one", "two", "three"],
+    "cases": [
+        {
+            "expression": "one",
+            "result": null
+        },
+        {
+            "expression": "two",
+            "result": null
+        },
+        {
+            "expression": "three",
+            "result": null
+        }
+    ]
+},
+{
+    "given":
+        {"foo": {"1": ["one", "two", "three"], "-1": "bar"}},
+    "cases": [
+         {
+            "expression": "foo.1",
+            "result": ["one", "two", "three"]
+         },
+         {
+            "expression": "foo.1[0]",
+            "result": "one"
+         },
+         {
+            "expression": "foo.-1",
+            "result": "bar"
+         }
+    ]
+}
+]

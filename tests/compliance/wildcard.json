@@ -1,0 +1,59 @@
+[{
+    "given": {
+        "foo": {
+            "bar": {
+                "baz": "one"
+            },
+            "other": {
+                "baz": "two"
+            },
+            "other2": {
+                "baz": "three"
+            },
+            "other3": {
+                "notbaz": ["a", "b", "c"]
+            },
+            "other4": {
+                "notbaz": ["d", "e", "f"]
+            }
+        }
+    },
+    "cases": [
+         {
+            "expression": "foo.*.baz",
+            "result": ["one", "two", "three"]
+         },
+         {
+            "expression": "foo.bar.*",
+            "result": ["one"]
+         },
+         {
+            "expression": "foo.*.notbaz",
+            "result": [["a", "b", "c"], ["d", "e", "f"]]
+         },
+         {
+            "expression": "foo.*.notbaz[0]",
+            "result": ["a", "d"]
+         },
+         {
+            "expression": "foo.*.notbaz[-1]",
+            "result": ["c", "f"]
+         },
+         {
+            "expression": "foo.*",
+            "result": [{"baz": "one"}, {"baz": "two"}, {"baz": "three"}, {"notbaz": ["a", "b", "c"]}, {"notbaz": ["d", "e", "f"]}]
+         },
+         {
+            "expression": "foo.*.*",
+            "result": null
+         },
+         {
+            "expression": "foo.*.*.*",
+            "result": null
+         },
+         {
+            "expression": "foo.*.*.*.*",
+            "result": null
+         }
+    ]
+}]
