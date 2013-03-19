@@ -47,10 +47,15 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parsed.search({'foo': 'foo', 'bar': 'bar'}), 'foo')
         self.assertEqual(parsed.search({'bad': 'bad'}), None)
 
+    def test_complex_or_expression(self):
+        parsed = self.parser.parse('foo.foo or foo.bar')
+        self.assertEqual(parsed.search({'foo': {'foo': 'foo'}}), 'foo')
+        self.assertEqual(parsed.search({'foo': {'bar': 'bar'}}), 'bar')
+        self.assertEqual(parsed.search({'foo': {'baz': 'baz'}}), None)
+
     def test_bad_parse(self):
         with self.assertRaises(ValueError):
             parsed = self.parser.parse('foo]baz')
-
 
 
 class TestParserWildcards(unittest.TestCase):
