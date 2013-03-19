@@ -133,6 +133,16 @@ class TestAST(unittest.TestCase):
         match = child.search(data)
         self.assertEqual(match, ['one', 'three'])
 
+    def test_or_expression(self):
+        # foo or bar
+        field_foo = ast.Field('foo')
+        field_bar = ast.Field('bar')
+        or_expression = ast.ORExpression(field_foo, field_bar)
+        self.assertEqual(or_expression.search({'foo': 'foo'}), 'foo')
+        self.assertEqual(or_expression.search({'bar': 'bar'}), 'bar')
+        self.assertEqual(or_expression.search(
+            {'foo': 'foo', 'bar': 'bar'}), 'foo')
+
 
 if __name__ == '__main__':
     unittest.main()

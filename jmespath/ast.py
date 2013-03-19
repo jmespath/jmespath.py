@@ -122,3 +122,15 @@ class _MultiMatch(list):
                 pass
         if matches:
             return _MultiMatch(matches)
+
+
+class ORExpression(AST):
+    def __init__(self, first, remaining):
+        self.first = first
+        self.remaining = remaining
+
+    def search(self, value):
+        matched = self.first.search(value)
+        if matched is None:
+            matched = self.remaining.search(value)
+        return matched

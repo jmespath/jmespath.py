@@ -35,6 +35,10 @@ class Grammar(object):
         """
         p[0] = ast.Field(str(p[1]))
 
+    def p_jmespath_or_expression(self, p):
+        """expression : expression OR expression"""
+        p[0] = ast.ORExpression(p[1], p[3])
+
     def p_error(self, t):
         raise ValueError(
             'Parse error at column %s near token %s (%s)' % (

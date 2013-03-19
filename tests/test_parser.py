@@ -40,6 +40,13 @@ class TestParser(unittest.TestCase):
             parsed.search({'foo': [{'bar': 'one'}, {'bar': 'two'}]}),
             ['one', 'two'])
 
+    def test_or_expression(self):
+        parsed = self.parser.parse('foo or bar')
+        self.assertEqual(parsed.search({'foo': 'foo'}), 'foo')
+        self.assertEqual(parsed.search({'bar': 'bar'}), 'bar')
+        self.assertEqual(parsed.search({'foo': 'foo', 'bar': 'bar'}), 'foo')
+        self.assertEqual(parsed.search({'bad': 'bad'}), None)
+
     def test_bad_parse(self):
         with self.assertRaises(ValueError):
             parsed = self.parser.parse('foo]baz')

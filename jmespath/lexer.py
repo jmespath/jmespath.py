@@ -1,4 +1,8 @@
 class LexerDefinition(object):
+    reserved = {
+        'or': 'OR',
+    }
+
     tokens = (
         'STAR',
         'DOT',
@@ -6,13 +10,13 @@ class LexerDefinition(object):
         'RBRACKET',
         'NUMBER',
         'IDENTIFIER',
-    )
+    ) + tuple(reserved.values())
 
-    reserved = {}
     t_STAR = r'\*'
     t_DOT = r'\.'
     t_LBRACKET = r'\['
     t_RBRACKET = r'\]'
+    t_ignore = ' '
 
     def t_NUMBER(self, t):
         r'-?\d+'
@@ -25,4 +29,4 @@ class LexerDefinition(object):
         return t
 
     def t_error(self, t):
-        raise ValueError("Illegal character '%s'" % t.value[0])
+        raise ValueError("Illegal token value '%s'" % t.value)
