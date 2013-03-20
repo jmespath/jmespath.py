@@ -89,5 +89,22 @@ class TestParserWildcards(unittest.TestCase):
                          ['five'])
 
 
+class TestParserCaching(unittest.TestCase):
+    def test_compile_lots_of_expressions(self):
+        # We have to be careful here because this is an implementation detail
+        # that should be abstracted from the user, but we need to make sure we
+        # exercise the code and that it doesn't blow up.
+        p = parser.Parser()
+        compiled = []
+        compiled2 = []
+        for i in range(parser.Parser._max_size + 1):
+            compiled.append(p.parse('foo%s' % i))
+        # Rerun the test and half of these entries should be from the
+        # cache but they should still be equal to compiled.
+        for i in range(parser.Parser._max_size + 1):
+            compiled2.append(p.parse('foo%s' % i))
+        self.assertEqual(compiled, compiled2)
+
+
 if __name__ == '__main__':
     unittest.main()
