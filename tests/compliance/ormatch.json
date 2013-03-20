@@ -1,0 +1,26 @@
+[{
+    "given":
+        {"outer": {"foo": "foo", "bar": "bar", "baz": "baz"}},
+     "cases": [
+         {
+            "expression": "outer.foo or outer.bar",
+            "result": "foo"
+         },
+         {
+            "expression": "outer.bar or outer.baz",
+            "result": "bar"
+         },
+         {
+            "expression": "outer.bad or outer.foo",
+            "result": "foo"
+         },
+         {
+            "expression": "outer.foo or outer.bad",
+            "result": "foo"
+         },
+         {
+            "expression": "outer.bad or outer.alsobad",
+            "result": null
+         }
+     ]
+}]
