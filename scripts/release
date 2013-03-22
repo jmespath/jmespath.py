@@ -71,6 +71,8 @@ def main():
     tag_release(args.release_version)
     merge_to_develop(args.release_version)
     push_changes()
+    print('Completed, run "python setup.py sdist upload" to "
+          "upload changes to pypi.")
 
 
 if __name__ == '__main__':
