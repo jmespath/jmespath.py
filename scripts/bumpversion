@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+import os
+import argparse
+from subprocess import check_call
+
+
+def open_file(filename, mode='r'):
+    # relative open a file from the root project dir.
+    d = os.path.dirname
+    full_path = os.path.join(
+        d(d(os.path.abspath(__file__))),
+        filename)
+    return open(full_path, mode)
+
+
+def bump_version(version):
+    update_sphinx_conf(version)
+    update_setup_py(version)
+    update_jmespath__init__(version)
+    show_git_diff()
+    response = input("Accept changes? ").strip()
+    if response.lower().startswith('y'):
+        commit_changes(version)
+
+
+def update_setup_py(version):
+    with open_file('setup.py') as f:
+        lines = f.readlines()
+    for i, line in enumerate(lines):
+        if line.startswith('    version='):
+            lines[i] = "    version='%s',\n" % version
+    with open_file('setup.py', 'w') as f:
+        f.write(''.join(lines))
+
+
+def update_sphinx_conf(version):
+    with open_file('docs/conf.py') as f:
+        lines = f.readlines()
+    for i, line in enumerate(lines):
+        if line.startswith('release = '):
+            lines[i] = "release = '%s'\n" % version
+    with open_file('docs/conf.py', 'w') as f:
+        f.write(''.join(lines))
+
+
+def update_jmespath__init__(version):
+    with open_file('jmespath/__init__.py') as f:
+        lines = f.readlines()
+    for i, line in enumerate(lines):
+        if line.startswith('__version__ ='):
+            lines[i] = "__version__ = '%s'\n" % version
+    with open_file('jmespath/__init__.py', 'w') as f:
+        f.write(''.join(lines))
+
+
+def show_git_diff():
+    check_call('git diff', shell=True)
+
+
+def commit_changes(version):
+    check_call('git commit -a -m "Bump version to %s"' % version, shell=True)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('release_version')
+    args = parser.parse_args()
+    bump_version(args.release_version)
+
+
+if __name__ == '__main__':
+    main()
