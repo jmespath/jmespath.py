@@ -16,6 +16,13 @@ class AST(object):
     def __repr__(self):
         return self.pretty_print()
 
+    def __eq__(self, other):
+        return (isinstance(other, self.__class__)
+                and self.__dict__ == other.__dict__)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class SubExpression(AST):
     def __init__(self, parent, child):
@@ -122,3 +129,15 @@ class _MultiMatch(list):
                 pass
         if matches:
             return _MultiMatch(matches)
+
+
+class ORExpression(AST):
+    def __init__(self, first, remaining):
+        self.first = first
+        self.remaining = remaining
+
+    def search(self, value):
+        matched = self.first.search(value)
+        if matched is None:
+            matched = self.remaining.search(value)
+        return matched

@@ -40,10 +40,22 @@ class TestParser(unittest.TestCase):
             parsed.search({'foo': [{'bar': 'one'}, {'bar': 'two'}]}),
             ['one', 'two'])
 
+    def test_or_expression(self):
+        parsed = self.parser.parse('foo or bar')
+        self.assertEqual(parsed.search({'foo': 'foo'}), 'foo')
+        self.assertEqual(parsed.search({'bar': 'bar'}), 'bar')
+        self.assertEqual(parsed.search({'foo': 'foo', 'bar': 'bar'}), 'foo')
+        self.assertEqual(parsed.search({'bad': 'bad'}), None)
+
+    def test_complex_or_expression(self):
+        parsed = self.parser.parse('foo.foo or foo.bar')
+        self.assertEqual(parsed.search({'foo': {'foo': 'foo'}}), 'foo')
+        self.assertEqual(parsed.search({'foo': {'bar': 'bar'}}), 'bar')
+        self.assertEqual(parsed.search({'foo': {'baz': 'baz'}}), None)
+
     def test_bad_parse(self):
         with self.assertRaises(ValueError):
             parsed = self.parser.parse('foo]baz')
-
 
 
 class TestParserWildcards(unittest.TestCase):
@@ -75,6 +87,23 @@ class TestParserWildcards(unittest.TestCase):
         parsed = self.parser.parse('foo[*].bar[2].baz')
         self.assertEqual(parsed.search(self.data),
                          ['five'])
+
+
+class TestParserCaching(unittest.TestCase):
+    def test_compile_lots_of_expressions(self):
+        # We have to be careful here because this is an implementation detail
+        # that should be abstracted from the user, but we need to make sure we
+        # exercise the code and that it doesn't blow up.
+        p = parser.Parser()
+        compiled = []
+        compiled2 = []
+        for i in range(parser.Parser._max_size + 1):
+            compiled.append(p.parse('foo%s' % i))
+        # Rerun the test and half of these entries should be from the
+        # cache but they should still be equal to compiled.
+        for i in range(parser.Parser._max_size + 1):
+            compiled2.append(p.parse('foo%s' % i))
+        self.assertEqual(compiled, compiled2)
 
 
 if __name__ == '__main__':
