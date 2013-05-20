@@ -194,5 +194,36 @@
             "result": null
          }
      ]
+},
+{
+    "given": [
+        "one", "two", "three"
+    ],
+     "cases": [
+         {
+            "expression": "[0]",
+            "result": "one"
+         },
+         {
+            "expression": "[1]",
+            "result": "two"
+         },
+         {
+            "expression": "[2]",
+            "result": "three"
+         },
+         {
+            "expression": "[-1]",
+            "result": "three"
+         },
+         {
+            "expression": "[-2]",
+            "result": "two"
+         },
+         {
+            "expression": "[-3]",
+            "result": "one"
+         }
+     ]
 }
 ]

@@ -88,6 +88,10 @@ class TestParserWildcards(unittest.TestCase):
         self.assertEqual(parsed.search(self.data),
                          ['five'])
 
+    def test_indices(self):
+        parsed = self.parser.parse('[0]')
+        self.assertEqual(parsed.search(['one', 'two']), 'one')
+
 
 class TestParserCaching(unittest.TestCase):
     def test_compile_lots_of_expressions(self):

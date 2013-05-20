@@ -39,6 +39,10 @@ class Grammar(object):
         """expression : expression OR expression"""
         p[0] = ast.ORExpression(p[1], p[3])
 
+    def p_jmespath_root_index(self, p):
+        """expression : LBRACKET NUMBER RBRACKET"""
+        p[0] = ast.Index(p[2])
+
     def p_error(self, t):
         raise ValueError(
             'Parse error at column %s near token %s (%s)' % (
