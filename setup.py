@@ -15,7 +15,7 @@ setup(
     author_email='js@jamesls.com',
     url='https://github.com/boto/jmespath',
     scripts=['bin/jp'],
-    packages=find_packages(),
+    packages=find_packages(exclude=['tests']),
     install_requires=[
         'ply==3.4',
     ],
