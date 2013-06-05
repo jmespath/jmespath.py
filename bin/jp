@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+import jmespath
+import sys
+import json
+
+if not len(sys.argv) == 2:
+    sys.stderr.write('usage: jp <expression>\n\n')
+    sys.exit(1)
+expression = sys.argv[1]
+sys.stdout.write(json.dumps(jmespath.search(expression, json.load(sys.stdin)),
+                            indent=4))
+sys.stdout.write('\n')
