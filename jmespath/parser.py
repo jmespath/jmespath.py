@@ -14,11 +14,13 @@ class Grammar(object):
 
     def p_jmespath_subexpression(self, p):
         """ expression : expression DOT expression
-                       | expression DOT STAR
+                       | STAR
         """
-        if p[3] == '*':
-            p[0] = ast.SubExpression(p[1], ast.WildcardValues())
+        if len(p) == 2:
+            # Then this is the STAR rule.
+            p[0] = ast.WildcardValues()
         else:
+            # This is the expression DOT expression rule.
             p[0] = ast.SubExpression(p[1], p[3])
 
     def p_jmespath_index(self, p):
