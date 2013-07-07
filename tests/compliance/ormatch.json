@@ -3,23 +3,23 @@
         {"outer": {"foo": "foo", "bar": "bar", "baz": "baz"}},
      "cases": [
          {
-            "expression": "outer.foo or outer.bar",
+            "expression": "outer.foo || outer.bar",
             "result": "foo"
          },
          {
-            "expression": "outer.bar or outer.baz",
+            "expression": "outer.bar || outer.baz",
             "result": "bar"
          },
          {
-            "expression": "outer.bad or outer.foo",
+            "expression": "outer.bad || outer.foo",
             "result": "foo"
          },
          {
-            "expression": "outer.foo or outer.bad",
+            "expression": "outer.foo || outer.bad",
             "result": "foo"
          },
          {
-            "expression": "outer.bad or outer.alsobad",
+            "expression": "outer.bad || outer.alsobad",
             "result": null
          }
      ]
