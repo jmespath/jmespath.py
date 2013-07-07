@@ -88,9 +88,24 @@ class TestParserWildcards(unittest.TestCase):
         self.assertEqual(parsed.search(self.data),
                          ['five'])
 
-    def test_indices(self):
+    def test_root_indices(self):
         parsed = self.parser.parse('[0]')
         self.assertEqual(parsed.search(['one', 'two']), 'one')
+
+    def test_root_wildcard(self):
+        parsed = self.parser.parse('*.foo')
+        data = {'top1': {'foo': 'bar'}, 'top2': {'foo': 'baz'},
+                'top3': {'notfoo': 'notfoo'}}
+        # Sorted is being used because the order of the keys are not
+        # required to be in any specific order.
+        self.assertEqual(sorted(parsed.search(data)), sorted(['bar', 'baz']))
+        self.assertEqual(sorted(self.parser.parse('*.notfoo').search(data)),
+                         sorted(['notfoo']))
+
+    def test_only_wildcard(self):
+        parsed = self.parser.parse('*')
+        data = {'foo': 'a', 'bar': 'b', 'baz': 'c'}
+        self.assertEqual(sorted(parsed.search(data)), sorted(['a', 'b', 'c']))
 
 
 class TestParserCaching(unittest.TestCase):
