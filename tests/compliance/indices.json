@@ -63,6 +63,26 @@
          {
             "expression": "foo[3].bar",
             "result": null
+         },
+         {
+            "expression": "foo[0]",
+            "result": {"bar": "one"}
+         },
+         {
+            "expression": "foo[1]",
+            "result": {"bar": "two"}
+         },
+         {
+            "expression": "foo[2]",
+            "result": {"bar": "three"}
+         },
+         {
+            "expression": "foo[3]",
+            "result": {"notbar": "four"}
+         },
+         {
+            "expression": "foo[4]",
+            "result": null
          }
      ]
 },
@@ -225,5 +245,4 @@
             "result": "one"
          }
      ]
-}
-]
+}]
