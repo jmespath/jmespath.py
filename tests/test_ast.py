@@ -117,7 +117,7 @@ class TestAST(unittest.TestCase):
         data = {'foo': {'bar': {'get': 'one'}, 'baz': {'get': 'two'}}}
         # ast for "foo.*.get"
         expression = ast.SubExpression(
-            ast.ValuesBranch(ast.Field('foo')),
+            ast.SubExpression(ast.Field('foo'), ast.WildcardValues()),
             ast.Field('get'))
         match = expression.search(data)
         self.assertEqual(sorted(match), ['one', 'two'])

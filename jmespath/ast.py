@@ -92,6 +92,13 @@ class Index(AST):
 
 
 class WildcardIndex(AST):
+    """Represents a wildcard index.
+
+    For example::
+
+        foo[*] -> SubExpression(Field(foo), WildcardIndex())
+
+    """
     def search(self, value):
         return _MultiMatch(value)
 
@@ -99,19 +106,22 @@ class WildcardIndex(AST):
         return "%sIndex(*)" % indent
 
 
-class ValuesBranch(AST):
-    def __init__(self, node):
-        self.node = node
+class WildcardValues(AST):
+    """Represents a wildcard on the values of a JSON object.
 
-    def pretty_print(self, indent=''):
-        return "%sValuesBranch(%s)" % (indent, self.node)
+    For example::
 
+        foo.* -> SubExpression(Field(foo), WildcardValues())
+
+    """
     def search(self, value):
-        response = self.node.search(value)
         try:
-            return _MultiMatch(response.values())
+            return _MultiMatch(value.values())
         except AttributeError:
             return None
+
+    def pretty_print(self, indent=''):
+        return "%sWildcardValues()" % indent
 
 
 class _MultiMatch(list):

@@ -13,8 +13,13 @@ class Grammar(object):
     )
 
     def p_jmespath_subexpression(self, p):
-        """ expression : expression DOT expression"""
-        p[0] = ast.SubExpression(p[1], p[3])
+        """ expression : expression DOT expression
+                       | expression DOT STAR
+        """
+        if p[3] == '*':
+            p[0] = ast.SubExpression(p[1], ast.WildcardValues())
+        else:
+            p[0] = ast.SubExpression(p[1], p[3])
 
     def p_jmespath_index(self, p):
         """expression : expression bracket-spec
@@ -36,10 +41,6 @@ class Grammar(object):
             p[0] = ast.WildcardIndex()
         else:
             p[0] = ast.Index(p[2])
-
-    def p_jmespath_wildcard(self, p):
-        """expression : expression DOT STAR"""
-        p[0] = ast.ValuesBranch(p[1])
 
     def p_jmespath_identifier(self, p):
         """expression : IDENTIFIER
