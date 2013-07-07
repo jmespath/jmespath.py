@@ -53,6 +53,10 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parsed.search({'foo': {'bar': 'bar'}}), 'bar')
         self.assertEqual(parsed.search({'foo': {'baz': 'baz'}}), None)
 
+    def test_or_repr(self):
+        parsed = self.parser.parse('foo || bar')
+        self.assertEqual(repr(parsed), 'ORExpression(Field(foo), Field(bar))')
+
     def test_bad_parse(self):
         with self.assertRaises(ValueError):
             parsed = self.parser.parse('foo]baz')
