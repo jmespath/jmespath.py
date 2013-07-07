@@ -12,18 +12,30 @@ class Grammar(object):
         ('right', 'DOT', 'LBRACKET'),
     )
 
-    def p_jmespath_expression(self, p):
+    def p_jmespath_subexpression(self, p):
         """ expression : expression DOT expression"""
         p[0] = ast.SubExpression(p[1], p[3])
 
     def p_jmespath_index(self, p):
-        """expression : expression LBRACKET NUMBER RBRACKET
-                      | expression LBRACKET STAR RBRACKET
+        """expression : expression bracket-spec
+                      | bracket-spec
         """
-        if p[3] == '*':
-            p[0] = ast.ElementsBranch(p[1])
+        if len(p) == 3:
+            p[0] = ast.SubExpression(p[1], p[2])
+        elif len(p) == 2:
+            # Otherwise this is just a bracket-spec, which is valid as a root
+            # level node (e.g. [2]) so we just assign the root node to the
+            # bracket-spec.
+            p[0] = p[1]
+
+    def p_jmespath_bracket_specifier(self, p):
+        """bracket-spec : LBRACKET STAR RBRACKET
+                        | LBRACKET NUMBER RBRACKET
+        """
+        if p[2] == '*':
+            p[0] = ast.WildcardIndex()
         else:
-            p[0] = ast.SubExpression(p[1], ast.Index(p[3]))
+            p[0] = ast.Index(p[2])
 
     def p_jmespath_wildcard(self, p):
         """expression : expression DOT STAR"""
@@ -38,10 +50,6 @@ class Grammar(object):
     def p_jmespath_or_expression(self, p):
         """expression : expression OR expression"""
         p[0] = ast.ORExpression(p[1], p[3])
-
-    def p_jmespath_root_index(self, p):
-        """expression : LBRACKET NUMBER RBRACKET"""
-        p[0] = ast.Index(p[2])
 
     def p_error(self, t):
         raise ValueError(

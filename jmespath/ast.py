@@ -5,6 +5,8 @@ class AST(object):
         pass
 
     def _get_value_method(self, value):
+        # This will find the appropriate getter method
+        # based on the passed in value.
         for method_name in self.VALUE_METHODS:
             method = getattr(value, method_name, None)
             if method is not None:
@@ -25,11 +27,21 @@ class AST(object):
 
 
 class SubExpression(AST):
+    """Represents a subexpression match.
+
+    A subexpression match has a parent and a child node.  A simple example
+    would be something like 'foo.bar' which is represented as::
+
+        SubExpression(Field(foo), Field(bar))
+
+    """
     def __init__(self, parent, child):
         self.parent = parent
         self.child = child
 
     def search(self, value):
+        # To evaluate a subexpression we first evaluate the parent object
+        # and then feed the match of the parent node into the child node.
         sub_value = self.parent.search(value)
         found = self.child.search(sub_value)
         return found
@@ -79,6 +91,14 @@ class Index(AST):
                 pass
 
 
+class WildcardIndex(AST):
+    def search(self, value):
+        return _MultiMatch(value)
+
+    def pretty_print(self, indent=''):
+        return "%sIndex(*)" % indent
+
+
 class ValuesBranch(AST):
     def __init__(self, node):
         self.node = node
@@ -92,18 +112,6 @@ class ValuesBranch(AST):
             return _MultiMatch(response.values())
         except AttributeError:
             return None
-
-
-class ElementsBranch(AST):
-    def __init__(self, node):
-        self.node = node
-
-    def pretty_print(self, indent=''):
-        return "%sElementsBranch(%s)" % (indent, self.node)
-
-    def search(self, value):
-        response = self.node.search(value)
-        return _MultiMatch(response)
 
 
 class _MultiMatch(list):
