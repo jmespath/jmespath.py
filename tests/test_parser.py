@@ -41,17 +41,21 @@ class TestParser(unittest.TestCase):
             ['one', 'two'])
 
     def test_or_expression(self):
-        parsed = self.parser.parse('foo or bar')
+        parsed = self.parser.parse('foo || bar')
         self.assertEqual(parsed.search({'foo': 'foo'}), 'foo')
         self.assertEqual(parsed.search({'bar': 'bar'}), 'bar')
         self.assertEqual(parsed.search({'foo': 'foo', 'bar': 'bar'}), 'foo')
         self.assertEqual(parsed.search({'bad': 'bad'}), None)
 
     def test_complex_or_expression(self):
-        parsed = self.parser.parse('foo.foo or foo.bar')
+        parsed = self.parser.parse('foo.foo || foo.bar')
         self.assertEqual(parsed.search({'foo': {'foo': 'foo'}}), 'foo')
         self.assertEqual(parsed.search({'foo': {'bar': 'bar'}}), 'bar')
         self.assertEqual(parsed.search({'foo': {'baz': 'baz'}}), None)
+
+    def test_or_repr(self):
+        parsed = self.parser.parse('foo || bar')
+        self.assertEqual(repr(parsed), 'ORExpression(Field(foo), Field(bar))')
 
     def test_bad_parse(self):
         with self.assertRaises(ValueError):
