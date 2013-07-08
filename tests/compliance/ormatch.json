@@ -7,7 +7,15 @@
             "result": "foo"
          },
          {
+            "expression": "outer.foo||outer.bar",
+            "result": "foo"
+         },
+         {
             "expression": "outer.bar || outer.baz",
+            "result": "bar"
+         },
+         {
+            "expression": "outer.bar||outer.baz",
             "result": "bar"
          },
          {
@@ -15,11 +23,23 @@
             "result": "foo"
          },
          {
+            "expression": "outer.bad||outer.foo",
+            "result": "foo"
+         },
+         {
             "expression": "outer.foo || outer.bad",
             "result": "foo"
          },
          {
+            "expression": "outer.foo||outer.bad",
+            "result": "foo"
+         },
+         {
             "expression": "outer.bad || outer.alsobad",
+            "result": null
+         },
+         {
+            "expression": "outer.bad||outer.alsobad",
             "result": null
          }
      ]
