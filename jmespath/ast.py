@@ -11,7 +11,7 @@ class AST(object):
                 return method
 
     def pretty_print(self, indent=''):
-        pass
+        return super(AST, self).__repr__()
 
     def __repr__(self):
         return self.pretty_print()
@@ -141,3 +141,7 @@ class ORExpression(AST):
         if matched is None:
             matched = self.remaining.search(value)
         return matched
+
+    def pretty_print(self, indent=''):
+        return "%sORExpression(%s, %s)" % (indent, self.first,
+                                           self.remaining)

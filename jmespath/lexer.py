@@ -1,13 +1,11 @@
 class LexerDefinition(object):
-    reserved = {
-        'or': 'OR',
-    }
-
+    reserved = {}
     tokens = (
         'STAR',
         'DOT',
         'LBRACKET',
         'RBRACKET',
+        'OR',
         'NUMBER',
         'IDENTIFIER',
     ) + tuple(reserved.values())
@@ -16,6 +14,7 @@ class LexerDefinition(object):
     t_DOT = r'\.'
     t_LBRACKET = r'\['
     t_RBRACKET = r'\]'
+    t_OR = r'\|\|'
     t_ignore = ' '
 
     def t_NUMBER(self, t):
