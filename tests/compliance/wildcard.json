@@ -56,4 +56,45 @@
             "result": null
          }
     ]
-}]
+}, {
+    "given": {
+        "foo": {
+            "bar": "one"
+        },
+        "other": {
+            "bar": "two"
+        },
+        "nomatch": {
+            "notbar": "three"
+        }
+    },
+    "cases": [
+         {
+            "expression": "*.bar",
+            "result": ["one", "two"]
+         }
+    ]
+}, {
+    "given": {
+        "top1": {
+            "sub1": {"foo": "one"}
+        },
+        "top2": {
+            "sub1": {"foo": "two"}
+        },
+        "top3": {
+            "sub3": {"notfoo": "notfoo"}
+        }
+    },
+    "cases": [
+         {
+            "expression": "*.*.foo",
+            "result": null
+         },
+         {
+            "expression": "*.sub1.foo",
+            "result": ["one", "two"]
+         }
+    ]
+}
+]
