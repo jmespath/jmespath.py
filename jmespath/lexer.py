@@ -11,6 +11,7 @@ class LexerDefinition(object):
         'OR',
         'NUMBER',
         'IDENTIFIER',
+        'COMMA',
     ) + tuple(reserved.values())
 
     t_STAR = r'\*'
@@ -18,6 +19,7 @@ class LexerDefinition(object):
     t_LBRACKET = r'\['
     t_RBRACKET = r'\]'
     t_OR = r'\|\|'
+    t_COMMA = r','
     t_ignore = ' '
 
     def t_NUMBER(self, t):

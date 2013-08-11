@@ -1,0 +1,56 @@
+[{
+    "given": {
+      "foo": {
+        "bar": "bar",
+        "baz": "baz",
+        "qux": "qux",
+        "nested": {
+          "one": {
+            "a": "first",
+            "b": "second",
+            "c": "third"
+          },
+          "two": {
+            "a": "first",
+            "b": "second",
+            "c": "third"
+          },
+          "three": {
+            "a": "first",
+            "b": "second",
+            "c": "third"
+          }
+        }
+      }
+    },
+     "cases": [
+         {
+            "expression": "foo.bar,baz",
+            "result": ["bar", "baz"]
+         },
+         {
+            "expression": "foo.bar,qux",
+            "result": ["bar", "qux"]
+         },
+         {
+            "expression": "foo.baz,qux",
+            "result": ["baz", "qux"]
+         },
+         {
+            "expression": "foo.bar,noexist",
+            "result": ["bar", null]
+         },
+         {
+            "expression": "foo.noexist,alsonoexist",
+            "result": [null, null]
+         },
+         {
+            "expression": "foo.badkey.nokey,alsonokey",
+            "result": null
+         },
+         {
+            "expression": "foo.nested.*.a,b",
+            "result": [["first", "second"], ["first", "second"], ["first", "second"]]
+         }
+     ]
+}]

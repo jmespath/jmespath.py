@@ -69,6 +69,29 @@ class Field(AST):
             return method(self.name)
 
 
+class MultiField(AST):
+    VALUE_METHODS = ['multi_get']
+
+    def __init__(self, names):
+        self.names = names
+
+    def search(self, value):
+        if value is None:
+            return None
+        method = self._get_value_method(value)
+        if method is not None:
+            return method(self.names)
+        else:
+            return self._multi_get(value)
+
+    def _multi_get(self, value):
+        collected = [value.get(name) for name in self.names]
+        return collected
+
+    def pretty_print(self, indent=''):
+        return "%sMultiField(%s)" % (indent, self.names)
+
+
 class Index(AST):
     VALUE_METHODS = ['get_index', '__getitem__']
 
@@ -147,6 +170,13 @@ class _MultiMatch(list):
                 pass
         if matches:
             return _MultiMatch(matches)
+
+    def multi_get(self, keys):
+        parts = [self.get(k) for k in keys]
+        inverted = []
+        for i in range(len(self)):
+            inverted.append([row[i] for row in parts])
+        return inverted
 
 
 class ORExpression(AST):

@@ -50,6 +50,24 @@ class Grammar(object):
         """
         p[0] = ast.Field(str(p[1]))
 
+    def p_jmespath_multiselect(self, p):
+        """expression : multiselect
+        """
+        if len(p[1]) > 1:
+            p[0] = ast.MultiField(p[1])
+        else:
+            p[0] = ast.Field(str(p[1]))
+
+    def p_jmespath_multiselect_parts(self, p):
+        """multiselect : multiselect COMMA IDENTIFIER
+                       | IDENTIFIER
+        """
+        if len(p) == 2:
+            p[0] = [p[1]]
+        elif len(p) == 4:
+            p[1].append(p[3])
+            p[0] = p[1]
+
     def p_jmespath_or_expression(self, p):
         """expression : expression OR expression"""
         p[0] = ast.ORExpression(p[1], p[3])
