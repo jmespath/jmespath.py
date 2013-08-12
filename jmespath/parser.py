@@ -82,7 +82,8 @@ class Parser(object):
         if cached is not None:
             return cached
         lexer = ply.lex.lex(module=self._lexer_definition(),
-                            debug=self._debug)
+                            debug=self._debug,
+                            reflags=self._lexer_definition.reflags)
         grammar = self._grammar()
         grammar.tokens = self._lexer_definition.tokens
         parser = ply.yacc.yacc(module=grammar, debug=self._debug,

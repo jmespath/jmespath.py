@@ -111,6 +111,29 @@ class TestParserWildcards(unittest.TestCase):
         data = {'foo': 'a', 'bar': 'b', 'baz': 'c'}
         self.assertEqual(sorted(parsed.search(data)), sorted(['a', 'b', 'c']))
 
+    def test_escape_sequences(self):
+        self.assertEqual(self.parser.parse('"foo\tbar"').search(
+            {'foo\tbar': 'baz'}), 'baz')
+        self.assertEqual(self.parser.parse('"foo\nbar"').search(
+            {'foo\nbar': 'baz'}), 'baz')
+        self.assertEqual(self.parser.parse('"foo\bbar"').search(
+            {'foo\bbar': 'baz'}), 'baz')
+        self.assertEqual(self.parser.parse('"foo\fbar"').search(
+            {'foo\fbar': 'baz'}), 'baz')
+        self.assertEqual(self.parser.parse('"foo\rbar"').search(
+            {'foo\rbar': 'baz'}), 'baz')
+
+    def test_consecutive_escape_sequences(self):
+        parsed = self.parser.parse('"foo\\nbar"')
+        self.assertEqual(parsed.search({'foo\\nbar': 'baz'}), 'baz')
+
+        parsed = self.parser.parse('"foo\n\t\rbar"')
+        self.assertEqual(parsed.search({'foo\n\t\rbar': 'baz'}), 'baz')
+
+    def test_escape_sequence_at_end_of_string_not_allowed(self):
+        with self.assertRaises(ValueError):
+            parsed = self.parser.parse('foobar\\')
+
 
 class TestParserCaching(unittest.TestCase):
     def test_compile_lots_of_expressions(self):
