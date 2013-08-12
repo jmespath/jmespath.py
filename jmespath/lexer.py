@@ -1,4 +1,7 @@
+import re
+
 class LexerDefinition(object):
+    reflags = re.DOTALL
     reserved = {}
     tokens = (
         'STAR',
@@ -23,9 +26,16 @@ class LexerDefinition(object):
         return t
 
     def t_IDENTIFIER(self, t):
-        r'[a-zA-Z_][a-zA-Z_0-9]*'
+        r'(([a-zA-Z_][a-zA-Z_0-9]*)|("(\"|.)*"))'
         t.type = self.reserved.get(t.value, 'IDENTIFIER')
+        i = 0
+        if t.value[0] == '"' and t.value[-1] == '"':
+            t.value = t.value[1:-1]
+            if '\\"' in t.value:
+                t.value = t.value.replace('\\"', '"')
+            return t
         return t
+
 
     def t_error(self, t):
         raise ValueError("Illegal token value '%s'" % t.value)

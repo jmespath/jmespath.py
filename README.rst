@@ -41,15 +41,35 @@ future.**
 Grammar
 =======
 
+The grammar is specified using ABNF, as described in `RFC4234`_
+
 ::
 
-    expression : expression '.' expression
-               | expression '[' (number|star) ']
-               | expression '.' star
-               | identifier
-    star : '*'
-    identifier : [a-zA-Z_][a-zA-Z0-9']+
-    number : -?[0-9]+
+    expression        = sub-expression / index-expression / or-expression / identifier / "*"
+    sub-expression    = expression "." expression
+    or-expression     = expression "||" expression
+    index-expression  = expression bracket-specifier / bracket-specifier
+    bracket-specifier = "[" (number / "*") "]"
+    number            = [-]1*digit
+    digit             = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9" / "0"
+    identifier        = 1*char
+    char              = unescaped /
+                        escape (
+                            %x20-2F /    ; Space,!,",#,$,%,&,',(,),*,+,comma,-,.,/
+                            %x3A-40 /    ; :,;,<,=,>,?,@
+                            %x5B    /    ; Left bracket: [
+                            %x5C    /    ; Back slash: \
+                            %x5D    /    ; Right bracket: ]
+                            %x5E    /    ; Caret: ^
+                            %x60    /    ; Backtick: `
+                            %x7B-7E /    ; {,|,},~
+                            b       /    ; backspace
+                            n       /    ; new line
+                            f       /    ; form feed
+                            r       /    ; carriage return
+                            t       )    ; tab
+    escape            = %x5C   ; Back slash: \
+    unescaped         = %x30-39 / %x41-5A / %x5F / %x61-7A / %x7F-10FFFF
 
 
 Testing
@@ -84,3 +104,6 @@ and reuse them to perform repeated searches::
 
 You can also use the ``jmespath.parser.Parser`` class directly
 if you want more control.
+
+
+.. _RFC4234: http://tools.ietf.org/html/rfc4234
