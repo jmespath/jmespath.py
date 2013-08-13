@@ -53,4 +53,26 @@
             "result": [["first", "second"], ["first", "second"], ["first", "second"]]
          }
      ]
+}, {
+    "given": {
+      "reservations": [{
+          "instances": [
+              {"id": "id1",
+               "name": "first"},
+              {"id": "id2",
+               "name": "second"}
+          ]}, {
+          "instances": [
+              {"id": "id3",
+               "name": "third"},
+              {"id": "id4",
+               "name": "fourth"}
+          ]}
+      ]},
+    "cases": [
+         {
+            "expression": "reservations[*].instances[*].id,name",
+            "result": [[["id1", "first"], ["id2", "second"]], [["id3", "third"], ["id4", "fourth"]]]
+         }
+    ]
 }]

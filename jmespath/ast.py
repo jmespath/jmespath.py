@@ -172,11 +172,17 @@ class _MultiMatch(list):
             return _MultiMatch(matches)
 
     def multi_get(self, keys):
-        parts = [self.get(k) for k in keys]
-        inverted = []
-        for i in range(len(self)):
-            inverted.append([row[i] for row in parts])
-        return inverted
+        results = _MultiMatch([])
+        for element in self:
+            if isinstance(element, _MultiMatch):
+                result = element.multi_get(keys)
+            else:
+                result = []
+                for key in keys:
+                    result.append(element.get(key))
+            result = _MultiMatch(result)
+            results.append(result)
+        return results
 
 
 class ORExpression(AST):
