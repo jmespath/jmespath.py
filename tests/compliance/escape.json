@@ -34,7 +34,7 @@
             "result": "unix"
          },
          {
-            "expression": "\"\"\"\"\"",
+            "expression": "\"\\\"\\\"\\\"\"",
             "result": "threequotes"
          }
      ]
