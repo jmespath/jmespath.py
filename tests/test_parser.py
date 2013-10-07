@@ -63,6 +63,12 @@ class TestParser(unittest.TestCase):
             parsed.search({'foo': {'bar': 'bar', 'baz': 'baz', 'qux': 'qux'}}),
             {'bar': 'bar', 'baz': 'baz'})
 
+    def test_multiselect_subexpressions(self):
+        parsed = self.parser.parse('foo.{bar.baz,qux}')
+        self.assertEqual(
+            parsed.search({'foo': {'bar': {'baz': 'CORRECT'}, 'qux': 'qux'}}),
+            {'bar.baz': 'CORRECT', 'qux': 'qux'})
+
     def test_bad_parse(self):
         with self.assertRaises(ValueError):
             parsed = self.parser.parse('foo]baz')

@@ -18,7 +18,7 @@
           "three": {
             "a": "first",
             "b": "second",
-            "c": "third"
+            "c": {"inner": "third"}
           }
         }
       }
@@ -49,6 +49,18 @@
             "result": [{"a": "first", "b": "second"},
                        {"a": "first", "b": "second"},
                        {"a": "first", "b": "second"}]
+         },
+         {
+            "expression": "foo.nested.three.{a,c.inner}",
+            "result": {"a": "first", "c.inner": "third"}
+         },
+         {
+            "expression": "foo.nested.three.{a,c.inner.bad.key}",
+            "result": {"a": "first", "c.inner.bad.key": null}
+         },
+         {
+            "expression": "foo.{nested.one.a,nested.two.b}",
+            "result": {"nested.one.a": "first", "nested.two.b": "second"}
          }
      ]
 }, {

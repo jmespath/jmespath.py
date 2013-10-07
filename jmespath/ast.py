@@ -1,5 +1,9 @@
 class AST(object):
     VALUE_METHODS = []
+    # This can be override on a per instance level.
+    # The parser can set this attribute to tell the node what part of the input
+    # text is associated with this particular node.
+    ASSOCIATED_TEXT = ''
 
     def search(self, value):
         pass
@@ -72,26 +76,27 @@ class Field(AST):
 class MultiField(AST):
     VALUE_METHODS = ['multi_get']
 
-    def __init__(self, names):
-        self.names = names
+    def __init__(self, nodes):
+        self.nodes = nodes
 
     def search(self, value):
         if value is None:
             return None
         method = self._get_value_method(value)
         if method is not None:
-            return method(self.names)
+            return method(self.nodes)
         else:
             return self._multi_get(value)
 
     def _multi_get(self, value):
         collected = {}
-        for name in self.names:
-            collected[name] = value.get(name)
+        for node in self.nodes:
+            key_name = node.ASSOCIATED_TEXT
+            collected[key_name] = node.search(value)
         return collected
 
     def pretty_print(self, indent=''):
-        return "%sMultiField(%s)" % (indent, self.names)
+        return "%sMultiField(%s)" % (indent, self.nodes)
 
 
 class Index(AST):
@@ -173,15 +178,16 @@ class _MultiMatch(list):
         if matches:
             return _MultiMatch(matches)
 
-    def multi_get(self, keys):
+    def multi_get(self, nodes):
         results = _MultiMatch([])
         for element in self:
             if isinstance(element, _MultiMatch):
-                result = element.multi_get(keys)
+                result = element.multi_get(nodes)
             else:
                 result = {}
-                for key in keys:
-                    result[key] = element.get(key)
+                for node in nodes:
+                    key_name = node.ASSOCIATED_TEXT
+                    result[key_name] = node.search(element)
             results.append(result)
         return results
 
