@@ -25,32 +25,30 @@
     },
      "cases": [
          {
-            "expression": "foo.bar,baz",
-            "result": ["bar", "baz"]
+            "expression": "foo.{bar,baz}",
+            "result": {"bar": "bar", "baz": "baz"}
          },
          {
-            "expression": "foo.bar,qux",
-            "result": ["bar", "qux"]
+            "expression": "foo.{bar,qux}",
+            "result": {"bar": "bar", "qux": "qux"}
          },
          {
-            "expression": "foo.baz,qux",
-            "result": ["baz", "qux"]
+            "expression": "foo.{bar,noexist}",
+            "result": {"bar": "bar", "noexist": null}
          },
          {
-            "expression": "foo.bar,noexist",
-            "result": ["bar", null]
+            "expression": "foo.{noexist,alsonoexist}",
+            "result": {"noexist": null, "alsonoexist": null}
          },
          {
-            "expression": "foo.noexist,alsonoexist",
-            "result": [null, null]
-         },
-         {
-            "expression": "foo.badkey.nokey,alsonokey",
+            "expression": "foo.badkey.{nokey,alsonokey}",
             "result": null
          },
          {
-            "expression": "foo.nested.*.a,b",
-            "result": [["first", "second"], ["first", "second"], ["first", "second"]]
+            "expression": "foo.nested.*.{a,b}",
+            "result": [{"a": "first", "b": "second"},
+                       {"a": "first", "b": "second"},
+                       {"a": "first", "b": "second"}]
          }
      ]
 }, {
@@ -71,8 +69,9 @@
       ]},
     "cases": [
          {
-            "expression": "reservations[*].instances[*].id,name",
-            "result": [[["id1", "first"], ["id2", "second"]], [["id3", "third"], ["id4", "fourth"]]]
+            "expression": "reservations[*].instances[*].{id,name}",
+            "result": [[{"id": "id1", "name": "first"}, {"id": "id2", "name": "second"}],
+                       [{"id": "id3", "name": "third"}, {"id": "id4", "name": "fourth"}]]
          }
     ]
 }]

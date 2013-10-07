@@ -85,7 +85,9 @@ class MultiField(AST):
             return self._multi_get(value)
 
     def _multi_get(self, value):
-        collected = [value.get(name) for name in self.names]
+        collected = {}
+        for name in self.names:
+            collected[name] = value.get(name)
         return collected
 
     def pretty_print(self, indent=''):
@@ -177,10 +179,9 @@ class _MultiMatch(list):
             if isinstance(element, _MultiMatch):
                 result = element.multi_get(keys)
             else:
-                result = []
+                result = {}
                 for key in keys:
-                    result.append(element.get(key))
-            result = _MultiMatch(result)
+                    result[key] = element.get(key)
             results.append(result)
         return results
 

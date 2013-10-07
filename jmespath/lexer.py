@@ -8,6 +8,8 @@ class LexerDefinition(object):
         'DOT',
         'LBRACKET',
         'RBRACKET',
+        'LBRACE',
+        'RBRACE',
         'OR',
         'NUMBER',
         'IDENTIFIER',
@@ -18,6 +20,8 @@ class LexerDefinition(object):
     t_DOT = r'\.'
     t_LBRACKET = r'\['
     t_RBRACKET = r'\]'
+    t_LBRACE = r'\{'
+    t_RBRACE = r'\}'
     t_OR = r'\|\|'
     t_COMMA = r','
     t_ignore = ' '

@@ -51,22 +51,24 @@ class Grammar(object):
         p[0] = ast.Field(str(p[1]))
 
     def p_jmespath_multiselect(self, p):
-        """expression : multiselect
+        """expression : LBRACE scalaridentifiers RBRACE
         """
-        if len(p[1]) > 1:
-            p[0] = ast.MultiField(p[1])
-        else:
-            p[0] = ast.Field(str(p[1]))
+        p[0] = ast.MultiField(p[2])
 
-    def p_jmespath_multiselect_parts(self, p):
-        """multiselect : multiselect COMMA IDENTIFIER
-                       | IDENTIFIER
+    def p_jmespath_multiselect_scalar_identifer(self, p):
+        """scalaridentifiers : scalaridentifiers COMMA scalaridentifier
+                             | scalaridentifier
         """
         if len(p) == 2:
             p[0] = [p[1]]
         elif len(p) == 4:
             p[1].append(p[3])
             p[0] = p[1]
+
+    def p_jmespath_scalar_identifie(self, p):
+        """scalaridentifier : IDENTIFIER
+        """
+        p[0] = p[1]
 
     def p_jmespath_or_expression(self, p):
         """expression : expression OR expression"""
