@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+import argparse
+from subprocess import check_call, check_output
+
+try:
+    input = raw_input
+except NameError:
+    pass
+
+
+def run(command):
+    print("Running:", command)
+    check_call(command, shell=True)
+
+def verify_starting_state():
+    must_be_on_develop_branch()
+    no_outstanding_changes()
+
+def must_be_on_develop_branch():
+    output = check_output('git rev-parse --abbrev-ref HEAD',
+                          shell=True).strip().decode('utf8')
+    assert output == 'develop', 'Must be on the develop branch, not %r' % output
+
+def no_outstanding_changes():
+    output = check_output(
+        'git status --short', shell=True).strip().decode('utf8')
+    if output:
+        raise AssertionError("Can't have any pending changes: %s" % output)
+
+
+def create_release_branch(version):
+    check_call('git checkout -b release-%s' % version, shell=True)
+
+
+def bump_version(version):
+    check_call('scripts/bumpversion %s' % version, shell=True)
+
+
+# It might be nice to auto populate the merge/tag messages,
+# right now it will pop up an editor.
+
+def merge_to_master(version):
+    run('git checkout master')
+    run('git merge --no-ff release-%s' % version)
+
+
+def tag_release(version):
+    run('git tag -a %s' % version)
+
+
+def merge_to_develop(version):
+    run('git checkout develop')
+    run('git merge --no-ff release-%s' % version)
+
+
+def push_changes():
+    run('git push origin develop')
+    run('git push origin master')
+    run('git push --tags')
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('release_version')
+    args = parser.parse_args()
+
+    verify_starting_state()
+    create_release_branch(args.release_version)
+    bump_version(args.release_version)
+    merge_to_master(args.release_version)
+    tag_release(args.release_version)
+    merge_to_develop(args.release_version)
+    push_changes()
+    print('Completed, run "python setup.py sdist upload" to "
+          "upload changes to pypi.")
+
+
+if __name__ == '__main__':
+    main()

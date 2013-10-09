@@ -41,17 +41,21 @@ class TestParser(unittest.TestCase):
             ['one', 'two'])
 
     def test_or_expression(self):
-        parsed = self.parser.parse('foo or bar')
+        parsed = self.parser.parse('foo || bar')
         self.assertEqual(parsed.search({'foo': 'foo'}), 'foo')
         self.assertEqual(parsed.search({'bar': 'bar'}), 'bar')
         self.assertEqual(parsed.search({'foo': 'foo', 'bar': 'bar'}), 'foo')
         self.assertEqual(parsed.search({'bad': 'bad'}), None)
 
     def test_complex_or_expression(self):
-        parsed = self.parser.parse('foo.foo or foo.bar')
+        parsed = self.parser.parse('foo.foo || foo.bar')
         self.assertEqual(parsed.search({'foo': {'foo': 'foo'}}), 'foo')
         self.assertEqual(parsed.search({'foo': {'bar': 'bar'}}), 'bar')
         self.assertEqual(parsed.search({'foo': {'baz': 'baz'}}), None)
+
+    def test_or_repr(self):
+        parsed = self.parser.parse('foo || bar')
+        self.assertEqual(repr(parsed), 'ORExpression(Field(foo), Field(bar))')
 
     def test_bad_parse(self):
         with self.assertRaises(ValueError):
@@ -87,6 +91,48 @@ class TestParserWildcards(unittest.TestCase):
         parsed = self.parser.parse('foo[*].bar[2].baz')
         self.assertEqual(parsed.search(self.data),
                          ['five'])
+
+    def test_root_indices(self):
+        parsed = self.parser.parse('[0]')
+        self.assertEqual(parsed.search(['one', 'two']), 'one')
+
+    def test_root_wildcard(self):
+        parsed = self.parser.parse('*.foo')
+        data = {'top1': {'foo': 'bar'}, 'top2': {'foo': 'baz'},
+                'top3': {'notfoo': 'notfoo'}}
+        # Sorted is being used because the order of the keys are not
+        # required to be in any specific order.
+        self.assertEqual(sorted(parsed.search(data)), sorted(['bar', 'baz']))
+        self.assertEqual(sorted(self.parser.parse('*.notfoo').search(data)),
+                         sorted(['notfoo']))
+
+    def test_only_wildcard(self):
+        parsed = self.parser.parse('*')
+        data = {'foo': 'a', 'bar': 'b', 'baz': 'c'}
+        self.assertEqual(sorted(parsed.search(data)), sorted(['a', 'b', 'c']))
+
+    def test_escape_sequences(self):
+        self.assertEqual(self.parser.parse('"foo\tbar"').search(
+            {'foo\tbar': 'baz'}), 'baz')
+        self.assertEqual(self.parser.parse('"foo\nbar"').search(
+            {'foo\nbar': 'baz'}), 'baz')
+        self.assertEqual(self.parser.parse('"foo\bbar"').search(
+            {'foo\bbar': 'baz'}), 'baz')
+        self.assertEqual(self.parser.parse('"foo\fbar"').search(
+            {'foo\fbar': 'baz'}), 'baz')
+        self.assertEqual(self.parser.parse('"foo\rbar"').search(
+            {'foo\rbar': 'baz'}), 'baz')
+
+    def test_consecutive_escape_sequences(self):
+        parsed = self.parser.parse('"foo\\nbar"')
+        self.assertEqual(parsed.search({'foo\\nbar': 'baz'}), 'baz')
+
+        parsed = self.parser.parse('"foo\n\t\rbar"')
+        self.assertEqual(parsed.search({'foo\n\t\rbar': 'baz'}), 'baz')
+
+    def test_escape_sequence_at_end_of_string_not_allowed(self):
+        with self.assertRaises(ValueError):
+            parsed = self.parser.parse('foobar\\')
 
 
 class TestParserCaching(unittest.TestCase):

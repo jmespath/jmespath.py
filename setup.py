@@ -8,14 +8,14 @@ from setuptools import setup, find_packages
 
 setup(
     name='jmespath',
-    version='0.0.2',
+    version='0.0.3',
     description='JSON Matching Expressions',
     long_description=open('README.rst').read(),
     author='James Saryerwinnie',
     author_email='js@jamesls.com',
     url='https://github.com/boto/jmespath',
-    scripts=[],
-    packages=find_packages(),
+    scripts=['bin/jp'],
+    packages=find_packages(exclude=['tests']),
     install_requires=[
         'ply==3.4',
     ],

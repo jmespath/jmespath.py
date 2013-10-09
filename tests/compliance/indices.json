@@ -63,6 +63,26 @@
          {
             "expression": "foo[3].bar",
             "result": null
+         },
+         {
+            "expression": "foo[0]",
+            "result": {"bar": "one"}
+         },
+         {
+            "expression": "foo[1]",
+            "result": {"bar": "two"}
+         },
+         {
+            "expression": "foo[2]",
+            "result": {"bar": "three"}
+         },
+         {
+            "expression": "foo[3]",
+            "result": {"notbar": "four"}
+         },
+         {
+            "expression": "foo[4]",
+            "result": null
          }
      ]
 },
@@ -194,5 +214,35 @@
             "result": null
          }
      ]
-}
-]
+},
+{
+    "given": [
+        "one", "two", "three"
+    ],
+     "cases": [
+         {
+            "expression": "[0]",
+            "result": "one"
+         },
+         {
+            "expression": "[1]",
+            "result": "two"
+         },
+         {
+            "expression": "[2]",
+            "result": "three"
+         },
+         {
+            "expression": "[-1]",
+            "result": "three"
+         },
+         {
+            "expression": "[-2]",
+            "result": "two"
+         },
+         {
+            "expression": "[-3]",
+            "result": "one"
+         }
+     ]
+}]

@@ -5,13 +5,15 @@ class AST(object):
         pass
 
     def _get_value_method(self, value):
+        # This will find the appropriate getter method
+        # based on the passed in value.
         for method_name in self.VALUE_METHODS:
             method = getattr(value, method_name, None)
             if method is not None:
                 return method
 
     def pretty_print(self, indent=''):
-        pass
+        return super(AST, self).__repr__()
 
     def __repr__(self):
         return self.pretty_print()
@@ -25,11 +27,21 @@ class AST(object):
 
 
 class SubExpression(AST):
+    """Represents a subexpression match.
+
+    A subexpression match has a parent and a child node.  A simple example
+    would be something like 'foo.bar' which is represented as::
+
+        SubExpression(Field(foo), Field(bar))
+
+    """
     def __init__(self, parent, child):
         self.parent = parent
         self.child = child
 
     def search(self, value):
+        # To evaluate a subexpression we first evaluate the parent object
+        # and then feed the match of the parent node into the child node.
         sub_value = self.parent.search(value)
         found = self.child.search(sub_value)
         return found
@@ -79,31 +91,37 @@ class Index(AST):
                 pass
 
 
-class ValuesBranch(AST):
-    def __init__(self, node):
-        self.node = node
+class WildcardIndex(AST):
+    """Represents a wildcard index.
+
+    For example::
+
+        foo[*] -> SubExpression(Field(foo), WildcardIndex())
+
+    """
+    def search(self, value):
+        return _MultiMatch(value)
 
     def pretty_print(self, indent=''):
-        return "%sValuesBranch(%s)" % (indent, self.node)
+        return "%sIndex(*)" % indent
 
+
+class WildcardValues(AST):
+    """Represents a wildcard on the values of a JSON object.
+
+    For example::
+
+        foo.* -> SubExpression(Field(foo), WildcardValues())
+
+    """
     def search(self, value):
-        response = self.node.search(value)
         try:
-            return _MultiMatch(response.values())
+            return _MultiMatch(value.values())
         except AttributeError:
             return None
 
-
-class ElementsBranch(AST):
-    def __init__(self, node):
-        self.node = node
-
     def pretty_print(self, indent=''):
-        return "%sElementsBranch(%s)" % (indent, self.node)
-
-    def search(self, value):
-        response = self.node.search(value)
-        return _MultiMatch(response)
+        return "%sWildcardValues()" % indent
 
 
 class _MultiMatch(list):
@@ -141,3 +159,7 @@ class ORExpression(AST):
         if matched is None:
             matched = self.remaining.search(value)
         return matched
+
+    def pretty_print(self, indent=''):
+        return "%sORExpression(%s, %s)" % (indent, self.first,
+                                           self.remaining)
