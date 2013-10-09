@@ -51,13 +51,13 @@ class Grammar(object):
         p[0] = ast.Field(str(p[1]))
 
     def p_jmespath_multiselect(self, p):
-        """expression : LBRACE scalaridentifiers RBRACE
+        """expression : LBRACE nonbranched-exprs RBRACE
         """
         p[0] = ast.MultiField(p[2])
 
-    def p_jmespath_multiselect_scalar_identifer(self, p):
-        """scalaridentifiers : scalaridentifiers COMMA scalaridentifier
-                             | scalaridentifier
+    def p_jmespath_multiselect_nonbranched_expressions(self, p):
+        """nonbranched-exprs : nonbranched-exprs COMMA nonbranched-expr
+                             | nonbranched-expr
         """
         if len(p) == 2:
             p[0] = [p[1]]
@@ -65,10 +65,10 @@ class Grammar(object):
             p[1].append(p[3])
             p[0] = p[1]
 
-    def p_jmespath_scalar_identifier(self, p):
-        """scalaridentifier : IDENTIFIER
-                            | scalaridentifier DOT IDENTIFIER
-                            | scalaridentifier LBRACKET NUMBER RBRACKET
+    def p_jmespath_nonbranched_expression(self, p):
+        """nonbranched-expr : IDENTIFIER
+                            | nonbranched-expr DOT IDENTIFIER
+                            | nonbranched-expr LBRACKET NUMBER RBRACKET
         """
         lexer_text = p.lexer.lexdata
         if len(p) == 2:
