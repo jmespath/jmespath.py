@@ -68,26 +68,23 @@ class Grammar(object):
     def p_jmespath_scalar_identifier(self, p):
         """scalaridentifier : IDENTIFIER
                             | scalaridentifier DOT IDENTIFIER
-                            | IDENTIFIER LBRACKET NUMBER RBRACKET
+                            | scalaridentifier LBRACKET NUMBER RBRACKET
         """
         lexer_text = p.lexer.lexdata
-        start = p.lexpos(1)
         if len(p) == 2:
             p[0] = ast.Field(str(p[1]))
+            start = p.lexpos(1)
             end = start + len(str(p[1]))
             p[0].ASSOCIATED_TEXT = lexer_text[start:end]
         elif len(p) == 4:
             # foo . bar
             p[0] = ast.SubExpression(p[1], ast.Field(str(p[3])))
-            #end = p.lexpos(3) + len(str(p[3]))
             p[0].ASSOCIATED_TEXT = p[1].ASSOCIATED_TEXT + "." + str(p[3])
         elif len(p) == 5:
-            p[0] = ast.SubExpression(
-                ast.Field(str(p[1])),
-                ast.Index(p[3]))
-            end = p.lexpos(3) + len(str(p[3]))
-            # Need + 1 to get the RBRACKET at the end.
-            p[0].ASSOCIATED_TEXT = lexer_text[start:end + 1]
+            # <scalaridentifier>[0]
+            p[0] = ast.SubExpression(p[1], ast.Index(p[3]))
+            p[0].ASSOCIATED_TEXT = (
+                p[1].ASSOCIATED_TEXT + "[" + str(p[3]) + "]")
 
     def p_jmespath_or_expression(self, p):
         """expression : expression OR expression"""

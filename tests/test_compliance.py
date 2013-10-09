@@ -31,7 +31,12 @@ def _load_cases(full_path):
 
 
 def _test_expression(given, expression, expected, filename):
-    parsed = jmespath.compile(expression)
+    try:
+        parsed = jmespath.compile(expression)
+    except ValueError as e:
+        raise AssertionError(
+            'jmespath expression failed to compile: "%s", error: %s"' %
+            (expression, e))
     actual = parsed.search(given)
     expected_repr = json.dumps(expected, indent=4)
     actual_repr = json.dumps(actual, indent=4)

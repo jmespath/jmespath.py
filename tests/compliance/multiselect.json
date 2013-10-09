@@ -21,7 +21,9 @@
             "c": {"inner": "third"}
           }
         }
-      }
+      },
+      "bar": 1,
+      "baz": 2
     },
      "cases": [
          {
@@ -61,8 +63,34 @@
          {
             "expression": "foo.{nested.one.a,nested.two.b}",
             "result": {"nested.one.a": "first", "nested.two.b": "second"}
+         },
+         {
+            "expression": "{bar,baz}",
+            "result": {"bar": 1, "baz": 2}
+         },
+         {
+            "expression": "{no,exist}",
+            "result": {"no": null, "exist": null}
          }
      ]
+}, {
+    "given": {
+      "foo": {
+          "bar": {"baz": [{"one": 1}, {"two": 2}]},
+          "ignoreme": 1,
+          "includeme": true
+      }
+    },
+    "cases": [
+         {
+            "expression": "foo.{bar.baz[1],includeme}",
+            "result": {"bar.baz[1]": {"two": 2}, "includeme": true}
+         },
+         {
+            "expression": "foo.{bar.baz[1].two,includeme}",
+            "result": {"bar.baz[1].two": 2, "includeme": true}
+         }
+    ]
 }, {
     "given": {
       "reservations": [{
