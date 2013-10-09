@@ -27,6 +27,10 @@
     },
      "cases": [
          {
+            "expression": "foo.{bar}",
+            "result": {"bar": "bar"}
+         },
+         {
             "expression": "foo.{bar,baz}",
             "result": {"bar": "bar", "baz": "baz"}
          },
@@ -67,6 +71,10 @@
          {
             "expression": "{bar,baz}",
             "result": {"bar": 1, "baz": 2}
+         },
+         {
+            "expression": "{bar}",
+            "result": {"bar": 1}
          },
          {
             "expression": "{no,exist}",
