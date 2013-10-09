@@ -8,16 +8,22 @@ class LexerDefinition(object):
         'DOT',
         'LBRACKET',
         'RBRACKET',
+        'LBRACE',
+        'RBRACE',
         'OR',
         'NUMBER',
         'IDENTIFIER',
+        'COMMA',
     ) + tuple(reserved.values())
 
     t_STAR = r'\*'
     t_DOT = r'\.'
     t_LBRACKET = r'\['
     t_RBRACKET = r'\]'
+    t_LBRACE = r'\{'
+    t_RBRACE = r'\}'
     t_OR = r'\|\|'
+    t_COMMA = r','
     t_ignore = ' '
 
     def t_NUMBER(self, t):

@@ -57,6 +57,18 @@ class TestParser(unittest.TestCase):
         parsed = self.parser.parse('foo || bar')
         self.assertEqual(repr(parsed), 'ORExpression(Field(foo), Field(bar))')
 
+    def test_multiselect(self):
+        parsed = self.parser.parse('foo.{bar,baz}')
+        self.assertEqual(
+            parsed.search({'foo': {'bar': 'bar', 'baz': 'baz', 'qux': 'qux'}}),
+            {'bar': 'bar', 'baz': 'baz'})
+
+    def test_multiselect_subexpressions(self):
+        parsed = self.parser.parse('foo.{bar.baz,qux}')
+        self.assertEqual(
+            parsed.search({'foo': {'bar': {'baz': 'CORRECT'}, 'qux': 'qux'}}),
+            {'bar.baz': 'CORRECT', 'qux': 'qux'})
+
     def test_bad_parse(self):
         with self.assertRaises(ValueError):
             parsed = self.parser.parse('foo]baz')
@@ -133,6 +145,27 @@ class TestParserWildcards(unittest.TestCase):
     def test_escape_sequence_at_end_of_string_not_allowed(self):
         with self.assertRaises(ValueError):
             parsed = self.parser.parse('foobar\\')
+
+    def test_wildcard_with_multiselect(self):
+        parsed = self.parser.parse('foo.*.{a,b}')
+        data = {
+            'foo': {
+                'one': {
+                    'a': {'c': 'CORRECT', 'd': 'other'},
+                    'b': {'c': 'ALSOCORRECT', 'd': 'other'},
+                },
+                'two': {
+                    'a': {'c': 'CORRECT', 'd': 'other'},
+                    'c': {'c': 'WRONG', 'd': 'other'},
+                },
+            }
+        }
+        match = parsed.search(data)
+        self.assertEqual(len(match), 2)
+        self.assertIn('a', match[0])
+        self.assertIn('b', match[0])
+        self.assertIn('a', match[1])
+        self.assertIn('b', match[1])
 
 
 class TestParserCaching(unittest.TestCase):
