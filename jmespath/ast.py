@@ -63,6 +63,7 @@ class Field(AST):
 
     def __init__(self, name):
         self.name = name
+        self.ASSOCIATED_TEXT = name
 
     def pretty_print(self, indent=''):
         return "%sField(%s)" % (indent, self.name)
@@ -73,9 +74,7 @@ class Field(AST):
             return method(self.name)
 
 
-class MultiField(AST):
-    VALUE_METHODS = ['multi_get']
-
+class BaseMultiField(AST):
     def __init__(self, nodes):
         self.nodes = nodes
 
@@ -88,6 +87,13 @@ class MultiField(AST):
         else:
             return self._multi_get(value)
 
+    def pretty_print(self, indent=''):
+        return "%s%s(%s)" % (indent, self.__class__.__name__, self.nodes)
+
+
+class MultiFieldDict(BaseMultiField):
+    VALUE_METHODS = ['multi_get']
+
     def _multi_get(self, value):
         collected = {}
         for node in self.nodes:
@@ -95,8 +101,15 @@ class MultiField(AST):
             collected[key_name] = node.search(value)
         return collected
 
-    def pretty_print(self, indent=''):
-        return "%sMultiField(%s)" % (indent, self.nodes)
+
+class MultiFieldList(BaseMultiField):
+    VALUE_METHODS = ['multi_get_list']
+
+    def _multi_get(self, value):
+        collected = []
+        for node in self.nodes:
+            collected.append(node.search(value))
+        return collected
 
 
 class Index(AST):
@@ -188,6 +201,18 @@ class _MultiMatch(list):
                 for node in nodes:
                     key_name = node.ASSOCIATED_TEXT
                     result[key_name] = node.search(element)
+            results.append(result)
+        return results
+
+    def multi_get_list(self, nodes):
+        results = _MultiMatch([])
+        for element in self:
+            if isinstance(element, _MultiMatch):
+                result = element.multi_get_list(nodes)
+            else:
+                result = []
+                for node in nodes:
+                    result.append(node.search(element))
             results.append(result)
         return results
 

@@ -53,7 +53,12 @@ class Grammar(object):
     def p_jmespath_multiselect(self, p):
         """expression : LBRACE nonbranched-exprs RBRACE
         """
-        p[0] = ast.MultiField(p[2])
+        p[0] = ast.MultiFieldDict(p[2])
+
+    def p_jmespath_multiselect_list(self, p):
+        """expression : LBRACKET nonbranched-exprs RBRACKET
+        """
+        p[0] = ast.MultiFieldList(p[2])
 
     def p_jmespath_multiselect_nonbranched_expressions(self, p):
         """nonbranched-exprs : nonbranched-exprs COMMA nonbranched-expr
