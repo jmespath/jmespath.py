@@ -79,6 +79,26 @@
          {
             "expression": "{no,exist}",
             "result": {"no": null, "exist": null}
+         },
+         {
+            "expression": "foo.[bar]",
+            "result": ["bar"]
+         },
+         {
+            "expression": "foo.[bar,baz]",
+            "result": ["bar", "baz"]
+         },
+         {
+            "expression": "foo.[bar,qux]",
+            "result": ["bar", "qux"]
+         },
+         {
+            "expression": "foo.[bar,noexist]",
+            "result": ["bar", null]
+         },
+         {
+            "expression": "foo.[noexist,alsonoexist]",
+            "result": [null, null]
          }
      ]
 }, {

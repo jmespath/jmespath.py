@@ -100,6 +100,31 @@ class MultiField(AST):
         return "%sMultiField(%s)" % (indent, self.nodes)
 
 
+class MultiFieldList(AST):
+    VALUE_METHODS = ['multi_get_list']
+
+    def __init__(self, nodes):
+        self.nodes = nodes
+
+    def search(self, value):
+        if value is None:
+            return None
+        method = self._get_value_method(value)
+        if method is not None:
+            return method(self.nodes)
+        else:
+            return self._multi_get(value)
+
+    def _multi_get(self, value):
+        collected = []
+        for node in self.nodes:
+            collected.append(node.search(value))
+        return collected
+
+    def pretty_print(self, indent=''):
+        return "%sMultiFieldList(%s)" % (indent, self.nodes)
+
+
 class Index(AST):
     VALUE_METHODS = ['get_index', '__getitem__']
 
@@ -189,6 +214,18 @@ class _MultiMatch(list):
                 for node in nodes:
                     key_name = node.ASSOCIATED_TEXT
                     result[key_name] = node.search(element)
+            results.append(result)
+        return results
+
+    def multi_get_list(self, nodes):
+        results = _MultiMatch([])
+        for element in self:
+            if isinstance(element, _MultiMatch):
+                result = element.multi_get_list(nodes)
+            else:
+                result = []
+                for node in nodes:
+                    result.append(node.search(element))
             results.append(result)
         return results
 

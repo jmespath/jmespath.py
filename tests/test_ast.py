@@ -166,6 +166,36 @@ class TestAST(unittest.TestCase):
             subexpr.search({'foo': {'bar': 1, 'baz': 2, 'qux': 3}}),
             {'bar': 1, 'baz': 2})
 
+    def test_multiselect_list(self):
+        # foo.[bar,baz]
+        field_foo = ast.Field('foo')
+        field_bar = ast.Field('bar')
+        field_baz = ast.Field('baz')
+        multiselect = ast.MultiFieldList([field_bar, field_baz])
+        subexpr = ast.SubExpression(field_foo, multiselect)
+        self.assertEqual(
+            subexpr.search({'foo': {'bar': 1, 'baz': 2, 'qux': 3}}),
+            [1, 2])
+
+    def test_multiselect_list_wildcard(self):
+        data = {
+            'foo': {
+                'ignore1': {
+                    'one': 1, 'two': 2, 'three': 3,
+                },
+                'ignore2': {
+                    'one': 1, 'two': 2, 'three': 3,
+                },
+            }
+        }
+        expr = ast.SubExpression(
+            ast.Field("foo"),
+            ast.SubExpression(
+                ast.WildcardValues(),
+                ast.MultiFieldList([ast.Field("one"), ast.Field("two")])))
+        self.assertEqual(expr.search(data), [[1, 2], [1, 2]])
+
+
 
 if __name__ == '__main__':
     unittest.main()
