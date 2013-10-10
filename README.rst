@@ -46,9 +46,15 @@ The grammar is specified using ABNF, as described in `RFC4234`_
 ::
 
     expression        = sub-expression / index-expression / or-expression / identifier / "*"
+    expression        =/ multi-select-list / multi-select-hash
     sub-expression    = expression "." expression
     or-expression     = expression "||" expression
     index-expression  = expression bracket-specifier / bracket-specifier
+    multi-select-list = "[" ( non-branched-expr *( "," non-branched-expr ) "]"
+    multi-select-hash = "{" ( non-branched-expr *( "," non-branched-expr ) "}"
+    non-branched-expr = identifier /
+                        non-branched-expr "." identifier /
+                        non-branched-expr "[" number "]"
     bracket-specifier = "[" (number / "*") "]"
     number            = [-]1*digit
     digit             = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9" / "0"
