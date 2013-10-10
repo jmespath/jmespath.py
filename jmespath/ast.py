@@ -111,9 +111,6 @@ class MultiFieldList(BaseMultiField):
             collected.append(node.search(value))
         return collected
 
-    def pretty_print(self, indent=''):
-        return "%sMultiFieldList(%s)" % (indent, self.nodes)
-
 
 class Index(AST):
     VALUE_METHODS = ['get_index', '__getitem__']
