@@ -74,9 +74,7 @@ class Field(AST):
             return method(self.name)
 
 
-class MultiField(AST):
-    VALUE_METHODS = ['multi_get']
-
+class BaseMultiField(AST):
     def __init__(self, nodes):
         self.nodes = nodes
 
@@ -88,6 +86,13 @@ class MultiField(AST):
             return method(self.nodes)
         else:
             return self._multi_get(value)
+
+    def pretty_print(self, indent=''):
+        return "%s%s(%s)" % (indent, self.__class__.__name__, self.nodes)
+
+
+class MultiFieldDict(BaseMultiField):
+    VALUE_METHODS = ['multi_get']
 
     def _multi_get(self, value):
         collected = {}
@@ -96,24 +101,9 @@ class MultiField(AST):
             collected[key_name] = node.search(value)
         return collected
 
-    def pretty_print(self, indent=''):
-        return "%sMultiField(%s)" % (indent, self.nodes)
 
-
-class MultiFieldList(AST):
+class MultiFieldList(BaseMultiField):
     VALUE_METHODS = ['multi_get_list']
-
-    def __init__(self, nodes):
-        self.nodes = nodes
-
-    def search(self, value):
-        if value is None:
-            return None
-        method = self._get_value_method(value)
-        if method is not None:
-            return method(self.nodes)
-        else:
-            return self._multi_get(value)
 
     def _multi_get(self, value):
         collected = []
