@@ -50,6 +50,42 @@ class Grammar(object):
         """
         p[0] = ast.Field(str(p[1]))
 
+    def p_jmespath_multiselect(self, p):
+        """expression : LBRACE nonbranched-exprs RBRACE
+        """
+        p[0] = ast.MultiField(p[2])
+
+    def p_jmespath_multiselect_nonbranched_expressions(self, p):
+        """nonbranched-exprs : nonbranched-exprs COMMA nonbranched-expr
+                             | nonbranched-expr
+        """
+        if len(p) == 2:
+            p[0] = [p[1]]
+        elif len(p) == 4:
+            p[1].append(p[3])
+            p[0] = p[1]
+
+    def p_jmespath_nonbranched_expression(self, p):
+        """nonbranched-expr : IDENTIFIER
+                            | nonbranched-expr DOT IDENTIFIER
+                            | nonbranched-expr LBRACKET NUMBER RBRACKET
+        """
+        lexer_text = p.lexer.lexdata
+        if len(p) == 2:
+            p[0] = ast.Field(str(p[1]))
+            start = p.lexpos(1)
+            end = start + len(str(p[1]))
+            p[0].ASSOCIATED_TEXT = lexer_text[start:end]
+        elif len(p) == 4:
+            # foo . bar
+            p[0] = ast.SubExpression(p[1], ast.Field(str(p[3])))
+            p[0].ASSOCIATED_TEXT = p[1].ASSOCIATED_TEXT + "." + str(p[3])
+        elif len(p) == 5:
+            # <scalaridentifier>[0]
+            p[0] = ast.SubExpression(p[1], ast.Index(p[3]))
+            p[0].ASSOCIATED_TEXT = (
+                p[1].ASSOCIATED_TEXT + "[" + str(p[3]) + "]")
+
     def p_jmespath_or_expression(self, p):
         """expression : expression OR expression"""
         p[0] = ast.ORExpression(p[1], p[3])

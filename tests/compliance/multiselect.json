@@ -1,0 +1,125 @@
+[{
+    "given": {
+      "foo": {
+        "bar": "bar",
+        "baz": "baz",
+        "qux": "qux",
+        "nested": {
+          "one": {
+            "a": "first",
+            "b": "second",
+            "c": "third"
+          },
+          "two": {
+            "a": "first",
+            "b": "second",
+            "c": "third"
+          },
+          "three": {
+            "a": "first",
+            "b": "second",
+            "c": {"inner": "third"}
+          }
+        }
+      },
+      "bar": 1,
+      "baz": 2
+    },
+     "cases": [
+         {
+            "expression": "foo.{bar}",
+            "result": {"bar": "bar"}
+         },
+         {
+            "expression": "foo.{bar,baz}",
+            "result": {"bar": "bar", "baz": "baz"}
+         },
+         {
+            "expression": "foo.{bar,qux}",
+            "result": {"bar": "bar", "qux": "qux"}
+         },
+         {
+            "expression": "foo.{bar,noexist}",
+            "result": {"bar": "bar", "noexist": null}
+         },
+         {
+            "expression": "foo.{noexist,alsonoexist}",
+            "result": {"noexist": null, "alsonoexist": null}
+         },
+         {
+            "expression": "foo.badkey.{nokey,alsonokey}",
+            "result": null
+         },
+         {
+            "expression": "foo.nested.*.{a,b}",
+            "result": [{"a": "first", "b": "second"},
+                       {"a": "first", "b": "second"},
+                       {"a": "first", "b": "second"}]
+         },
+         {
+            "expression": "foo.nested.three.{a,c.inner}",
+            "result": {"a": "first", "c.inner": "third"}
+         },
+         {
+            "expression": "foo.nested.three.{a,c.inner.bad.key}",
+            "result": {"a": "first", "c.inner.bad.key": null}
+         },
+         {
+            "expression": "foo.{nested.one.a,nested.two.b}",
+            "result": {"nested.one.a": "first", "nested.two.b": "second"}
+         },
+         {
+            "expression": "{bar,baz}",
+            "result": {"bar": 1, "baz": 2}
+         },
+         {
+            "expression": "{bar}",
+            "result": {"bar": 1}
+         },
+         {
+            "expression": "{no,exist}",
+            "result": {"no": null, "exist": null}
+         }
+     ]
+}, {
+    "given": {
+      "foo": {
+          "bar": {"baz": [{"one": 1}, {"two": 2}]},
+          "ignoreme": 1,
+          "includeme": true
+      }
+    },
+    "cases": [
+         {
+            "expression": "foo.{bar.baz[1],includeme}",
+            "result": {"bar.baz[1]": {"two": 2}, "includeme": true}
+         },
+         {
+            "expression": "foo.{bar.baz[1].two,includeme}",
+            "result": {"bar.baz[1].two": 2, "includeme": true}
+         }
+    ]
+}, {
+    "given": {
+      "reservations": [{
+          "instances": [
+              {"id": "id1",
+               "name": "first"},
+              {"id": "id2",
+               "name": "second"}
+          ]}, {
+          "instances": [
+              {"id": "id3",
+               "name": "third"},
+              {"id": "id4",
+               "name": "fourth"}
+          ]}
+      ]},
+    "cases": [
+         {
+            "expression": "reservations[*].instances[*].{id,name}",
+            "result": [[{"id": "id1", "name": "first"}, {"id": "id2", "name": "second"}],
+                       [{"id": "id3", "name": "third"}, {"id": "id4", "name": "fourth"}]]
+         }
+    ]
+}]

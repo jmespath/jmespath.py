@@ -4,10 +4,14 @@ import jmespath
 import sys
 import json
 
-if not len(sys.argv) == 2:
-    sys.stderr.write('usage: jp <expression>\n\n')
+if not len(sys.argv) >= 2:
+    sys.stderr.write('usage: jp <expression> <filepath>\n\n')
     sys.exit(1)
 expression = sys.argv[1]
-sys.stdout.write(json.dumps(jmespath.search(expression, json.load(sys.stdin)),
-                            indent=4))
+if len(sys.argv) == 3:
+    with open(sys.argv[2], 'r') as f:
+        data = json.load(f)
+else:
+    data = json.load(sys.stdin)
+sys.stdout.write(json.dumps(jmespath.search(expression, data), indent=4))
 sys.stdout.write('\n')
