@@ -63,6 +63,7 @@ class Field(AST):
 
     def __init__(self, name):
         self.name = name
+        self.ASSOCIATED_TEXT = name
 
     def pretty_print(self, indent=''):
         return "%sField(%s)" % (indent, self.name)

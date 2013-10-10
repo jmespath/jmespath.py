@@ -83,6 +83,16 @@
      ]
 }, {
     "given": {
+      "foo": {"bar": 1, "baz": 2}
+    },
+    "cases": [
+         {
+            "expression": "foo.{bar,baz}",
+            "result": {"bar": 1, "baz": 2}
+         }
+    ]
+}, {
+    "given": {
       "foo": {
           "bar": {"baz": [{"one": 1}, {"two": 2}]},
           "ignoreme": 1,

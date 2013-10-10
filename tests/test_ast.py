@@ -155,6 +155,17 @@ class TestAST(unittest.TestCase):
         self.assertEqual(or_expression.search(
             {'foo': 'foo', 'bar': 'bar'}), 'foo')
 
+    def test_multiselect_dict(self):
+        # foo.{bar,baz}
+        field_foo = ast.Field('foo')
+        field_bar = ast.Field('bar')
+        field_baz = ast.Field('baz')
+        multiselect = ast.MultiField([field_bar, field_baz])
+        subexpr = ast.SubExpression(field_foo, multiselect)
+        self.assertEqual(
+            subexpr.search({'foo': {'bar': 1, 'baz': 2, 'qux': 3}}),
+            {'bar': 1, 'baz': 2})
+
 
 if __name__ == '__main__':
     unittest.main()
