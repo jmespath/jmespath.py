@@ -3,6 +3,7 @@
 from tests import unittest
 
 from jmespath import parser
+from jmespath import ast
 
 
 class TestParser(unittest.TestCase):
@@ -27,6 +28,12 @@ class TestParser(unittest.TestCase):
         self.assertEqual(
             parsed.search({'foo': ['zero', 'one', 'two']}),
             'one')
+
+    def test_quoted_subexpression(self):
+        parsed = self.parser.parse('"foo"."bar"')
+        self.assertIsInstance(parsed, ast.SubExpression)
+        self.assertEqual(parsed.parent.name, 'foo')
+        self.assertEqual(parsed.child.name, 'bar')
 
     def test_wildcard(self):
         parsed = self.parser.parse('foo[*]')
@@ -58,16 +65,22 @@ class TestParser(unittest.TestCase):
         self.assertEqual(repr(parsed), 'ORExpression(Field(foo), Field(bar))')
 
     def test_multiselect(self):
-        parsed = self.parser.parse('foo.{bar,baz}')
+        parsed = self.parser.parse('foo.{bar: bar,baz: baz}')
         self.assertEqual(
             parsed.search({'foo': {'bar': 'bar', 'baz': 'baz', 'qux': 'qux'}}),
             {'bar': 'bar', 'baz': 'baz'})
 
     def test_multiselect_subexpressions(self):
-        parsed = self.parser.parse('foo.{bar.baz,qux}')
+        parsed = self.parser.parse('foo.{"bar.baz": bar.baz, qux: qux}')
+        foo = parsed.search({'foo': {'bar': {'baz': 'CORRECT'}, 'qux': 'qux'}})
         self.assertEqual(
             parsed.search({'foo': {'bar': {'baz': 'CORRECT'}, 'qux': 'qux'}}),
             {'bar.baz': 'CORRECT', 'qux': 'qux'})
+
+    def test_multiselect_with_all_quoted_keys(self):
+        parsed = self.parser.parse('foo.{"bar": bar.baz, "qux": qux}')
+        result = parsed.search({'foo': {'bar': {'baz': 'CORRECT'}, 'qux': 'qux'}})
+        self.assertEqual(result, {"bar": "CORRECT", "qux": "qux"})
 
     def test_bad_parse(self):
         with self.assertRaises(ValueError):
@@ -147,7 +160,7 @@ class TestParserWildcards(unittest.TestCase):
             parsed = self.parser.parse('foobar\\')
 
     def test_wildcard_with_multiselect(self):
-        parsed = self.parser.parse('foo.*.{a,b}')
+        parsed = self.parser.parse('foo.*.{a: a, b: b}')
         data = {
             'foo': {
                 'one': {

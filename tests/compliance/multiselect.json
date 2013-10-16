@@ -23,61 +23,86 @@
         }
       },
       "bar": 1,
-      "baz": 2
+      "baz": 2,
+      "qux\"": 3
     },
      "cases": [
          {
-            "expression": "foo.{bar}",
+            "expression": "foo.{bar: bar}",
             "result": {"bar": "bar"}
          },
          {
-            "expression": "foo.{bar,baz}",
+            "expression": "foo.{\"bar\": bar}",
+            "result": {"bar": "bar"}
+         },
+         {
+            "expression": "foo.{\"foo.bar\": bar}",
+            "result": {"foo.bar": "bar"}
+         },
+         {
+            "expression": "foo.{bar: bar, baz: baz}",
             "result": {"bar": "bar", "baz": "baz"}
          },
          {
-            "expression": "foo.{bar,qux}",
+            "expression": "foo.{\"bar\": bar, \"baz\": baz}",
+            "result": {"bar": "bar", "baz": "baz"}
+         },
+         {
+            "expression": "{\"baz\": baz, \"qux\\\"\": \"qux\\\"\"}",
+            "result": {"baz": 2, "qux\"": 3}
+         },
+         {
+            "expression": "foo.{bar:bar,baz:baz}",
+            "result": {"bar": "bar", "baz": "baz"}
+         },
+         {
+            "expression": "foo.{bar: bar,qux: qux}",
             "result": {"bar": "bar", "qux": "qux"}
          },
          {
-            "expression": "foo.{bar,noexist}",
+            "expression": "foo.{bar: bar, noexist: noexist}",
             "result": {"bar": "bar", "noexist": null}
          },
          {
-            "expression": "foo.{noexist,alsonoexist}",
+            "expression": "foo.{noexist: noexist, alsonoexist: alsonoexist}",
             "result": {"noexist": null, "alsonoexist": null}
          },
          {
-            "expression": "foo.badkey.{nokey,alsonokey}",
+            "expression": "foo.badkey.{nokey: nokey, alsonokey: alsonokey}",
             "result": null
          },
          {
-            "expression": "foo.nested.*.{a,b}",
+            "expression": "foo.nested.*.{a: a,b: b}",
             "result": [{"a": "first", "b": "second"},
                        {"a": "first", "b": "second"},
                        {"a": "first", "b": "second"}]
          },
          {
-            "expression": "foo.nested.three.{a,c.inner}",
-            "result": {"a": "first", "c.inner": "third"}
+            "expression": "foo.nested.three.{a: a, cinner: c.inner}",
+            "result": {"a": "first", "cinner": "third"}
          },
          {
-            "expression": "foo.nested.three.{a,c.inner.bad.key}",
-            "result": {"a": "first", "c.inner.bad.key": null}
+            "expression": "foo.nested.three.{a: a, c: c.inner.bad.key}",
+            "result": {"a": "first", "c": null}
          },
          {
-            "expression": "foo.{nested.one.a,nested.two.b}",
-            "result": {"nested.one.a": "first", "nested.two.b": "second"}
+            "expression": "foo.{a: nested.one.a, b: nested.two.b}",
+            "result": {"a": "first", "b": "second"}
          },
          {
-            "expression": "{bar,baz}",
+            "expression": "{bar: bar, baz: baz}",
             "result": {"bar": 1, "baz": 2}
          },
          {
-            "expression": "{bar}",
+            "expression": "{bar: bar}",
             "result": {"bar": 1}
          },
          {
-            "expression": "{no,exist}",
+            "expression": "{otherkey: bar}",
+            "result": {"otherkey": 1}
+         },
+         {
+            "expression": "{no: no, exist: exist}",
             "result": {"no": null, "exist": null}
          },
          {
@@ -107,7 +132,7 @@
     },
     "cases": [
          {
-            "expression": "foo.{bar,baz}",
+            "expression": "foo.{bar:bar,baz:baz}",
             "result": {"bar": 1, "baz": [2, 3, 4]}
          },
          {
@@ -137,7 +162,7 @@
     },
     "cases": [
          {
-            "expression": "foo.{bar,baz}",
+            "expression": "foo.{bar: bar, baz: baz}",
             "result": {"bar": 1, "baz": 2}
          },
          {
@@ -155,12 +180,12 @@
     },
     "cases": [
          {
-            "expression": "foo.{bar.baz[1],includeme}",
-            "result": {"bar.baz[1]": {"two": 2}, "includeme": true}
+            "expression": "foo.{bar: bar.baz[1],includeme: includeme}",
+            "result": {"bar": {"two": 2}, "includeme": true}
          },
          {
-            "expression": "foo.{bar.baz[1].two,includeme}",
-            "result": {"bar.baz[1].two": 2, "includeme": true}
+            "expression": "foo.{\"bar.baz.two\": bar.baz[1].two, includeme: includeme}",
+            "result": {"bar.baz.two": 2, "includeme": true}
          }
     ]
 }, {
@@ -181,7 +206,7 @@
       ]},
     "cases": [
          {
-            "expression": "reservations[*].instances[*].{id,name}",
+            "expression": "reservations[*].instances[*].{id: id, name: name}",
             "result": [[{"id": "id1", "name": "first"}, {"id": "id2", "name": "second"}],
                        [{"id": "id3", "name": "third"}, {"id": "id4", "name": "fourth"}]]
          }
