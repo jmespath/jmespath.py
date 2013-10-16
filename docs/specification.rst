@@ -32,7 +32,8 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     or-expression     = expression "||" expression
     index-expression  = expression bracket-specifier / bracket-specifier
     multi-select-list = "[" ( non-branched-expr *( "," non-branched-expr ) "]"
-    multi-select-hash = "{" ( non-branched-expr *( "," non-branched-expr ) "}"
+    multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) "}"
+    keyval-expr       = identifier ":" non-branched-expr
     non-branched-expr = identifier /
                         non-branched-expr "." identifier /
                         non-branched-expr "[" number "]"
@@ -207,13 +208,12 @@ Examples
   search(override || mylist[-1], {"mylist": ["one", "two"], "override": "yes"}) -> "yes"
 
 
-MultiSelect
-===========
+MultiSelect List
+================
 
 ::
 
     multi-select-list = "[" ( non-branched-expr *( "," non-branched-expr ) "]"
-    multi-select-hash = "{" ( non-branched-expr *( "," non-branched-expr ) "}"
     non-branched-expr = identifier /
                         non-branched-expr "." identifier /
                         non-branched-expr "[" number "]"
@@ -221,25 +221,14 @@ MultiSelect
 A multiselect expression is used to extract a subset of elements from a JSON
 hash.  There are two version of multiselect, one in which the multiselect
 expression is enclosed in ``{...}`` and one which is enclosed in ``[...]``.
-The starting and ending characters used will control the data type returned.
-The ``{...}`` characters will return a hash and the ``[...]`` characters will
-return a list.  Within the start and closing characters is one or more non
+This section describes the ``[...]`` version.
+Within the start and closing characters is one or more non
 branched expressions separated by a comma.  Each non branched expression will
-be evaluated against the JSON document.  For the case of the ``[...]``
-characters, each returned element will be the result of evaluating the non
-branched expression. A ``multi-select-list`` with ``N`` non branched
-expressions will result in a list of length ``N``.  Given a multiselect
-expression ``[expr-1,expr-2,...,expr-n]``, the evaluated expression will return
-``[evaluate(expr-1), evaluate(expr-2), ..., evaluate(expr-n)]``.
-
-In the case of ``multi-select-hash``, a hash is returned.  They key name is the
-text of the non branched expression and the value is the evaluated non branched
-expression.  Given a ``multi-select-hash`` with ``N`` non branched expressions,
-there will be a hash with ``N`` key value pairs.  Given a multiselect
-expression ``{expr-1,expr-2,...,expr-n}``, the evaluated expression will return
-``{"expr-1": evaluate(expr-1), "expr-2": evaluate(expr-2), ..., "expr-n":
-evaluate(expr-n)}``.
-
+be evaluated against the JSON document.  Each returned element will be the
+result of evaluating the non branched expression. A ``multi-select-list`` with
+``N`` non branched expressions will result in a list of length ``N``.  Given a
+multiselect expression ``[expr-1,expr-2,...,expr-n]``, the evaluated expression
+will return ``[evaluate(expr-1), evaluate(expr-2), ..., evaluate(expr-n)]``.
 
 Examples
 --------
@@ -250,11 +239,60 @@ Examples
   search([foo,bar[0]], {"foo": "a", "bar": ["b"], "baz": "c"}) -> ["a", "b"]
   search([foo,bar.baz], {"foo": "a", "bar": {"baz": "b"}}) -> ["a", "b"]
   search([foo,baz], {"foo": "a", "bar": "b"}) -> ["a", null]
-  search({foo,bar}, {"foo": "a", "bar": "b", "baz": "c"}) -> {"foo": "a", "bar": "b"}
-  search({foo,bar[0]}, {"foo": "a", "bar": ["b"]}) -> {"foo": "a", "bar[0]": "b"}
-  search({foo,bar.baz}, {"foo": "a", "bar": {"baz": "b"}}) -> {"foo": "a", "bar.baz": "b"}
-  search({foo,baz}, {"foo": "a", "bar": "b"}) -> {"foo": "a", "baz": null}
 
+
+MultiSelect Hash
+================
+
+::
+
+    multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) "}"
+    keyval-expr       = identifier ":" non-branched-expr
+    non-branched-expr = identifier /
+                        non-branched-expr "." identifier /
+                        non-branched-expr "[" number "]"
+
+A ``multi-select-hash`` expression is similar to a ``multi-select-list``
+expression, except that a hash is created instead of a list.  A
+``multi-select-hash`` expression also requires key names to be provided, as
+specified in the ``keyval-expr`` rule.  Given the following rule::
+
+    keyval-expr       = identifier ":" non-branched-expr
+
+The ``identifier`` is used as the key name and the result of evaluating the
+``non-branched-expr`` is the value associated with the ``identifier`` key.
+
+Each ``keyval-expr`` within the ``multi-select-hash`` will correspond to a
+single key value pair in the created hash.
+
+
+Examples
+--------
+
+Given a ``multi-select-hash`` expression ``{foo: one.two, bar: bar}`` and the
+data ``{"bar": "bar", {"one": {"two": "one-two"}}}``, the expression is
+evaluated as follows:
+
+1. A hash is created: ``{}``
+2. A key ``foo`` is created whose value is the result of evaluating ``one.two``
+   against the provided JSON document: ``{"foo": evaluate(one.two, <data>)}``
+3. A key ``bar`` is created whose value is the result of evaluting the
+   expression ``bar`` against the provided JSON document.
+
+The final result will be: ``{"foo": "one-two", "bar": "bar"}``.
+
+Additional examples:
+
+::
+
+  search({foo: foo, bar: bar}, {"foo": "a", "bar": "b", "baz": "c"})
+                -> {"foo": "a", "bar": "b"}
+  search({foo: foo, firstbar: bar[0]}, {"foo": "a", "bar": ["b"]})
+                -> {"foo": "a", "firstbar": "b"}
+  search({foo: foo, "bar.baz": bar.baz}, {"foo": "a", "bar": {"baz": "b"}})
+                -> {"foo": "a", "bar.baz": "b"}
+  search({foo: foo, baz: baz}, {"foo": "a", "bar": "b"})
+                -> {"foo": "a", "bar": null}
 
 
 Wildcard Expressions
