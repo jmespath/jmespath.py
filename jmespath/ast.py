@@ -1,9 +1,5 @@
 class AST(object):
     VALUE_METHODS = []
-    # This can be override on a per instance level.
-    # The parser can set this attribute to tell the node what part of the input
-    # text is associated with this particular node.
-    ASSOCIATED_TEXT = ''
 
     def search(self, value):
         pass
@@ -63,7 +59,6 @@ class Field(AST):
 
     def __init__(self, name):
         self.name = name
-        self.ASSOCIATED_TEXT = name
 
     def pretty_print(self, indent=''):
         return "%sField(%s)" % (indent, self.name)
@@ -97,8 +92,7 @@ class MultiFieldDict(BaseMultiField):
     def _multi_get(self, value):
         collected = {}
         for node in self.nodes:
-            key_name = node.ASSOCIATED_TEXT
-            collected[key_name] = node.search(value)
+            collected[node.key_name] = node.search(value)
         return collected
 
 
@@ -110,6 +104,19 @@ class MultiFieldList(BaseMultiField):
         for node in self.nodes:
             collected.append(node.search(value))
         return collected
+
+
+class KeyValPair(AST):
+    def __init__(self, key_name, node):
+        self.key_name = key_name
+        self.node = node
+
+    def search(self, value):
+        return self.node.search(value)
+
+    def pretty_print(self, indent=''):
+        return "%sKeyValPair(key_name=%s, node=%s)" % (indent, self.key_name,
+                                                       self.node)
 
 
 class Index(AST):
@@ -199,8 +206,7 @@ class _MultiMatch(list):
             else:
                 result = {}
                 for node in nodes:
-                    key_name = node.ASSOCIATED_TEXT
-                    result[key_name] = node.search(element)
+                    result[node.key_name] = node.search(element)
             results.append(result)
         return results
 

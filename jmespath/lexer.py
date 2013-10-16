@@ -14,6 +14,7 @@ class LexerDefinition(object):
         'NUMBER',
         'IDENTIFIER',
         'COMMA',
+        'COLON',
     ) + tuple(reserved.values())
 
     t_STAR = r'\*'
@@ -24,6 +25,7 @@ class LexerDefinition(object):
     t_RBRACE = r'\}'
     t_OR = r'\|\|'
     t_COMMA = r','
+    t_COLON = r':'
     t_ignore = ' '
 
     def t_NUMBER(self, t):
@@ -32,7 +34,7 @@ class LexerDefinition(object):
         return t
 
     def t_IDENTIFIER(self, t):
-        r'(([a-zA-Z_][a-zA-Z_0-9]*)|("(\"|.)*"))'
+        r'(([a-zA-Z_][a-zA-Z_0-9]*)|("(?:\\"|[^"])*"))'
         t.type = self.reserved.get(t.value, 'IDENTIFIER')
         i = 0
         if t.value[0] == '"' and t.value[-1] == '"':
