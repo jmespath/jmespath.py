@@ -157,14 +157,21 @@ class TestAST(unittest.TestCase):
 
     def test_multiselect_dict(self):
         # foo.{bar,baz}
-        field_foo = ast.Field('foo')
-        field_bar = ast.Field('bar')
-        field_baz = ast.Field('baz')
+        field_foo = ast.KeyValPair(key_name='foo', node=ast.Field('foo'))
+        field_bar = ast.KeyValPair(key_name='bar', node=ast.Field('bar'))
+        field_baz = ast.KeyValPair(key_name='baz', node=ast.Field('baz'))
         multiselect = ast.MultiFieldDict([field_bar, field_baz])
         subexpr = ast.SubExpression(field_foo, multiselect)
         self.assertEqual(
             subexpr.search({'foo': {'bar': 1, 'baz': 2, 'qux': 3}}),
             {'bar': 1, 'baz': 2})
+
+    def test_multiselect_different_key_names(self):
+        field_foo = ast.KeyValPair(key_name='arbitrary', node=ast.Field('foo'))
+        field_bar = ast.KeyValPair(key_name='arbitrary2', node=ast.Field('bar'))
+        multiselect = ast.MultiFieldDict([field_foo, field_bar])
+        self.assertEqual(multiselect.search({'foo': 'value1', 'bar': 'value2'}),
+                         {'arbitrary': 'value1', 'arbitrary2': 'value2'})
 
     def test_multiselect_list(self):
         # foo.[bar,baz]
