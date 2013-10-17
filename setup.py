@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='jmespath',
-    version='0.0.3',
+    version='0.1.0',
     description='JSON Matching Expressions',
     long_description=open('README.rst').read(),
     author='James Saryerwinnie',
