@@ -1,5 +1,8 @@
 import re
 
+from jmespath.compat import with_str_method
+
+@with_str_method
 class LexerError(ValueError):
     def __init__(self, lexer_position, lexer_value, message):
         self.lexer_position = lexer_position
