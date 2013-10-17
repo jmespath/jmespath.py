@@ -202,6 +202,19 @@ class TestAST(unittest.TestCase):
                 ast.MultiFieldList([ast.Field("one"), ast.Field("two")])))
         self.assertEqual(expr.search(data), [[1, 2], [1, 2]])
 
+    def test_wildcard_values_index_not_a_list(self):
+        parsed = ast.SubExpression(
+            ast.WildcardValues(),
+            ast.SubExpression(ast.Field("foo"), ast.Index(0)))
+        data = {"a": {"foo": 1}, "b": {"foo": 1}, "c": {"bar": 1}}
+        self.assertEqual(parsed.search(data), None)
+
+    def test_wildcard_values_index_does_exist(self):
+        parsed = ast.SubExpression(
+            ast.WildcardValues(),
+            ast.SubExpression(ast.Field("foo"), ast.Index(0)))
+        data = {"a": {"foo": [1]}, "b": {"foo": 1}, "c": {"bar": 1}}
+        self.assertEqual(parsed.search(data), [1])
 
 
 if __name__ == '__main__':

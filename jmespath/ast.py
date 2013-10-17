@@ -193,7 +193,7 @@ class _MultiMatch(list):
         for el in self:
             try:
                 matches.append(el[index])
-            except IndexError:
+            except (IndexError, TypeError):
                 pass
         if matches:
             return _MultiMatch(matches)
