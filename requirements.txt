@@ -2,3 +2,5 @@ nose==1.2.1
 ply==3.4
 py==1.4.12
 tox==1.4.2
+Sphinx==1.2b3
+guzzle-sphinx-theme==0.3.1
