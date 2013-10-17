@@ -138,7 +138,7 @@ Additional examples::
 
    search(foo.bar, {"foo": {"bar": "value"}}) -> "value"
    search(foo.bar, {"foo": {"baz": "value"}}) -> null
-   search(foo.bar.baz, {"foo": {"bar": {"baz": "value"}}}) -> "baz"
+   search(foo.bar.baz, {"foo": {"bar": {"baz": "value"}}}) -> "value"
 
 
 Index Expressions
