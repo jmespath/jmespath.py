@@ -5,8 +5,10 @@ import ply.lex
 
 from jmespath import ast
 from jmespath import lexer
+from jmespath.compat import with_str_method
 
 
+@with_str_method
 class ParseError(ValueError):
     def __init__(self, lex_position, token_value, token_type):
         super(ParseError, self).__init__(lex_position, token_value, token_type)
