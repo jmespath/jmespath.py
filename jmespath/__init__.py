@@ -1,6 +1,6 @@
 from jmespath import parser
 
-__version__ = '0.0.3'
+__version__ = '0.1.0'
 
 
 def compile(expression, debug=False):

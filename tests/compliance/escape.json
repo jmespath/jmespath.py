@@ -6,7 +6,8 @@
         "foo\"bar": "doublequote",
         "c:\\\\windows\\path": "windows",
         "/unix/path": "unix",
-        "\"\"\"": "threequotes"
+        "\"\"\"": "threequotes",
+        "bar": {"baz": "qux"}
      },
      "cases": [
          {
@@ -36,6 +37,10 @@
          {
             "expression": "\"\\\"\\\"\\\"\"",
             "result": "threequotes"
+         },
+         {
+            "expression": "\"bar\".\"baz\"",
+            "result": "qux"
          }
      ]
 }]

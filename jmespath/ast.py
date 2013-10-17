@@ -69,6 +69,56 @@ class Field(AST):
             return method(self.name)
 
 
+class BaseMultiField(AST):
+    def __init__(self, nodes):
+        self.nodes = nodes
+
+    def search(self, value):
+        if value is None:
+            return None
+        method = self._get_value_method(value)
+        if method is not None:
+            return method(self.nodes)
+        else:
+            return self._multi_get(value)
+
+    def pretty_print(self, indent=''):
+        return "%s%s(%s)" % (indent, self.__class__.__name__, self.nodes)
+
+
+class MultiFieldDict(BaseMultiField):
+    VALUE_METHODS = ['multi_get']
+
+    def _multi_get(self, value):
+        collected = {}
+        for node in self.nodes:
+            collected[node.key_name] = node.search(value)
+        return collected
+
+
+class MultiFieldList(BaseMultiField):
+    VALUE_METHODS = ['multi_get_list']
+
+    def _multi_get(self, value):
+        collected = []
+        for node in self.nodes:
+            collected.append(node.search(value))
+        return collected
+
+
+class KeyValPair(AST):
+    def __init__(self, key_name, node):
+        self.key_name = key_name
+        self.node = node
+
+    def search(self, value):
+        return self.node.search(value)
+
+    def pretty_print(self, indent=''):
+        return "%sKeyValPair(key_name=%s, node=%s)" % (indent, self.key_name,
+                                                       self.node)
+
+
 class Index(AST):
     VALUE_METHODS = ['get_index', '__getitem__']
 
@@ -143,10 +193,34 @@ class _MultiMatch(list):
         for el in self:
             try:
                 matches.append(el[index])
-            except IndexError:
+            except (IndexError, TypeError):
                 pass
         if matches:
             return _MultiMatch(matches)
+
+    def multi_get(self, nodes):
+        results = _MultiMatch([])
+        for element in self:
+            if isinstance(element, _MultiMatch):
+                result = element.multi_get(nodes)
+            else:
+                result = {}
+                for node in nodes:
+                    result[node.key_name] = node.search(element)
+            results.append(result)
+        return results
+
+    def multi_get_list(self, nodes):
+        results = _MultiMatch([])
+        for element in self:
+            if isinstance(element, _MultiMatch):
+                result = element.multi_get_list(nodes)
+            else:
+                result = []
+                for node in nodes:
+                    result.append(node.search(element))
+            results.append(result)
+        return results
 
 
 class ORExpression(AST):
