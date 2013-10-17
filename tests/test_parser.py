@@ -4,6 +4,7 @@ from tests import unittest
 
 from jmespath import parser
 from jmespath import ast
+from jmespath import lexer
 
 
 class TestParser(unittest.TestCase):
@@ -82,9 +83,54 @@ class TestParser(unittest.TestCase):
         result = parsed.search({'foo': {'bar': {'baz': 'CORRECT'}, 'qux': 'qux'}})
         self.assertEqual(result, {"bar": "CORRECT", "qux": "qux"})
 
+
+class TestErrorMessages(unittest.TestCase):
+
+    def setUp(self):
+        self.parser = parser.Parser()
+
+    def assert_error_message(self, expression, error_message,
+                             exception=parser.ParseError):
+        try:
+            self.parser.parse(expression)
+        except exception as e:
+            self.assertEqual(error_message, str(e))
+            return
+        except Exception as e:
+            self.fail(
+                "Unexpected error raised (%s: %s) for bad expression: %s" %
+                (e.__class__.__name__, e, expression))
+        else:
+            self.fail(
+                "ParseError not raised for bad expression: %s" % expression)
+
     def test_bad_parse(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(parser.ParseError):
             parsed = self.parser.parse('foo]baz')
+
+    def test_bad_parse_error_message(self):
+        error_message = (
+            'Invalid jmespath expression: Parse error at column 3 '
+            'near token "]" (RBRACKET) for expression:\n'
+            '"foo]baz"\n'
+            '    ^')
+        self.assert_error_message('foo]baz', error_message)
+
+    def test_bad_parse_error_message_with_multiselect(self):
+        error_message = (
+            'Invalid jmespath expression: Incomplete expression:\n'
+            '"foo.{bar: baz,bar: bar"\n'
+            '                       ^')
+        self.assert_error_message('foo.{bar: baz,bar: bar', error_message)
+
+    def test_bad_lexer_values(self):
+        error_message = (
+            'Bad jmespath expression: Bad token \'"bar\': '
+            'starting quote is missing the ending quote:\n'
+            'foo."bar\n'
+            '    ^')
+        self.assert_error_message('foo."bar', error_message,
+                                  exception=lexer.LexerError)
 
 
 class TestParserWildcards(unittest.TestCase):
