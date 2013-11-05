@@ -1,7 +1,7 @@
 JMESPath
 ========
 
-JMESPath (pronounced "jaymz path") allows you to declaratively specify how to
+JMESPath (pronounced ``\ˈjāmz path\``) allows you to declaratively specify how to
 extract elements from a JSON document.
 
 For example, given this document::
