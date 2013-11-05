@@ -31,8 +31,8 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     sub-expression    = expression "." expression
     or-expression     = expression "||" expression
     index-expression  = expression bracket-specifier / bracket-specifier
-    multi-select-list = "[" ( non-branched-expr *( "," non-branched-expr ) "]"
-    multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) "}"
+    multi-select-list = "[" ( non-branched-expr *( "," non-branched-expr ) ) "]"
+    multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) ) "}"
     keyval-expr       = identifier ":" non-branched-expr
     non-branched-expr = identifier /
                         non-branched-expr "." identifier /
@@ -51,6 +51,7 @@ The grammar is specified using ABNF, as described in `RFC4234`_
                         %x5F /    ; _
                         %x61-7A / ; a-z
                         %x7F-10FFFF
+
 
 
 Identifiers
