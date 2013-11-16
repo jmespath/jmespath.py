@@ -209,6 +209,20 @@
             "expression": "reservations[*].instances[*].{id: id, name: name}",
             "result": [[{"id": "id1", "name": "first"}, {"id": "id2", "name": "second"}],
                        [{"id": "id3", "name": "third"}, {"id": "id4", "name": "fourth"}]]
+         },
+         {
+            "expression": "reservations[].instances[].{id: id, name: name}",
+            "result": [{"id": "id1", "name": "first"},
+                       {"id": "id2", "name": "second"},
+                       {"id": "id3", "name": "third"},
+                       {"id": "id4", "name": "fourth"}]
+         },
+         {
+            "expression": "reservations[].instances[].[id, name]",
+            "result": [["id1", "first"],
+                       ["id2", "second"],
+                       ["id3", "third"],
+                       ["id4", "fourth"]]
          }
     ]
 }]
