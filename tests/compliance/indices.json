@@ -146,7 +146,10 @@
             {"foo": [{"bar": 1}, {"bar": 2}, {"notbar": 3}, {"bar": 4}]},
             {"foo": [{"bar": 5}, {"bar": 6}, {"notbar": [7]}, {"bar": 8}]},
             {"foo": "bar"},
-            {"notfoo": [{"bar": 5}, {"bar": 6}, {"notbar": [7]}, {"bar": 8}]}
+            {"notfoo": [{"bar": 5}, {"bar": 6}, {"notbar": [7]}, {"bar": 8}]},
+            {"bar": [{"baz": [1]}, {"baz": [2]}, {"baz": [3]}, {"baz": [4]}]},
+            {"baz": [{"baz": [1, 2]}, {"baz": []}, {"baz": []}, {"baz": [3, 4]}]},
+            {"qux": [{"baz": []}, {"baz": [1, 2, 3]}, {"baz": [4]}, {"baz": []}]}
         ]}
     ]},
     "cases": [
@@ -165,6 +168,18 @@
         {
            "expression": "reservations[].instances[].foo[].notbar",
            "result": [3, 7]
+        },
+        {
+           "expression": "reservations[].instances[].bar[].baz",
+           "result": [1, 2, 3, 4]
+        },
+        {
+           "expression": "reservations[].instances[].baz[].baz",
+           "result": [1, 2, 3, 4]
+        },
+        {
+           "expression": "reservations[].instances[].qux[].baz",
+           "result": [1, 2, 3, 4]
         }
     ]
 },
