@@ -243,6 +243,24 @@ class TestAST(unittest.TestCase):
         }
         self.assertEqual(parsed.search(data), [1, 2, 3, 4])
 
+    def test_multiple_nested_wildcards_with_list_values(self):
+        parsed = ast.SubExpression(
+                ast.SubExpression(
+                        ast.Field("foo"),
+                        ast.ListElements()),
+                ast.SubExpression(
+                        ast.SubExpression(
+                                ast.Field("bar"),
+                                ast.ListElements()),
+                        ast.Field("baz")))
+        data = {
+            "foo": [
+                {"bar": [{"baz": [1]}, {"baz": [2]}]},
+                {"bar": [{"baz": [3]}, {"baz": [4]}]},
+            ]
+        }
+        self.assertEqual(parsed.search(data), [[1], [2], [3], [4]])
+
     def test_flattened_multiselect_list(self):
         # foo[].[bar,baz]
         field_foo = ast.Field('foo')

@@ -176,7 +176,18 @@ class WildcardValues(AST):
 
 class ListElements(AST):
     def search(self, value):
-        return _FlattenedMultiMatch(value)
+        if isinstance(value, list):
+            # reduce inner list elements into
+            # a single list.
+            merged_list = []
+            for element in value:
+                if isinstance(element, list):
+                    merged_list.extend(element)
+                else:
+                    merged_list.append(element)
+            return _FlattenedMultiMatch(merged_list)
+        else:
+            return _FlattenedMultiMatch(value)
 
     def pretty_print(self, indent=''):
         return "%sListElements()" % indent
@@ -185,6 +196,19 @@ class ListElements(AST):
 class _BaseMultiMatch(list):
     def __init__(self, elements):
         self.extend(elements)
+
+    def get(self, value):
+        results = self.__class__([])
+        for element in self:
+            try:
+                result = element.get(value)
+            except AttributeError:
+                continue
+            if result is not None:
+                if isinstance(result, list):
+                    result = self.__class__(result)
+                results.append(result)
+        return results
 
     def multi_get(self, nodes):
         results = self.__class__([])
@@ -212,19 +236,6 @@ class _BaseMultiMatch(list):
 
 
 class _MultiMatch(_BaseMultiMatch):
-    def get(self, value):
-        results = self.__class__([])
-        for element in self:
-            try:
-                result = element.get(value)
-            except AttributeError:
-                continue
-            if result is not None:
-                if isinstance(result, list):
-                    result = self.__class__(result)
-                results.append(result)
-        return results
-
     def get_index(self, index):
         matches = []
         for el in self:
@@ -239,44 +250,6 @@ class _MultiMatch(_BaseMultiMatch):
 class _FlattenedMultiMatch(_BaseMultiMatch):
     def __init__(self, elements):
         self.extend(elements)
-
-    def get(self, value):
-        current_match = self.__class__([])
-        for element in self:
-            try:
-                result = element.get(value)
-            except AttributeError:
-                continue
-            if result is not None:
-                if isinstance(result, list):
-                    current_match.extend(result)
-                else:
-                    current_match.append(result)
-        return current_match
-
-    def multi_get(self, nodes):
-        results = _FlattenedMultiMatch([])
-        for element in self:
-            if isinstance(element, _FlattenedMultiMatch):
-                result = element.multi_get(nodes)
-            else:
-                result = {}
-                for node in nodes:
-                    result[node.key_name] = node.search(element)
-            results.append(result)
-        return results
-
-    def multi_get_list(self, nodes):
-        results = _FlattenedMultiMatch([])
-        for element in self:
-            if isinstance(element, _FlattenedMultiMatch):
-                result = element.multi_get_list(nodes)
-            else:
-                result = []
-                for node in nodes:
-                    result.append(node.search(element))
-            results.append(result)
-        return results
 
 
 class ORExpression(AST):
