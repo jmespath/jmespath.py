@@ -225,4 +225,64 @@
                        ["id4", "fourth"]]
          }
     ]
-}]
+},
+{
+    "given": {
+      "foo": [{
+          "bar": [
+            {
+              "qux": 2,
+              "baz": 1
+            },
+            {
+              "qux": 4,
+              "baz": 3
+            }
+          ]
+        },
+        {
+          "bar": [
+            {
+              "qux": 6,
+              "baz": 5
+            },
+            {
+              "qux": 8,
+              "baz": 7
+            }
+          ]
+        }
+      ]
+    },
+    "cases": [
+        {
+           "expression": "foo",
+           "result": [{"bar": [{"qux": 2, "baz": 1}, {"qux": 4, "baz": 3}]},
+                      {"bar": [{"qux": 6, "baz": 5}, {"qux": 8, "baz": 7}]}]
+        },
+        {
+           "expression": "foo[]",
+           "result": [{"bar": [{"qux": 2, "baz": 1}, {"qux": 4, "baz": 3}]},
+                      {"bar": [{"qux": 6, "baz": 5}, {"qux": 8, "baz": 7}]}]
+        },
+        {
+           "expression": "foo[].bar",
+           "result": [[{"qux": 2, "baz": 1}, {"qux": 4, "baz": 3}],
+                      [{"qux": 6, "baz": 5}, {"qux": 8, "baz": 7}]]
+        },
+        {
+           "expression": "foo[].bar[]",
+           "result": [{"qux": 2, "baz": 1}, {"qux": 4, "baz": 3},
+                      {"qux": 6, "baz": 5}, {"qux": 8, "baz": 7}]
+        },
+        {
+           "expression": "foo[].bar[].[baz, qux]",
+           "result": [[1, 2], [3, 4], [5, 6], [7, 8]]
+        },
+        {
+           "expression": "foo[].bar[].[baz, qux][]",
+           "result": [1, 2, 3, 4, 5, 6, 7, 8]
+        }
+    ]
+}
+]
