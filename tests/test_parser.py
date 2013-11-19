@@ -240,7 +240,8 @@ class TestMergedLists(unittest.TestCase):
     def test_merge_with_indices(self):
         parsed = self.parser.parse('foo[][0]')
         match = parsed.search(self.data)
-        self.assertEqual(match, ["one", "two"])
+        self.assertEqual(match, ["one", "three", "five", "seven",
+                                 "nine", "ten"])
 
     def test_trailing_merged_operator(self):
         parsed = self.parser.parse('foo[]')

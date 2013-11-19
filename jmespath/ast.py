@@ -150,7 +150,7 @@ class WildcardIndex(AST):
 
     """
     def search(self, value):
-        return _MultiMatch(value)
+        return _Projection(value)
 
     def pretty_print(self, indent=''):
         return "%sIndex(*)" % indent
@@ -166,7 +166,7 @@ class WildcardValues(AST):
     """
     def search(self, value):
         try:
-            return _MultiMatch(value.values())
+            return _Projection(value.values())
         except AttributeError:
             return None
 
@@ -185,15 +185,15 @@ class ListElements(AST):
                     merged_list.extend(element)
                 else:
                     merged_list.append(element)
-            return _FlattenedMultiMatch(merged_list)
+            return _Projection(merged_list)
         else:
-            return _FlattenedMultiMatch(value)
+            return _Projection(value)
 
     def pretty_print(self, indent=''):
         return "%sListElements()" % indent
 
 
-class _BaseMultiMatch(list):
+class _Projection(list):
     def __init__(self, elements):
         self.extend(elements)
 
@@ -209,6 +209,18 @@ class _BaseMultiMatch(list):
                     result = self.__class__(result)
                 results.append(result)
         return results
+
+    def get_index(self, index):
+        matches = []
+        for el in self:
+            if not isinstance(el, list):
+                continue
+            try:
+                matches.append(el[index])
+            except (IndexError, TypeError):
+                pass
+        if matches:
+            return self.__class__(matches)
 
     def multi_get(self, nodes):
         results = self.__class__([])
@@ -233,23 +245,6 @@ class _BaseMultiMatch(list):
                     result.append(node.search(element))
             results.append(result)
         return results
-
-
-class _MultiMatch(_BaseMultiMatch):
-    def get_index(self, index):
-        matches = []
-        for el in self:
-            try:
-                matches.append(el[index])
-            except (IndexError, TypeError):
-                pass
-        if matches:
-            return self.__class__(matches)
-
-
-class _FlattenedMultiMatch(_BaseMultiMatch):
-    def __init__(self, elements):
-        self.extend(elements)
 
 
 class ORExpression(AST):
