@@ -199,6 +199,10 @@
         {
            "expression": "reservations[].instances[].qux[].baz",
            "result": [[], [1, 2, 3], [4], [], [], [1, 2, 3], [4], []]
+        },
+        {
+           "expression": "reservations[].instances[].qux[].baz[]",
+           "result": [1, 2, 3, 4, 1, 2, 3, 4]
         }
     ]
 },
