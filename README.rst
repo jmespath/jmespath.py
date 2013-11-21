@@ -56,7 +56,7 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     non-branched-expr = identifier /
                         non-branched-expr "." identifier /
                         non-branched-expr "[" number "]"
-    bracket-specifier = "[" (number / "*") "]"
+    bracket-specifier = "[" (number / "*") "]" / "[]"
     number            = [-]1*digit
     digit             = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9" / "0"
     identifier        = 1*char
