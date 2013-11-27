@@ -140,7 +140,7 @@
          },
          {
             "expression": "foo.bar[*].baz[3]",
-            "result": null
+            "result": []
          }
      ]
 },
@@ -212,7 +212,7 @@
          },
          {
             "expression": "foo[*].bar[2]",
-            "result": null
+            "result": []
          }
      ]
 },
@@ -223,7 +223,7 @@
      "cases": [
          {
             "expression": "foo[*].bar[0]",
-            "result": null
+            "result": []
          }
      ]
 },
@@ -251,7 +251,8 @@
                 ["five", "six"], ["seven", "eight"]
             ], [
                 ["nine"], ["ten"]
-        ]]
+            ]
+        ]
      },
      "cases": [
          {
@@ -279,8 +280,12 @@
             "result": ["four", "eight"]
          },
          {
+            "expression": "foo[*][2]",
+            "result": []
+         },
+         {
             "expression": "foo[*][2][2]",
-            "result": null
+            "result": []
          }
      ]
 }

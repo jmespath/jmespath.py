@@ -207,7 +207,7 @@ class TestAST(unittest.TestCase):
             ast.WildcardValues(),
             ast.SubExpression(ast.Field("foo"), ast.Index(0)))
         data = {"a": {"foo": 1}, "b": {"foo": 1}, "c": {"bar": 1}}
-        self.assertEqual(parsed.search(data), None)
+        self.assertEqual(parsed.search(data), [])
 
     def test_wildcard_values_index_does_exist(self):
         parsed = ast.SubExpression(

@@ -216,6 +216,11 @@
      },
     "cases": [
         {
+           "expression": "foo[]",
+           "result": [["one", "two"], ["three", "four"], ["five", "six"],
+                      ["seven", "eight"], ["nine"], ["ten"]]
+        },
+        {
            "expression": "foo[][0]",
            "result": ["one", "three", "five", "seven", "nine", "ten"]
         },
@@ -225,15 +230,15 @@
         },
         {
            "expression": "foo[][0][0]",
-           "result": null
+           "result": []
         },
          {
             "expression": "foo[][2][2]",
-            "result": null
+            "result": []
          },
          {
             "expression": "foo[][0][0][100]",
-            "result": null
+            "result": []
          }
     ]
 },
