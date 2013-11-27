@@ -37,7 +37,7 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     non-branched-expr = identifier /
                         non-branched-expr "." identifier /
                         non-branched-expr "[" number "]"
-    bracket-specifier = "[" (number / "*") "]"
+    bracket-specifier = "[" (number / "*") "]" / "[]"
     number            = [-]1*digit
     digit             = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9" / "0"
     identifier        = 1*char
@@ -148,7 +148,7 @@ Index Expressions
 ::
 
   index-expression  = expression bracket-specifier / bracket-specifier
-  bracket-specifier = "[" (number / "*") "]"
+  bracket-specifier = "[" (number / "*") "]" / "[]"
 
 An index expression is used to access elements in a list.  Indexing is 0 based,
 the index of 0 refers to the first element of the list.  A negative number is a
@@ -168,6 +168,27 @@ input to the ``bracket-specifier``.
 
 Using a "*" character within a ``bracket-specifier`` is discussed below in the
 ``wildcard expressions`` section.
+
+Flatten Operator
+----------------
+
+When the character sequence ``[]`` is provided as a bracket specifier, then
+a flattening operation occurs on the current result.  The flattening operator
+will merge sublists in the current result into a single list.  The flattening
+operator has the following semantics:
+
+* Create an empty result list.
+* Iterate over the elements of the current result.
+* If the current element is not a list, add to the end of the result list.
+* If the current element is a list, add each element of the current element
+  to the end of the result list.
+* The result list is now the new current result.
+
+Once the flattening operation has been performed, subsequent operations
+are projected onto the flattened list with the same semantics as a
+wildcard expression.  Thus the difference between ``[*]`` and ``[]`` is that
+``[]`` will first flatten sublists in the current result.
+
 
 Examples
 --------
