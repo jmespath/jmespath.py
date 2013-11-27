@@ -10,7 +10,7 @@ Abstract
 ========
 
 This document proposes modifying the `JMESPath grammar <http://jmespath.readthedocs.org/en/latest/specification.html#grammar>`_ 
-to support arbitrarilynested expressions within ``multi-select-list`` and 
+to support arbitrarily nested expressions within ``multi-select-list`` and 
 ``multi-select-hash`` expressions.
 
 Motivation
