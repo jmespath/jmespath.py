@@ -15,6 +15,13 @@
             },
             "other4": {
                 "notbaz": ["d", "e", "f"]
+            },
+            "other5": {
+                "other": {
+                    "a": 1,
+                    "b": 2,
+                    "c": 3
+                }
             }
         }
     },
@@ -41,19 +48,23 @@
          },
          {
             "expression": "foo.*",
-            "result": [{"baz": "one"}, {"baz": "two"}, {"baz": "three"}, {"notbaz": ["a", "b", "c"]}, {"notbaz": ["d", "e", "f"]}]
+            "result": [{"baz": "one"}, {"baz": "two"}, {"baz": "three"},
+                       {"notbaz": ["a", "b", "c"]}, {"notbaz": ["d", "e", "f"]},
+                       {"other": {"a": 1, "b": 2, "c": 3}}]
          },
          {
             "expression": "foo.*.*",
-            "result": null
+            "result": [["one"], ["two"], ["three"],
+                       [["a", "b", "c"]], [["d", "e", "f"]],
+                       [{"a": 1, "b": 2, "c": 3}]]
          },
          {
             "expression": "foo.*.*.*",
-            "result": null
+            "result": [[], [], [], [], [], [[1, 2, 3]]]
          },
          {
             "expression": "foo.*.*.*.*",
-            "result": null
+            "result": [[], [], [], [], [], [[]]]
          }
     ]
 }, {
@@ -88,8 +99,25 @@
     },
     "cases": [
          {
+            "expression": "*",
+            "result": [{"sub1": {"foo": "one"}},
+                       {"sub1": {"foo": "two"}},
+                       { "sub3": {"notfoo": "notfoo"}}]
+         },
+         {
+            "expression": "*.sub1",
+            "result": [{"foo": "one"},
+                       {"foo": "two"}]
+         },
+         {
+            "expression": "*.*",
+            "result": [[{"foo": "one"}],
+                       [{"foo": "two"}],
+                       [{"notfoo": "notfoo"}]]
+         },
+         {
             "expression": "*.*.foo",
-            "result": null
+            "result": [["one"], ["two"], []]
          },
          {
             "expression": "*.sub1.foo",
