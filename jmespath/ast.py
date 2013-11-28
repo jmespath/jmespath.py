@@ -219,8 +219,7 @@ class _Projection(list):
                 matches.append(el[index])
             except (IndexError, TypeError):
                 pass
-        if matches:
-            return self.__class__(matches)
+        return self.__class__(matches)
 
     def multi_get(self, nodes):
         results = self.__class__([])
