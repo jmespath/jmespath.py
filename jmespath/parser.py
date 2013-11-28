@@ -155,6 +155,7 @@ class Parser(object):
     # _cache dict.
     _cache = {}
     _max_size = 64
+    _table_module = 'jmespath._lrtable'
 
     def __init__(self, lexer_definition=None, grammar=None,
                  debug=False):
@@ -177,6 +178,7 @@ class Parser(object):
         grammar = self._grammar()
         grammar.tokens = self._lexer_definition.tokens
         parser = ply.yacc.yacc(module=grammar, debug=self._debug,
+                               tabmodule=self._table_module,
                                write_tables=False)
         parsed = self._parse_expression(parser=parser, expression=expression,
                                         lexer_obj=lexer)

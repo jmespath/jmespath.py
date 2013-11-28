@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+import os
+import argparse
+
+import ply
+
+import jmespath
+import jmespath.parser
+import jmespath.lexer
+
+
+MODULE_DIR = os.path.dirname(jmespath.__file__)
+
+
+def write_lr_tables(args):
+    remove_current_lr_tables(args)
+    lex_definition = jmespath.lexer.LexerDefinition()
+    grammar = jmespath.parser.Grammar()
+    grammar.tokens = lex_definition.tokens
+    # Note that it is possible to create a lextable.py
+    # as well from the lexer, but this didn't make a
+    # difference in the performance.
+    parser = ply.yacc.yacc(module=grammar,
+                           tabmodule=args.parser_module,
+                           outputdir=args.output_dir,
+                           write_tables=True)
+
+
+def remove_current_lr_tables(args):
+    parser_filename = os.path.join(args.output_dir, args.parser_module) + '.py'
+    for filename in [parser_filename, parser_filename + 'c']:
+        if os.path.isfile(filename):
+            print("Removing file: %s" % filename)
+            os.remove(filename)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--parser-module', default='_lrtable')
+    parser.add_argument('-o', '--output-dir', default=MODULE_DIR)
+    args = parser.parse_args()
+    write_lr_tables(args)
+
+
+if __name__ == '__main__':
+    main()
