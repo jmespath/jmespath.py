@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
+from tests import OrderedDict
 
 from jmespath import ast
 
@@ -122,6 +123,47 @@ class TestAST(unittest.TestCase):
         match = expression.search(data)
         self.assertEqual(sorted(match), ['one', 'two'])
         self.assertEqual(expression.search({'foo': [{'bar': 'one'}]}), None)
+
+    def test_wildcard_dot_wildcard(self):
+        _ = OrderedDict
+        data = _([(
+            "top1", _({
+                "sub1": _({"foo": "one"})
+            })),
+            ("top2", _({
+                "sub1": _({"foo": "two"})
+            })),
+            ("top3", _({
+                "sub3": _({"notfoo": "notfoo"})
+            }))
+        ])
+        # ast for "*.*"
+        expression = ast.SubExpression(
+            ast.WildcardValues(), ast.WildcardValues())
+        match = expression.search(data)
+        self.assertEqual(match, [[{'foo': 'one'}], [{'foo': 'two'}],
+                                 [{'notfoo': 'notfoo'}]])
+
+    def test_wildcard_with_field_node(self):
+        data = {
+            "top1": {
+                "sub1": {"foo": "one"}
+            },
+            "top2": {
+                "sub1": {"foo": "two"}
+            },
+            "top3": {
+                "sub3": {"notfoo": "notfoo"}
+            }
+        }
+        # ast for "*.*.foo"
+        expression = ast.SubExpression(
+            ast.WildcardValues(), ast.SubExpression(ast.WildcardValues(),
+                                                    ast.Field('foo')))
+        match = expression.search(data)
+        self.assertEqual(sorted(match), sorted([[],
+                                                ['one'],
+                                                ['two']]))
 
     def test_wildcard_branches_with_index(self):
         # foo[*].bar

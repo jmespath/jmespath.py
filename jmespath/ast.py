@@ -246,6 +246,16 @@ class _Projection(list):
             results.append(result)
         return results
 
+    def values(self):
+        results = self.__class__([])
+        for element in self:
+            try:
+                current = self.__class__(element.values())
+                results.append(current)
+            except AttributeError:
+                continue
+        return results
+
 
 class ORExpression(AST):
     def __init__(self, first, remaining):
