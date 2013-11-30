@@ -1,16 +1,113 @@
-class AST(object):
-    VALUE_METHODS = []
+class Visitor(object):
+    def visit(self, node):
+        method = getattr(
+            self, 'visit_%s' % node.__class__.__name__.lower(),
+            self.default_visit)
+        return method(node)
 
-    def search(self, value):
+    def default_visit(self, node):
         pass
 
-    def _get_value_method(self, value):
-        # This will find the appropriate getter method
-        # based on the passed in value.
-        for method_name in self.VALUE_METHODS:
-            method = getattr(value, method_name, None)
+
+class TreeInterpreter(Visitor):
+    def __init__(self, starting_data):
+        self.result = starting_data
+
+    def visit_subexpression(self, node):
+        self.visit(node.parent)
+        self.visit(node.child)
+
+    def visit_field(self, node):
+        try:
+            self.result = self.result.get(node.name)
+        except AttributeError:
+            self.result = None
+
+    def visit_multifielddict(self, node):
+        value = self.result
+        if value is not None:
+            method = getattr(value, 'multi_get', None)
             if method is not None:
-                return method
+                self.result = method(node.nodes)
+            else:
+                collected = {}
+                original = value
+                for node in node.nodes:
+                    self.result = original
+                    self.visit(node)
+                    collected[node.key_name] = self.result
+                self.result = collected
+
+    def visit_multifieldlist(self, node):
+        value = self.result
+        if value is not None:
+            method = getattr(value, 'multi_get_list', None)
+            if method is not None:
+                self.result = method(node.nodes)
+            else:
+                collected = []
+                original = value
+                for node in node.nodes:
+                    self.result = original
+                    self.visit(node)
+                    collected.append(self.result)
+                self.result = collected
+
+    def visit_keyvalpair(self, node):
+        self.visit(node.node)
+
+    def visit_index(self, node):
+        value = self.result
+        # Even though we can index strings, we don't
+        # want to support that.
+        if not isinstance(value, list):
+            self.result = None
+        else:
+            method = getattr(value, 'get_index',
+                             getattr(value, '__getitem__'))
+            if method is not None:
+                try:
+                    self.result = method(node.index)
+                except IndexError:
+                    self.result = None
+
+    def visit_wildcardindex(self, node):
+        self.result = _Projection(self.result)
+
+    def visit_wildcardvalues(self, node):
+        try:
+            self.result = _Projection(self.result.values())
+        except AttributeError:
+            self.result = None
+
+    def visit_listelements(self, node):
+        value = self.result
+        if isinstance(value, list):
+            # reduce inner list elements into
+            # a single list.
+            merged_list = []
+            for element in value:
+                if isinstance(element, list):
+                    merged_list.extend(element)
+                else:
+                    merged_list.append(element)
+            self.result = _Projection(merged_list)
+        else:
+            self.result = _Projection(value)
+
+    def visit_orexpression(self, node):
+        original = self.result
+        self.visit(node.first)
+        if self.result is None:
+            self.result = original
+            self.visit(node.remaining)
+
+
+class AST(object):
+    def search(self, value):
+        interpreter = TreeInterpreter(value)
+        interpreter.visit(self)
+        return interpreter.result
 
     def pretty_print(self, indent=''):
         return super(AST, self).__repr__()
@@ -39,13 +136,6 @@ class SubExpression(AST):
         self.parent = parent
         self.child = child
 
-    def search(self, value):
-        # To evaluate a subexpression we first evaluate the parent object
-        # and then feed the match of the parent node into the child node.
-        sub_value = self.parent.search(value)
-        found = self.child.search(sub_value)
-        return found
-
     def pretty_print(self, indent=''):
         sub_indent = indent + ' ' * 4
         return "%sSubExpression(\n%s%s,\n%s%s)" % (
@@ -55,7 +145,6 @@ class SubExpression(AST):
 
 
 class Field(AST):
-    VALUE_METHODS = ['get']
 
     def __init__(self, name):
         self.name = name
@@ -63,47 +152,21 @@ class Field(AST):
     def pretty_print(self, indent=''):
         return "%sField(%s)" % (indent, self.name)
 
-    def search(self, value):
-        method = self._get_value_method(value)
-        if method is not None:
-            return method(self.name)
-
 
 class BaseMultiField(AST):
     def __init__(self, nodes):
         self.nodes = nodes
-
-    def search(self, value):
-        if value is None:
-            return None
-        method = self._get_value_method(value)
-        if method is not None:
-            return method(self.nodes)
-        else:
-            return self._multi_get(value)
 
     def pretty_print(self, indent=''):
         return "%s%s(%s)" % (indent, self.__class__.__name__, self.nodes)
 
 
 class MultiFieldDict(BaseMultiField):
-    VALUE_METHODS = ['multi_get']
-
-    def _multi_get(self, value):
-        collected = {}
-        for node in self.nodes:
-            collected[node.key_name] = node.search(value)
-        return collected
+    pass
 
 
 class MultiFieldList(BaseMultiField):
-    VALUE_METHODS = ['multi_get_list']
-
-    def _multi_get(self, value):
-        collected = []
-        for node in self.nodes:
-            collected.append(node.search(value))
-        return collected
+    pass
 
 
 class KeyValPair(AST):
@@ -111,34 +174,17 @@ class KeyValPair(AST):
         self.key_name = key_name
         self.node = node
 
-    def search(self, value):
-        return self.node.search(value)
-
     def pretty_print(self, indent=''):
         return "%sKeyValPair(key_name=%s, node=%s)" % (indent, self.key_name,
                                                        self.node)
 
 
 class Index(AST):
-    VALUE_METHODS = ['get_index', '__getitem__']
-
     def __init__(self, index):
         self.index = index
 
     def pretty_print(self, indent=''):
         return "%sIndex(%s)" % (indent, self.index)
-
-    def search(self, value):
-        # Even though we can index strings, we don't
-        # want to support that.
-        if not isinstance(value, list):
-            return None
-        method = self._get_value_method(value)
-        if method is not None:
-            try:
-                return method(self.index)
-            except IndexError:
-                pass
 
 
 class WildcardIndex(AST):
@@ -149,9 +195,6 @@ class WildcardIndex(AST):
         foo[*] -> SubExpression(Field(foo), WildcardIndex())
 
     """
-    def search(self, value):
-        return _Projection(value)
-
     def pretty_print(self, indent=''):
         return "%sIndex(*)" % indent
 
@@ -164,31 +207,11 @@ class WildcardValues(AST):
         foo.* -> SubExpression(Field(foo), WildcardValues())
 
     """
-    def search(self, value):
-        try:
-            return _Projection(value.values())
-        except AttributeError:
-            return None
-
     def pretty_print(self, indent=''):
         return "%sWildcardValues()" % indent
 
 
 class ListElements(AST):
-    def search(self, value):
-        if isinstance(value, list):
-            # reduce inner list elements into
-            # a single list.
-            merged_list = []
-            for element in value:
-                if isinstance(element, list):
-                    merged_list.extend(element)
-                else:
-                    merged_list.append(element)
-            return _Projection(merged_list)
-        else:
-            return _Projection(value)
-
     def pretty_print(self, indent=''):
         return "%sListElements()" % indent
 
@@ -260,12 +283,6 @@ class ORExpression(AST):
     def __init__(self, first, remaining):
         self.first = first
         self.remaining = remaining
-
-    def search(self, value):
-        matched = self.first.search(value)
-        if matched is None:
-            matched = self.remaining.search(value)
-        return matched
 
     def pretty_print(self, indent=''):
         return "%sORExpression(%s, %s)" % (indent, self.first,

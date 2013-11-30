@@ -33,6 +33,10 @@
          {
             "expression": "foo.bar[-4]",
             "result": null
+         },
+         {
+            "expression": "foo.bar[0][0]",
+            "result": null
          }
      ]
 },

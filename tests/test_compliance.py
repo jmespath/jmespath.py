@@ -6,6 +6,7 @@ from tests import json
 from nose.tools import assert_equal
 
 import jmespath
+from jmespath.ast import TreeInterpreter
 
 
 TEST_DIR = os.path.join(
@@ -37,7 +38,9 @@ def _test_expression(given, expression, expected, filename):
         raise AssertionError(
             'jmespath expression failed to compile: "%s", error: %s"' %
             (expression, e))
-    actual = parsed.search(given)
+    visitor = TreeInterpreter(given)
+    visitor.visit(parsed)
+    actual = visitor.result
     expected_repr = json.dumps(expected, indent=4)
     actual_repr = json.dumps(actual, indent=4)
     error_msg = ("\n(%s) The expression '%s' was suppose to give: %s.\n"
