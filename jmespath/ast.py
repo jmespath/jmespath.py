@@ -13,9 +13,15 @@ class TreeInterpreter(Visitor):
     def __init__(self, starting_data):
         self.result = starting_data
 
+    def _lookup_method(self, value, *methods):
+        for method in methods:
+            func = getattr(value, method, None)
+            if func is not None:
+                return func
+
     def visit_subexpression(self, node):
-        self.visit(node.parent)
-        self.visit(node.child)
+        for node in node.nodes:
+            self.visit(node)
 
     def visit_field(self, node):
         try:
@@ -54,7 +60,7 @@ class TreeInterpreter(Visitor):
                 self.result = collected
 
     def visit_keyvalpair(self, node):
-        self.visit(node.node)
+        self.visit(node.nodes[0])
 
     def visit_index(self, node):
         value = self.result
@@ -63,8 +69,7 @@ class TreeInterpreter(Visitor):
         if not isinstance(value, list):
             self.result = None
         else:
-            method = getattr(value, 'get_index',
-                             getattr(value, '__getitem__'))
+            method = self._lookup_method(value, 'get_index', '__getitem__')
             if method is not None:
                 try:
                     self.result = method(node.index)
@@ -97,51 +102,62 @@ class TreeInterpreter(Visitor):
 
     def visit_orexpression(self, node):
         original = self.result
-        self.visit(node.first)
+        self.visit(node.nodes[0])
         if self.result is None:
             self.result = original
-            self.visit(node.remaining)
+            self.visit(node.nodes[1])
 
 
 class PrintVisitor(Visitor):
-    def visit_subexpression(self, node, indent=''):
+    def _print_node_with_children(self, node, indent=''):
         sub_indent = indent + ' ' * 4
-        return "%s%s(\n%s%s,\n%s%s)" % (
-            indent, node.__class__.__name__,
-            sub_indent, self.visit(node.parent, sub_indent),
-            sub_indent, self.visit(node.child, sub_indent))
+        parts = ['%s%s(\n' % (indent, node.__class__.__name__)]
+        for child in node.nodes[:-1]:
+            parts.append('%s,\n' % (self.visit(child, sub_indent),))
+        parts.append('%s)' % (self.visit(node.nodes[-1], sub_indent),))
+        return ''.join(parts)
+
+    def _print_leaf_node(self, node, indent, inner_content=''):
+        return "%s%s(%s)" % (indent, node.__class__.__name__, inner_content)
+
+    def visit_subexpression(self, node, indent=''):
+        return self._print_node_with_children(node, indent)
 
     def visit_field(self, node, indent=''):
-        return "%s%s(%s)" % (indent, node.__class__.__name__, node.name)
+        return self._print_leaf_node(node, indent, node.name)
 
     def visit_multifielddict(self, node, indent=''):
-        return "%s%s(%s)" % (indent, node.__class__.__name__, node.nodes)
+        return self._print_node_with_children(node, indent)
 
     def visit_multifieldlist(self, node, indent=''):
-        return "%s%s(%s)" % (indent, node.__class__.__name__, node.nodes)
+        return self._print_node_with_children(node, indent)
 
     def visit_keyvalpair(self, node, indent=''):
-        return "%sKeyValPair(key_name=%s, node=%s)" % (indent, node.key_name,
-                                                       node.node)
+        inner_content = 'key_name=%s, node=%s' % (node.key_name, node.nodes[0])
+        return self._print_leaf_node(node, indent, inner_content)
 
     def visit_index(self, node, indent=''):
-        return "%sIndex(%s)" % (indent, node.index)
+        return self._print_leaf_node(node, indent, node.index)
 
     def visit_wildcardindex(self, node, indent=''):
-        return "%sIndex(*)" % (indent,)
+        return self._print_leaf_node(node, indent, '*')
 
     def visit_wildcardvalues(self, node, indent=''):
-        return "%sWildcardValues()" % (indent,)
+        return self._print_leaf_node(node, indent)
 
     def visit_listelements(self, node, indent=''):
-        return "%sListElements()" % indent
+        return self._print_leaf_node(node, indent)
 
     def visit_orexpression(self, node, indent=''):
-        return "%sORExpression(%s, %s)" % (indent, node.first,
-                                           node.remaining)
+        return self._print_node_with_children(node, indent)
 
 
 class AST(object):
+    def __init__(self, children_nodes=None):
+        if children_nodes is None:
+            children_nodes = []
+        self.nodes = children_nodes
+
     def search(self, value):
         interpreter = TreeInterpreter(value)
         interpreter.visit(self)
@@ -168,37 +184,32 @@ class SubExpression(AST):
         SubExpression(Field(foo), Field(bar))
 
     """
-    def __init__(self, parent, child):
-        self.parent = parent
-        self.child = child
+    pass
 
 
 class Field(AST):
     def __init__(self, name):
+        super(Field, self).__init__()
         self.name = name
 
 
-class BaseMultiField(AST):
-    def __init__(self, nodes):
-        self.nodes = nodes
-
-
-class MultiFieldDict(BaseMultiField):
+class MultiFieldDict(AST):
     pass
 
 
-class MultiFieldList(BaseMultiField):
+class MultiFieldList(AST):
     pass
 
 
 class KeyValPair(AST):
     def __init__(self, key_name, node):
+        super(KeyValPair, self).__init__(children_nodes=[node])
         self.key_name = key_name
-        self.node = node
 
 
 class Index(AST):
     def __init__(self, index):
+        super(Index, self).__init__()
         self.index = index
 
 
@@ -225,6 +236,10 @@ class WildcardValues(AST):
 
 
 class ListElements(AST):
+    pass
+
+
+class ORExpression(AST):
     pass
 
 
@@ -289,9 +304,3 @@ class _Projection(list):
             except AttributeError:
                 continue
         return results
-
-
-class ORExpression(AST):
-    def __init__(self, first, remaining):
-        self.first = first
-        self.remaining = remaining

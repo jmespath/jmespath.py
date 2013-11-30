@@ -58,14 +58,14 @@ class Grammar(object):
             p[0] = ast.WildcardValues()
         else:
             # This is the expression DOT expression rule.
-            p[0] = ast.SubExpression(p[1], p[3])
+            p[0] = ast.SubExpression([p[1], p[3]])
 
     def p_jmespath_index(self, p):
         """expression : expression bracket-spec
                       | bracket-spec
         """
         if len(p) == 3:
-            p[0] = ast.SubExpression(p[1], p[2])
+            p[0] = ast.SubExpression([p[1], p[2]])
         elif len(p) == 2:
             # Otherwise this is just a bracket-spec, which is valid as a root
             # level node (e.g. [2]) so we just assign the root node to the
@@ -134,14 +134,14 @@ class Grammar(object):
             p[0] = ast.Field(str(p[1]))
         elif len(p) == 4:
             # foo . bar
-            p[0] = ast.SubExpression(p[1], ast.Field(str(p[3])))
+            p[0] = ast.SubExpression([p[1], ast.Field(str(p[3]))])
         elif len(p) == 5:
             # <scalaridentifier>[0]
-            p[0] = ast.SubExpression(p[1], ast.Index(p[3]))
+            p[0] = ast.SubExpression([p[1], ast.Index(p[3])])
 
     def p_jmespath_or_expression(self, p):
         """expression : expression OR expression"""
-        p[0] = ast.ORExpression(p[1], p[3])
+        p[0] = ast.ORExpression([p[1], p[3]])
 
     def p_error(self, t):
         if t is not None:

@@ -33,8 +33,8 @@ class TestParser(unittest.TestCase):
     def test_quoted_subexpression(self):
         parsed = self.parser.parse('"foo"."bar"')
         self.assertIsInstance(parsed, ast.SubExpression)
-        self.assertEqual(parsed.parent.name, 'foo')
-        self.assertEqual(parsed.child.name, 'bar')
+        self.assertEqual(parsed.nodes[0].name, 'foo')
+        self.assertEqual(parsed.nodes[1].name, 'bar')
 
     def test_wildcard(self):
         parsed = self.parser.parse('foo[*]')
@@ -63,7 +63,8 @@ class TestParser(unittest.TestCase):
 
     def test_or_repr(self):
         parsed = self.parser.parse('foo || bar')
-        self.assertEqual(repr(parsed), 'ORExpression(Field(foo), Field(bar))')
+        self.assertEqual(repr(parsed),
+                         'ORExpression(\n    Field(foo),\n    Field(bar))')
 
     def test_multiselect(self):
         parsed = self.parser.parse('foo.{bar: bar,baz: baz}')
