@@ -1,11 +1,11 @@
 class Visitor(object):
-    def visit(self, node):
+    def visit(self, node, *args, **kwargs):
         method = getattr(
             self, 'visit_%s' % node.__class__.__name__.lower(),
             self.default_visit)
-        return method(node)
+        return method(node, *args, **kwargs)
 
-    def default_visit(self, node):
+    def default_visit(self, node, *args, **kwargs):
         pass
 
 
@@ -103,17 +103,53 @@ class TreeInterpreter(Visitor):
             self.visit(node.remaining)
 
 
+class PrintVisitor(Visitor):
+    def visit_subexpression(self, node, indent=''):
+        sub_indent = indent + ' ' * 4
+        return "%s%s(\n%s%s,\n%s%s)" % (
+            indent, node.__class__.__name__,
+            sub_indent, self.visit(node.parent, sub_indent),
+            sub_indent, self.visit(node.child, sub_indent))
+
+    def visit_field(self, node, indent=''):
+        return "%s%s(%s)" % (indent, node.__class__.__name__, node.name)
+
+    def visit_multifielddict(self, node, indent=''):
+        return "%s%s(%s)" % (indent, node.__class__.__name__, node.nodes)
+
+    def visit_multifieldlist(self, node, indent=''):
+        return "%s%s(%s)" % (indent, node.__class__.__name__, node.nodes)
+
+    def visit_keyvalpair(self, node, indent=''):
+        return "%sKeyValPair(key_name=%s, node=%s)" % (indent, node.key_name,
+                                                       node.node)
+
+    def visit_index(self, node, indent=''):
+        return "%sIndex(%s)" % (indent, node.index)
+
+    def visit_wildcardindex(self, node, indent=''):
+        return "%sIndex(*)" % (indent,)
+
+    def visit_wildcardvalues(self, node, indent=''):
+        return "%sWildcardValues()" % (indent,)
+
+    def visit_listelements(self, node, indent=''):
+        return "%sListElements()" % indent
+
+    def visit_orexpression(self, node, indent=''):
+        return "%sORExpression(%s, %s)" % (indent, node.first,
+                                           node.remaining)
+
+
 class AST(object):
     def search(self, value):
         interpreter = TreeInterpreter(value)
         interpreter.visit(self)
         return interpreter.result
 
-    def pretty_print(self, indent=''):
-        return super(AST, self).__repr__()
-
     def __repr__(self):
-        return self.pretty_print()
+        printer = PrintVisitor()
+        return printer.visit(self)
 
     def __eq__(self, other):
         return (isinstance(other, self.__class__)
@@ -136,29 +172,15 @@ class SubExpression(AST):
         self.parent = parent
         self.child = child
 
-    def pretty_print(self, indent=''):
-        sub_indent = indent + ' ' * 4
-        return "%sSubExpression(\n%s%s,\n%s%s)" % (
-            indent,
-            sub_indent, self.parent.pretty_print(sub_indent),
-            sub_indent, self.child.pretty_print(sub_indent))
-
 
 class Field(AST):
-
     def __init__(self, name):
         self.name = name
-
-    def pretty_print(self, indent=''):
-        return "%sField(%s)" % (indent, self.name)
 
 
 class BaseMultiField(AST):
     def __init__(self, nodes):
         self.nodes = nodes
-
-    def pretty_print(self, indent=''):
-        return "%s%s(%s)" % (indent, self.__class__.__name__, self.nodes)
 
 
 class MultiFieldDict(BaseMultiField):
@@ -174,17 +196,10 @@ class KeyValPair(AST):
         self.key_name = key_name
         self.node = node
 
-    def pretty_print(self, indent=''):
-        return "%sKeyValPair(key_name=%s, node=%s)" % (indent, self.key_name,
-                                                       self.node)
-
 
 class Index(AST):
     def __init__(self, index):
         self.index = index
-
-    def pretty_print(self, indent=''):
-        return "%sIndex(%s)" % (indent, self.index)
 
 
 class WildcardIndex(AST):
@@ -195,8 +210,7 @@ class WildcardIndex(AST):
         foo[*] -> SubExpression(Field(foo), WildcardIndex())
 
     """
-    def pretty_print(self, indent=''):
-        return "%sIndex(*)" % indent
+    pass
 
 
 class WildcardValues(AST):
@@ -207,13 +221,11 @@ class WildcardValues(AST):
         foo.* -> SubExpression(Field(foo), WildcardValues())
 
     """
-    def pretty_print(self, indent=''):
-        return "%sWildcardValues()" % indent
+    pass
 
 
 class ListElements(AST):
-    def pretty_print(self, indent=''):
-        return "%sListElements()" % indent
+    pass
 
 
 class _Projection(list):
@@ -283,7 +295,3 @@ class ORExpression(AST):
     def __init__(self, first, remaining):
         self.first = first
         self.remaining = remaining
-
-    def pretty_print(self, indent=''):
-        return "%sORExpression(%s, %s)" % (indent, self.first,
-                                           self.remaining)
