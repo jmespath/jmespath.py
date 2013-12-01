@@ -1,7 +1,7 @@
 class Visitor(object):
     def visit(self, node, *args, **kwargs):
         method = getattr(
-            self, 'visit_%s' % node.__class__.__name__.lower(),
+            self, 'visit_%s' % node.__class__.__name__,
             self.default_visit)
         return method(node, *args, **kwargs)
 
@@ -19,17 +19,17 @@ class TreeInterpreter(Visitor):
             if func is not None:
                 return func
 
-    def visit_subexpression(self, node):
+    def visit_SubExpression(self, node):
         for node in node.nodes:
             self.visit(node)
 
-    def visit_field(self, node):
+    def visit_Field(self, node):
         try:
             self.result = self.result.get(node.name)
         except AttributeError:
             self.result = None
 
-    def visit_multifielddict(self, node):
+    def visit_MultiFieldDict(self, node):
         value = self.result
         if value is not None:
             method = getattr(value, 'multi_get', None)
@@ -44,7 +44,7 @@ class TreeInterpreter(Visitor):
                     collected[node.key_name] = self.result
                 self.result = collected
 
-    def visit_multifieldlist(self, node):
+    def visit_MultiFieldList(self, node):
         value = self.result
         if value is not None:
             method = getattr(value, 'multi_get_list', None)
@@ -59,10 +59,10 @@ class TreeInterpreter(Visitor):
                     collected.append(self.result)
                 self.result = collected
 
-    def visit_keyvalpair(self, node):
+    def visit_KeyValPair(self, node):
         self.visit(node.nodes[0])
 
-    def visit_index(self, node):
+    def visit_Index(self, node):
         value = self.result
         # Even though we can index strings, we don't
         # want to support that.
@@ -76,16 +76,16 @@ class TreeInterpreter(Visitor):
                 except IndexError:
                     self.result = None
 
-    def visit_wildcardindex(self, node):
+    def visit_WildcardIndex(self, node):
         self.result = _Projection(self.result)
 
-    def visit_wildcardvalues(self, node):
+    def visit_WildcardValues(self, node):
         try:
             self.result = _Projection(self.result.values())
         except AttributeError:
             self.result = None
 
-    def visit_listelements(self, node):
+    def visit_ListElements(self, node):
         value = self.result
         if isinstance(value, list):
             # reduce inner list elements into
@@ -100,7 +100,7 @@ class TreeInterpreter(Visitor):
         else:
             self.result = _Projection(value)
 
-    def visit_orexpression(self, node):
+    def visit_ORExpression(self, node):
         original = self.result
         self.visit(node.nodes[0])
         if self.result is None:
@@ -120,35 +120,35 @@ class PrintVisitor(Visitor):
     def _print_leaf_node(self, node, indent, inner_content=''):
         return "%s%s(%s)" % (indent, node.__class__.__name__, inner_content)
 
-    def visit_subexpression(self, node, indent=''):
+    def visit_SubExpression(self, node, indent=''):
         return self._print_node_with_children(node, indent)
 
-    def visit_field(self, node, indent=''):
+    def visit_Field(self, node, indent=''):
         return self._print_leaf_node(node, indent, node.name)
 
-    def visit_multifielddict(self, node, indent=''):
+    def visit_MultiFieldDict(self, node, indent=''):
         return self._print_node_with_children(node, indent)
 
-    def visit_multifieldlist(self, node, indent=''):
+    def visit_MultiFieldList(self, node, indent=''):
         return self._print_node_with_children(node, indent)
 
-    def visit_keyvalpair(self, node, indent=''):
+    def visit_KeyValPair(self, node, indent=''):
         inner_content = 'key_name=%s, node=%s' % (node.key_name, node.nodes[0])
         return self._print_leaf_node(node, indent, inner_content)
 
-    def visit_index(self, node, indent=''):
+    def visit_Index(self, node, indent=''):
         return self._print_leaf_node(node, indent, node.index)
 
-    def visit_wildcardindex(self, node, indent=''):
+    def visit_WildcardIndex(self, node, indent=''):
         return self._print_leaf_node(node, indent, '*')
 
-    def visit_wildcardvalues(self, node, indent=''):
+    def visit_WildcardValues(self, node, indent=''):
         return self._print_leaf_node(node, indent)
 
-    def visit_listelements(self, node, indent=''):
+    def visit_ListElements(self, node, indent=''):
         return self._print_leaf_node(node, indent)
 
-    def visit_orexpression(self, node, indent=''):
+    def visit_ORExpression(self, node, indent=''):
         return self._print_node_with_children(node, indent)
 
 
