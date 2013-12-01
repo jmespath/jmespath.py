@@ -38,9 +38,8 @@ def _test_expression(given, expression, expected, filename):
         raise AssertionError(
             'jmespath expression failed to compile: "%s", error: %s"' %
             (expression, e))
-    visitor = TreeInterpreter(given)
-    visitor.visit(parsed)
-    actual = visitor.result
+    visitor = TreeInterpreter()
+    actual = visitor.visit(parsed, given)
     expected_repr = json.dumps(expected, indent=4)
     actual_repr = json.dumps(actual, indent=4)
     error_msg = ("\n(%s) The expression '%s' was suppose to give: %s.\n"

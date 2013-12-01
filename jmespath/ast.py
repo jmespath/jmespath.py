@@ -10,83 +10,75 @@ class Visitor(object):
 
 
 class TreeInterpreter(Visitor):
-    def __init__(self, starting_data):
-        self.result = starting_data
-
     def _lookup_method(self, value, *methods):
         for method in methods:
             func = getattr(value, method, None)
             if func is not None:
                 return func
 
-    def visit_SubExpression(self, node):
+    def visit_SubExpression(self, node, value):
+        result = value
         for node in node.nodes:
-            self.visit(node)
+            result = self.visit(node, result)
+        return result
 
-    def visit_Field(self, node):
+    def visit_Field(self, node, value):
         try:
-            self.result = self.result.get(node.name)
+            return value.get(node.name)
         except AttributeError:
-            self.result = None
+            return None
 
-    def visit_MultiFieldDict(self, node):
-        value = self.result
+    def visit_MultiFieldDict(self, node, value):
         if value is not None:
             method = getattr(value, 'multi_get', None)
             if method is not None:
-                self.result = method(node.nodes)
+                return method(node.nodes)
             else:
                 collected = {}
                 original = value
                 for node in node.nodes:
-                    self.result = original
-                    self.visit(node)
-                    collected[node.key_name] = self.result
-                self.result = collected
+                    current = self.visit(node, value)
+                    collected[node.key_name] = current
+                return collected
 
-    def visit_MultiFieldList(self, node):
-        value = self.result
+    def visit_MultiFieldList(self, node, value):
         if value is not None:
             method = getattr(value, 'multi_get_list', None)
             if method is not None:
-                self.result = method(node.nodes)
+                return method(node.nodes)
             else:
                 collected = []
-                original = value
                 for node in node.nodes:
-                    self.result = original
-                    self.visit(node)
-                    collected.append(self.result)
-                self.result = collected
+                    current = self.visit(node, value)
+                    collected.append(current)
+                return collected
 
-    def visit_KeyValPair(self, node):
-        self.visit(node.nodes[0])
+    def visit_KeyValPair(self, node, value):
+        return self.visit(node.nodes[0], value)
 
-    def visit_Index(self, node):
-        value = self.result
+    def visit_Index(self, node, value):
         # Even though we can index strings, we don't
         # want to support that.
         if not isinstance(value, list):
-            self.result = None
+            return None
         else:
             method = self._lookup_method(value, 'get_index', '__getitem__')
             if method is not None:
                 try:
-                    self.result = method(node.index)
+                    return method(node.index)
                 except IndexError:
-                    self.result = None
+                    return None
 
-    def visit_WildcardIndex(self, node):
-        self.result = _Projection(self.result)
+    def visit_WildcardIndex(self, node, value):
+        return _Projection(value)
 
-    def visit_WildcardValues(self, node):
+    def visit_WildcardValues(self, node, value):
         try:
-            self.result = _Projection(self.result.values())
+            return _Projection(value.values())
         except AttributeError:
-            self.result = None
+            return None
 
-    def visit_ListElements(self, node):
-        value = self.result
+    def visit_ListElements(self, node, value):
         if isinstance(value, list):
             # reduce inner list elements into
             # a single list.
@@ -96,16 +88,15 @@ class TreeInterpreter(Visitor):
                     merged_list.extend(element)
                 else:
                     merged_list.append(element)
-            self.result = _Projection(merged_list)
+            return  _Projection(merged_list)
         else:
-            self.result = _Projection(value)
+            return _Projection(value)
 
-    def visit_ORExpression(self, node):
-        original = self.result
-        self.visit(node.nodes[0])
-        if self.result is None:
-            self.result = original
-            self.visit(node.nodes[1])
+    def visit_ORExpression(self, node, value):
+        result = self.visit(node.nodes[0], value)
+        if result is None:
+            result = self.visit(node.nodes[1], value)
+        return result
 
 
 class PrintVisitor(Visitor):
@@ -159,9 +150,8 @@ class AST(object):
         self.nodes = children_nodes
 
     def search(self, value):
-        interpreter = TreeInterpreter(value)
-        interpreter.visit(self)
-        return interpreter.result
+        interpreter = TreeInterpreter()
+        return interpreter.visit(self, value)
 
     def __repr__(self):
         printer = PrintVisitor()
