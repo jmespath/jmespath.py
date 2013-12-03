@@ -113,6 +113,36 @@ In the above example, the function is passed two arguments: a primitive value
 ``true`` and the result of grabbing the ``abc`` key of the current node being
 evaluated.
 
+Truthy vs Falsey Values
+=======================
+
+Some of these built-in functions (e.g., ``get``) evaluate arguments to
+determine if they are "truthy" or "falsey". In order to discourage
+inconsistencies in the language in future JEPs, this JEP formally defines
+"truthy" and "falsey" values.
+
+Falsey
+------
+
+"Falsey" is defined using the following semantics:
+
+1. Boolean false
+2. Empty string
+3. ``null``
+4. Empty Array
+5. Empty Object
+
+Truthy
+------
+
+"Truthy" is defined using the following semantics:
+
+1. Boolean true
+2. A string with one or more characters
+3. An Array with one or more elements
+4. An Object with one or more key value pairs
+5. Any Number value, including 0
+
 Built-in functions
 ==================
 
@@ -920,16 +950,6 @@ This function accepts a variable number of arguments, each of which can be of
 any type and returns the first argument that is not "falsey".
 
 This function MUST return ``null`` if all arguments are "falsey".
-
-"Falsey" is defined using the following semantics:
-
-1. Boolean false
-2. Empty string
-3. ``null``
-4. Empty Array
-5. Empty Object (hash)
-
-Note that ``0`` is NOT a falsey value.
 
 .. list-table:: Examples
    :header-rows: 1
