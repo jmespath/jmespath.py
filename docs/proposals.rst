@@ -7,3 +7,5 @@ changes. Proposals are marked as either "draft", "accepted", or "rejected".
 
 .. toctree::
    :maxdepth: 1
+
+   proposals/nested-expressions
