@@ -22,7 +22,7 @@ in ``multi-select-list`` and ``multi-select-hash`` expressions to format the
 output of an expression to contain data that might not have been in the
 original JSON input. If filtered projections are added to JMESPath, functions
 would be a powerful mechanism to perform any kind of special comparisons for
-things like ``count()``, ``length()``, ``substring()``, etc.
+things like ``length()``, ``matches()``, ``substring()``, etc.
 
 Data Types
 ==========
@@ -188,16 +188,21 @@ result. If no arguments are Strings or Numbers, this function MUST return
    * - ``concat(a)``
      - raises an error because the function requires at least two arguments
 
+.. _length:
+
 length
 ~~~~~~
 
 ::
 
-    String|null length(String $subject)
+    Number|null length(String|Array|Object $subject)
 
-Returns the length of the String passed in the ``$subject`` argument.
+Returns the length of the given argument using the following types rules:
 
-If ``$subject`` is not a String, this function MUST return ``null``.
+1. String: returns the number of characters in the String
+2. Array: returns the number of elements in the Array
+3. Object: returns the number of key-value pairs in the Object
+4. Boolean, null: returns null
 
 .. list-table:: Examples
    :header-rows: 1
@@ -226,6 +231,18 @@ If ``$subject`` is not a String, this function MUST return ``null``.
    * - n/a
      - ``length()``
      - Raises an error
+   * - ``["a", "b", "c"]``
+     - ``length(@)``
+     - 3
+   * - ``[]``
+     - ``length(@)``
+     - 0
+   * - ``{}``
+     - ``length(@)``
+     - 0
+   * - ``{"foo": "bar", "baz": "bam"}``
+     - ``length(@)``
+     - 2
 
 lowercase
 ~~~~~~~~~
@@ -580,45 +597,6 @@ a String or Number.
      - ``contains("foo", @)``
      - Raises an error
 
-.. _count:
-
-count
-~~~~~
-
-::
-
-    Number|null count(Array|Object $collection)
-
-Returns the number of elements in the ``$collection`` argument if
-``$collection`` is an Array or Object.
-
-Returns ``null`` if ``$collection`` is not an Array or Object.
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Given
-     - Expression
-     - Result
-   * - ``["a", "b", "c"]``
-     - ``count(@)``
-     - 3
-   * - ``[]``
-     - ``count(@)``
-     - 0
-   * - ``{}``
-     - ``count(@)``
-     - 0
-   * - ``{"foo": "bar", "baz": "bam"}``
-     - ``count(@)``
-     - 2
-   * - n/a
-     - ``count(false)``
-     - ``null``
-   * - n/a
-     - ``count(abc)``
-     - ``null``
-
 join
 ~~~~
 
@@ -660,6 +638,11 @@ String.
    * - ``["a", "b"]``
      - ``join(false, @)``
      - Raises an error
+
+length
+~~~~~~
+
+See length_.
 
 max
 ~~~
@@ -826,10 +809,10 @@ contains
 
 See contains_.
 
-count
-~~~~~
+length
+~~~~~~
 
-See count_.
+See length_.
 
 keys
 ~~~~
@@ -1172,16 +1155,16 @@ Test Cases
           "error": "runtime"
         },
         {
-          "expression": "count(@)",
+          "expression": "length(@)",
           "result": 9
         },
         {
-          "expression": "count(@.arr)",
+          "expression": "length(@.arr)",
           "result": 6
         },
         {
-          "expression": "count(@.str)",
-          "result": null
+          "expression": "length(@.str)",
+          "result": 3
         },
         {
           "expression": "floor(@.dec[0])",
