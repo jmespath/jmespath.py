@@ -1,0 +1,78 @@
+[{
+  "given": {
+    "foo": {
+      "bar": "bar",
+      "baz": "baz"
+    },
+    "bar": 1
+  },
+  "cases": [
+    {
+      "expression": "foo.{bar: bar, baz: $.bar}",
+      "result": {"bar": "bar", "baz": 1}
+    },
+    {
+      "expression": "foo.{\"bar\": bar, \"baz\": $.bar}",
+      "result": {"bar": "bar", "baz": 1}
+    },
+    {
+      "expression": "foo.{\"foo.bar\": $}",
+      "result": {"foo.bar": {
+        "foo": {
+          "bar": "bar",
+          "baz": "baz"
+        },
+        "bar": 1
+      }}
+    },
+    {
+      "expression": "foo.{\"bar\": bar, \"baz\": $.bar, \"bar2\": bar}",
+      "result": {"bar": "bar", "baz": 1, "bar2": "bar"}
+    },
+    {
+      "expression": "foo.{bar:bar,baz:$.bar}",
+      "result": {"bar": "bar", "baz": 1}
+    },
+    {
+      "expression": "foo.{bar1: $.bar,bar2: bar}",
+      "result": {"bar1": 1, "bar2": "bar"}
+    },
+    {
+      "expression": "foo.{bar: bar, noexist: $.noexist}",
+      "result": {"bar": "bar", "noexist": null}
+    },
+    {
+      "expression": "foo.{noexist: $.noexist, alsonoexist: $.alsonoexist}",
+      "result": {"noexist": null, "alsonoexist": null}
+    },
+    {
+      "expression": "foo.badkey.{nokey: nokey, alsonokey: $.alsonokey}",
+      "result": null
+    },
+    {
+      "expression": "$.foo.bar",
+      "result": "bar"
+    },
+    {
+      "expression": "$.*",
+      "result": [{"bar": "bar", "baz": "baz"}, 1]
+    }
+  ]
+},
+{
+    "given": {
+      "foo": {
+        "baz": {"a": 1},
+        "boo": {"a": 2},
+        "bam": {"a": 3}
+      },
+      "bar": 4
+    },
+    "cases": [{
+        "expression": "foo.*.{a: a, b: $.bar}",
+        "result": [{"a": 1, "b": 4},
+          {"a": 2, "b": 4},
+          {"a": 3, "b": 4}
+        ]
+    }]
+}]
