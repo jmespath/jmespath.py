@@ -3,35 +3,35 @@ Nested Expressions
 ==================
 
 :Author: Michael Dowling
-:Status: Draft
+:Status: accepted
 :Created: 27-Nov-2013
 
 Abstract
 ========
 
-This document proposes modifying the `JMESPath grammar <http://jmespath.readthedocs.org/en/latest/specification.html#grammar>`_ 
-to support arbitrarily nested expressions within ``multi-select-list`` and 
+This document proposes modifying the `JMESPath grammar <http://jmespath.readthedocs.org/en/latest/specification.html#grammar>`_
+to support arbitrarily nested expressions within ``multi-select-list`` and
 ``multi-select-hash`` expressions.
 
 Motivation
 ==========
 
 This JMESPath grammar currently does not allow arbitrarily nested expressions
-within ``multi-select-list`` and ``multi-select-hash`` expressions. This 
-prevents nested branching expressions, nested ``multi-select-list`` expressions 
-within other multi expressions, and nested ``or-expression``s within any 
+within ``multi-select-list`` and ``multi-select-hash`` expressions. This
+prevents nested branching expressions, nested ``multi-select-list`` expressions
+within other multi expressions, and nested ``or-expression``s within any
 multi-expression.
 
 By allowing any expression to be nested within a ``multi-select-list`` and
-``multi-select-hash`` expression, we can trim down several grammar rules and 
+``multi-select-hash`` expression, we can trim down several grammar rules and
 provide customers with a much more flexible expression DSL.
 
 Supporting arbitrarily nested expressions within other expressions requires:
 
 * Updating the grammar to remove ``non-branched-expr``
-* Updating compliance tests to add various permutations of the grammar to 
+* Updating compliance tests to add various permutations of the grammar to
   ensure implementations are compliant.
-* Updating the JMESPath documentation to reflect the ability to arbitrarily 
+* Updating the JMESPath documentation to reflect the ability to arbitrarily
   nest expressions.
 
 Nested Expression Examples
@@ -156,7 +156,7 @@ Result:
 No breaking changes
 -------------------
 
-Because there are no breaking changes from this modification, existing 
+Because there are no breaking changes from this modification, existing
 multi-select expressions will still work unchanged:
 
 Given:
@@ -167,7 +167,7 @@ Given:
         "foo": {
             "baz": {
                 "abc": 123,
-                "bar": 456 
+                "bar": 456
             }
         }
     }
@@ -189,7 +189,7 @@ Result:
 Modified Grammar
 ================
 
-The following modified JMESPath grammar supports arbitrarily nested expressions 
+The following modified JMESPath grammar supports arbitrarily nested expressions
 and is specified using ABNF, as described in `RFC4234`_
 
 ::
@@ -216,5 +216,5 @@ and is specified using ABNF, as described in `RFC4234`_
                         %x5F /    ; _
                         %x61-7A / ; a-z
                         %x7F-10FFFF
-    
+
 .. _RFC4234: http://tools.ietf.org/html/rfc4234
