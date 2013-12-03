@@ -314,6 +314,14 @@
          {
             "expression": "foo[*][2][2]",
             "result": []
+         },
+         {
+            "expression": "bar[*]",
+            "result": []
+         },
+         {
+            "expression": "bar[*].baz[*]",
+            "result": []
          }
      ]
 }
