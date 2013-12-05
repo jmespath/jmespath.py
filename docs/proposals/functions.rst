@@ -30,11 +30,11 @@ Data Types
 In order to support functions, we must define a type system. Because JMESPath
 is a JSON DSL, we will use JSON types:
 
-* Number (integers and double-precision floating-point format in JavaScript)
-* String
-* Boolean (``true`` or ``false``)
-* Array (an ordered, sequence of values)
-* Object (an unordered, comma-separated collection of key:value pairs)
+* number (integers and double-precision floating-point format in JavaScript)
+* string
+* boolean (``true`` or ``false``)
+* array (an ordered, sequence of values)
+* object (an unordered, comma-separated collection of key:value pairs)
 * null
 
 Syntax Changes
@@ -49,38 +49,80 @@ The function grammar will require the following grammar additions:
 ::
 
     function-expression = identifier "(" *(function-arg *("," function-arg ) ) ")"
-    function-arg        = expression / primitive
-    primitive           = "null" / "true" / "false"
+    function-arg        = expression
+    literal             = "_null" / "_true" / "_false"
+    literal             =/ "_" quote 1*(unescaped-char / escaped-quote) quote
+    literal             =/ "_" number
+    literal             =/ "_" [-]1*digit "." 1*digit
 
-``expression`` will need to be updated to add the ``current-node`` grammar:
+``expression`` will need to be updated to add the ``current-node`` and
+``literal`` tokens:
 
 ::
 
     expression        = sub-expression / index-expression / or-expression / identifier / "*"
     expression        =/ multi-select-list / multi-select-hash
-    expression        =/ function-expression / current-node
+    expression        =/ function-expression / current-node / literal
     current-node      = "@"
 
 A function can accept any number of arguments, and each argument can be an
-expression or primitive.
+expression.
 
-primitive
----------
+literal
+-------
 
-With the addition of primitives, ``true``, ``false``, and ``null`` will now be
-tokenized as primitive tokens. These tokens represent the JavaScript primitives
-of ``true``, ``false``, and ``null``. A quoted primitive remains an identifier
-(e.g., ``"true"`` will continue to be an ``identifier`` String token).
+With the addition of the literal token, the JMESPath syntax can now contain
+JavaScript literals for ``true``, ``false``, ``null``, numbers, and literal
+strings. Literal tokens allow function arguments to be passed to the function
+as the literal JavaScript value instead of the result of an expression the
+descends into the current node. More flexible output structures are possible
+with the addition of literal tokens.
+
+Given the following data, ``{"foo": {"bar": "bar"}}``, and the following
+expression, ``foo.[bar, _true, _false, _null, _"literal"]``, the result would
+be ``["bar", true, false, "literal"]``.
+
+The following expressions would be parsed as literal tokens:
+
+* ``_true`` => ``true``
+* ``_false`` => ``false``
+* ``_null`` => ``null``
+* ``_123`` => ``123``
+* ``_-123`` => ``-123``
+* ``_-1.23`` => ``-1.23``
+* ``_"abc"`` => ``"abc"``
 
 current-node
 ------------
 
-The ``current-node`` token is used to represent the current node being
-evaluated. When passing arguments to a function, arguments are only treated as
-JMESPath expressions if the argument begins with the ``current-node`` (``@``)
-token. The usage of the ``current-node`` token means that any tokens after the
-current node being evaluated are considered JMESPath expressions that traverse
-the current node.
+The ``current-node`` token can be used to represent the current node being
+evaluated. The ``current-node`` token is useful for functions that require the
+current node being evaluated as an argument. For example, the following
+expression creates an array containing the total number of elements in the
+``foo`` object followed by the value of ``foo["bar"]``.
+
+::
+
+    foo.[count(@), bar]
+
+JMESPath assumes that all function arguments operate on the current node unless
+the argument is a ``literal`` or ``number`` token. It is not necessary to
+prefix a function argument with the ``current-node`` token when descending into
+the current node. The following example calls the ``substring`` function and
+passed the value of the ``current-node["foo"]``, the number ``1``, and the
+number ``3``.
+
+::
+
+    substring(foo, _1, 3)
+
+The following expression is equivalent except that it adds the ``current-node``
+and removes the literal token ``_1`` in exchange for the equivalent number
+token ``1``:
+
+::
+
+    substring(@.foo, 1, 3)
 
 current-node state
 ~~~~~~~~~~~~~~~~~~
@@ -91,58 +133,6 @@ value the the current node represents MUST change to reflect the node currently
 being evaluated. When in a projection, the current node value MUST be changed
 to the node currently being evaluated by the projection.
 
-``current-node`` and function arguments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If an argument is passed to a function that does not start with the
-``current-node`` token, then argument is treated as a scalar expression.
-
-Given the following expression:
-
-    foo(true, abc)
-
-The ``foo`` function is invoked and is passed a primitive ``true`` value and a
-scalar string "abc".
-
-When an argument is prefixed with the ``current-node`` token ``@``, the
-argument passed to the function will be the result of an expression.
-
-    foo(true, @.abc)
-
-In the above example, the function is passed two arguments: a primitive value
-``true`` and the result of grabbing the ``abc`` key of the current node being
-evaluated.
-
-Truthy vs Falsey Values
-=======================
-
-Some of these built-in functions (e.g., ``get``) evaluate arguments to
-determine if they are "truthy" or "falsey". In order to discourage
-inconsistencies in the language in future JEPs, this JEP formally defines
-"truthy" and "falsey" values.
-
-Falsey
-------
-
-"Falsey" is defined using the following semantics:
-
-1. Boolean false
-2. Empty string
-3. ``null``
-4. Empty Array
-5. Empty Object
-
-Truthy
-------
-
-"Truthy" is defined using the following semantics:
-
-1. Boolean true
-2. A string with one or more characters
-3. An Array with one or more elements
-4. An Object with one or more key value pairs
-5. Any Number value, including 0
-
 Built-in functions
 ==================
 
@@ -152,9 +142,10 @@ number of arguments.
 
 .. note::
 
-    All String related functions are defined on the basis of Unicode code points; they do not take collations into account.
+    All string related functions are defined on the basis of Unicode code
+    points; they do not take collations into account.
 
-String functions
+string functions
 ----------------
 
 concat
@@ -162,12 +153,12 @@ concat
 
 ::
 
-    String|null concat(String|Number $string1, String|Number $string2 [, String|Number $... ])
+    string concat(string|number $string1, string|number $string2 [, string|number $... ])
 
 Returns each argument concatenated one after the other.
 
-Any argument that is not a String or Number is excluded from the concatenated
-result. If no arguments are Strings or Numbers, this function MUST return
+Any argument that is not a string or number is excluded from the concatenated
+result. If no arguments are strings or numbers, this function MUST return
 ``null``.
 
 .. list-table:: Examples
@@ -175,18 +166,23 @@ result. If no arguments are Strings or Numbers, this function MUST return
 
    * - Expression
      - Result
-   * - ``concat(a, b)``
+   * - ``concat(_"a", _"b")``
      - "ab"
-   * - ``concat(a, b, c)``
+   * - ``concat(_"a", _"b", _"c")``
      - "abc"
-   * - ``concat(a, b, 1)``
+   * - ``concat(_"a", _"b", 1)``
      - "ab1"
-   * - ``concat(a, false, b)``
+   * - ``concat(_"a", _false, _"b")``
      - "ab"
-   * - ``concat(true, false)``
+   * - ``concat(_true, _false)``
      - ``null``
-   * - ``concat(a)``
+   * - ``concat(_"a")``
      - raises an error because the function requires at least two arguments
+
+contains
+~~~~~~~~
+
+See contains_.
 
 .. _length:
 
@@ -195,14 +191,14 @@ length
 
 ::
 
-    Number|null length(String|Array|Object $subject)
+    number length(string|array|object $subject)
 
 Returns the length of the given argument using the following types rules:
 
-1. String: returns the number of characters in the String
-2. Array: returns the number of elements in the Array
-3. Object: returns the number of key-value pairs in the Object
-4. Boolean, null: returns null
+1. string: returns the number of characters in the string
+2. array: returns the number of elements in the array
+3. object: returns the number of key-value pairs in the object
+4. boolean, null: returns null
 
 .. list-table:: Examples
    :header-rows: 1
@@ -211,10 +207,7 @@ Returns the length of the given argument using the following types rules:
      - Expression
      - Result
    * - n/a
-     - ``length(abc)``
-     - 3
-   * - n/a
-     - ``length("abc")``
+     - ``length(_"abc")``
      - 3
    * - "current"
      - ``length(@)``
@@ -222,8 +215,11 @@ Returns the length of the given argument using the following types rules:
    * - "current"
      - ``length(@.not_there)``
      - ``null``
+   * - "current"
+     - ``length(not_there)``
+     - ``null``
    * - n/a
-     - ``length(false)``
+     - ``length(_false)``
      - ``null``
    * - n/a
      - ``length(10)``
@@ -249,11 +245,11 @@ lowercase
 
 ::
 
-    String|null lowercase(String $subject)
+    string lowercase(string $subject)
 
 Returns the provided ``$subject`` argument in lowercase characters.
 
-If the provided argument is not a String, this function MUST return ``null``.
+If the provided argument is not a string, this function MUST return ``null``.
 
 .. list-table:: Examples
    :header-rows: 1
@@ -262,10 +258,7 @@ If the provided argument is not a String, this function MUST return ``null``.
      - Expression
      - Result
    * - n/a
-     - ``lowercase(ABC)``
-     - "abc"
-   * - n/a
-     - ``lowercase("ABC")``
+     - ``lowercase(_"ABC")``
      - "abc"
    * - "CURRENT"
      - ``lowercase(@)``
@@ -274,7 +267,7 @@ If the provided argument is not a String, this function MUST return ``null``.
      - ``lowercase(@)``
      - ``null``
    * - "foo"
-     - ``lowercase(@.not_there)``
+     - ``lowercase(not_there)``
      - ``null``
 
 matches
@@ -282,7 +275,7 @@ matches
 
 ::
 
-    String|null matches(String $subject, String $pattern [, String $flags])
+    string matches(string $subject, string $pattern [, string $flags])
 
 Returns ``true`` if the given PCRE regular expression ``$pattern`` matches the
 provided ``$subject`` string or ``false`` if it does not match.
@@ -316,37 +309,37 @@ Flags
      - Expression
      - Result
    * - n/a
-     - ``matches("foobar", "foo")``
+     - ``matches(_"foobar", _"foo")``
      - ``true``
    * - n/a
-     - ``matches("FOO", "^foo$", "i")``
+     - ``matches(_"FOO", _"^foo$", _"i")``
      - ``true``
    * - n/a
-     - ``matches("FOO", "foo", "im")``
+     - ``matches(_"FOO", _"foo", _"im")``
      - ``true``
    * - n/a
-     - ``matches("testing", "foo")``
+     - ``matches(_"testing", _"foo")``
      - ``false``
    * - "foo"
-     - ``matches(@, "foo")``
+     - ``matches(@, _"foo")``
      - ``true``
    * - "foo"
      - ``matches(@, @)``
      - ``true``
    * - n/a
-     - ``matches("foo123", "123")``
+     - ``matches(_"foo123", _"123")``
      - ``true``
    * - n/a
-     - ``matches(false, "foo")``
+     - ``matches(_false, _"foo")``
      - ``null``
    * - n/a
-     - ``matches("foo123", 123)``
+     - ``matches(_"foo123", 123)``
      - Raises an error
    * - n/a
-     - ``matches("foo123", false)``
+     - ``matches(_"foo123", _false)``
      - Raises an error
    * - ``[]``
-     - ``matches("foo123", @)``
+     - ``matches(_"foo123", @)``
      - Raises an error
 
 substring
@@ -354,7 +347,7 @@ substring
 
 ::
 
-    String|null substring(String $subject, Number $start [, Number $length])
+    string substring(string $subject, number $start [, number $length])
 
 Returns a subset of the given string in the ``$subject`` argument starting at
 the given ``$start`` position. If no ``$length`` argument is provided, the
@@ -368,31 +361,31 @@ negative integer is provided for the ``$start`` argument, the start position is
 calculated as the total length of the string + the provided ``$start``
 argument.
 
-If the given ``$subject`` is not a String, this function returns ``null``.
+If the given ``$subject`` is not a string, this function returns ``null``.
 
 This function MUST raise an error if the given ``$start`` or ``$length``
-arguments are not Numbers.
+arguments are not numbers.
 
 .. list-table:: Examples
    :header-rows: 1
 
    * - Expression
      - Result
-   * - ``substring("testing", 0, 4)``
+   * - ``substring(_"testing", 0, 4)``
      - "test"
-   * - ``substring("testing", -2)``
+   * - ``substring(_"testing", -2)``
      - "ng"
-   * - ``substring("testing", 0, -3)``
+   * - ``substring(_"testing", 0, -3)``
      - "test"
-   * - ``substring("testing", -3)``
+   * - ``substring(_"testing", -3)``
      - "ing"
-   * - ``substring("testing", -3, 2)``
+   * - ``substring(_"testing", -3, 2)``
      - "in"
-   * - ``substring(false, "abc", 2)``
+   * - ``substring(_false, _"abc", 2)``
      - ``null``
-   * - ``substring("testing", "abc", 2)``
+   * - ``substring(_"testing", _"abc", 2)``
      - Raises an error
-   * - ``substring("testing", 0, "abc")``
+   * - ``substring(_"testing", 0, _"abc")``
      - Raises an error
 
 uppercase
@@ -400,27 +393,27 @@ uppercase
 
 ::
 
-    String|null uppercase(String $subject)
+    string uppercase(string $subject)
 
 Returns the provided ``$subject`` argument in uppercase characters.
 
-If the provided argument is not a String, this function MUST return ``null``.
+If the provided argument is not a string, this function MUST return ``null``.
 
 .. list-table:: Examples
    :header-rows: 1
 
    * - Expression
      - Result
-   * - ``uppercase(Foo)``
+   * - ``uppercase(_"Foo")``
      - "FOO"
-   * - ``uppercase("123")``
+   * - ``uppercase(_"123")``
      - "123"
    * - ``uppercase(123)``
      - ``null``
-   * - ``uppercase(null)``
+   * - ``uppercase(_null)``
      - ``null``
 
-Number functions
+number functions
 ----------------
 
 abs
@@ -428,11 +421,11 @@ abs
 
 ::
 
-    Number|null abs(Number $number)
+    number abs(number $number)
 
 Returns the absolute value of the provided argument.
 
-If the provided argument is not a Number, then this function MUST return ``null``.
+If the provided argument is not a number, then this function MUST return ``null``.
 
 .. list-table:: Examples
    :header-rows: 1
@@ -443,7 +436,7 @@ If the provided argument is not a Number, then this function MUST return ``null`
      - 1
    * - ``abs(-1)``
      - 1
-   * - ``abs(abc)``
+   * - ``abs(_"abc")``
      - ``null``
 
 ceil
@@ -451,24 +444,24 @@ ceil
 
 ::
 
-    Number|null ceil(Number $number)
+    number ceil(number $number)
 
 Returns the next highest integer value by rounding up if necessary.
 
-This function MUST return ``null`` if the provided argument is not a Number.
+This function MUST return ``null`` if the provided argument is not a number.
 
 .. list-table:: Examples
    :header-rows: 1
 
    * - Expression
      - Result
-   * - ``ceil(1.001)``
+   * - ``ceil(_1.001)``
      - 2
-   * - ``ceil(1.9)``
+   * - ``ceil(_1.9)``
      - 2
    * - ``ceil(1)``
      - 1
-   * - ``ceil(abc)``
+   * - ``ceil(_"abc")``
      - ``null``
 
 floor
@@ -476,27 +469,27 @@ floor
 
 ::
 
-    Number|null floor(Number $number)
+    number floor(number $number)
 
 Returns the next lowest integer value by rounding down if necessary.
 
-This function MUST return ``null`` if the provided argument is not a Number.
+This function MUST return ``null`` if the provided argument is not a number.
 
 .. list-table:: Examples
    :header-rows: 1
 
    * - Expression
      - Result
-   * - ``floor(1.001)``
+   * - ``floor(_1.001)``
      - 1
-   * - ``floor(1.9)``
+   * - ``floor(_1.9)``
      - 1
    * - ``floor(1)``
      - 1
-   * - ``floor(abc)``
+   * - ``floor(_"abc")``
      - ``null``
 
-Array functions
+array functions
 ---------------
 
 avg
@@ -504,14 +497,14 @@ avg
 
 ::
 
-    Number|null avg(Array $arr)
+    number avg(array $arr)
 
-Returns the average of the elements in the provided Array.
+Returns the average of the elements in the provided array.
 
-Elements in the Array that are not Numbers are excluded from the averaged
-result. If no elements are Numbers, then this function MUST return ``null``.
+Elements in the array that are not numbers are excluded from the averaged
+result. If no elements are numbers, then this function MUST return ``null``.
 
-If the provided argument, ``$arr``, is not an Array, this function MUST return
+If the provided argument, ``$arr``, is not an array, this function MUST return
 ``null``.
 
 .. list-table:: Examples
@@ -540,22 +533,22 @@ contains
 
 ::
 
-    Boolean|null contains(Array|String $subject, String|Number $search)
+    boolean contains(array|string $subject, string|number $search)
 
 Returns true if the given ``$subject`` contains the provided ``$search``
-String. The ``$search`` argument can be either a String or Number.
+string. The ``$search`` argument can be either a string or number.
 
-If ``$subject`` is an Array, this function returns true if one of the elements
-in the Array is equal to the provided ``$search`` value.
+If ``$subject`` is an array, this function returns true if one of the elements
+in the array is equal to the provided ``$search`` value.
 
-If the provided ``$subject`` is a String, this function returns true if
+If the provided ``$subject`` is a string, this function returns true if
 the string contains the provided ``$search`` argument.
 
 This function returns ``null`` if the given ``$subject`` argument is not an
-Array or String.
+array or string.
 
 This function MUST raise an error if the provided ``$search`` argument is not
-a String or Number.
+a string or number.
 
 .. list-table:: Examples
    :header-rows: 1
@@ -564,37 +557,37 @@ a String or Number.
      - Expression
      - Result
    * - n/a
-     - ``contains("foobar", "foo")``
+     - ``contains(_"foobar", _"foo")``
      - ``true``
    * - n/a
-     - ``contains("foobar", "not")``
+     - ``contains(_"foobar", _"not")``
      - ``false``
    * - n/a
-     - ``contains("foobar", "bar")``
+     - ``contains(_"foobar", _"bar")``
      - ``true``
    * - n/a
-     - ``contains(false, "bar")``
+     - ``contains(_false, _"bar")``
      - ``null``
    * - n/a
-     - ``contains(123, "bar")``
+     - ``contains(123, _"bar")``
      - ``null``
    * - n/a
-     - ``contains("foobar", 123)``
+     - ``contains(_"foobar", 123)``
      - ``false``
    * - ``["a", "b"]``
-     - ``contains(@, a)``
+     - ``contains(@, _"a")``
      - ``true``
    * - ``["a"]``
-     - ``contains(@, a)``
+     - ``contains(@, _"a")``
      - ``true``
    * - ``["a"]``
-     - ``contains(@, b)``
+     - ``contains(@, _"b")``
      - ``false``
    * - ``{"a": "123"}``
-     - ``contains(@, "123")``
+     - ``contains(@, _"123")``
      - ``null``
    * - ``{"a": "123"}``
-     - ``contains("foo", @)``
+     - ``contains(_"foo", @)``
      - Raises an error
 
 join
@@ -602,17 +595,17 @@ join
 
 ::
 
-    String|null join(String $glue, Array $stringsArray)
+    string join(string $glue, array $stringsarray)
 
-Returns all of the elements from the provided ``$stringsArray`` Array joined
+Returns all of the elements from the provided ``$stringsarray`` array joined
 together using the ``$glue`` argument as a separator between each.
 
-Any element that is not a String or Number is excluded from the joined result.
+Any element that is not a string or number is excluded from the joined result.
 
-This function MUST return ``null`` if ``$stringsArray`` is not an Array.
+This function MUST return ``null`` if ``$stringsarray`` is not an array.
 
 This function MUST raise an error if the provided ``$glue`` argument is not a
-String.
+string.
 
 .. list-table:: Examples
    :header-rows: 1
@@ -621,22 +614,22 @@ String.
      - Expression
      - Result
    * - ``["a", "b"]``
-     - ``join(", ", @)``
+     - ``join(_", ", @)``
      - "a, b"
    * - ``["a", "b"]``
-     - ``join("", @)``
+     - ``join(_"", @)``
      - "ab"
    * - ``["a", false, "b"]``
-     - ``join(", ", @)``
+     - ``join(_", ", @)``
      - "a, b"
    * - ``[false]``
-     - ``join(", ", @)``
+     - ``join(_", ", @)``
      - ""
    * - n/a
-     - ``join(", ", foo)``
+     - ``join(_", ", _"foo")``
      - ``null``
    * - ``["a", "b"]``
-     - ``join(false, @)``
+     - ``join(_false, @)``
      - Raises an error
 
 length
@@ -649,12 +642,12 @@ max
 
 ::
 
-    Number|null max(Array $collection)
+    number max(array $collection)
 
-Returns the highest found Number in the provided Array argument. Any element in
-the sequence that is not a Number MUST be ignored from the calculated result.
+Returns the highest found number in the provided array argument. Any element in
+the sequence that is not a number MUST be ignored from the calculated result.
 
-If the provided argument is not an Array, this function MUST return ``null``.
+If the provided argument is not an array, this function MUST return ``null``.
 
 If no Numeric values are found, this function MUST return ``null``.
 
@@ -688,15 +681,15 @@ min
 
 ::
 
-    Number|null min(Array $collection)
+    number min(array $collection)
 
-Returns the lowest found Number in the provided Array argument.
+Returns the lowest found number in the provided array argument.
 
-Any element in the sequence that is not a Number MUST be ignored from the
+Any element in the sequence that is not a number MUST be ignored from the
 calculated result. If no Numeric values are found, this function MUST return
 ``null``.
 
-This function MUST return ``null`` if the provided argument is not an Array.
+This function MUST return ``null`` if the provided argument is not an array.
 
 .. list-table:: Examples
    :header-rows: 1
@@ -728,12 +721,12 @@ reverse
 
 ::
 
-    Array|null reverse(Array $list)
+    array reverse(array $list)
 
-This function accepts an Array ``$list`` argument and returns the the elements
+This function accepts an array ``$list`` argument and returns the the elements
 in reverse order.
 
-This function MUST return ``null`` if the provided argument is not an Array.
+This function MUST return ``null`` if the provided argument is not an array.
 
 .. list-table:: Examples
    :header-rows: 1
@@ -759,22 +752,22 @@ sort
 
 ::
 
-    Array|null sort(Array $list)
+    array sort(array $list)
 
-This function accepts an Array ``$list`` argument and returns the
-lexicographically sorted elements of the ``$list`` as an Array.
+This function accepts an array ``$list`` argument and returns the
+lexicographically sorted elements of the ``$list`` as an array.
 
-This function MUST return ``null`` if the provided argument is not an Array.
+This function MUST return ``null`` if the provided argument is not an array.
 
-Array element types are sorted in the following order (the lower the number
+array element types are sorted in the following order (the lower the number
 means the sooner in the list the element appears):
 
-1. Object
-2. Array
+1. object
+2. array
 3. null
-4. Boolean
-5. Number
-6. String
+4. boolean
+5. number
+6. string
 
 .. list-table:: Examples
    :header-rows: 1
@@ -801,7 +794,7 @@ means the sooner in the list the element appears):
      - ``sort(@)``
      - ``null``
 
-Object functions
+object functions
 ----------------
 
 contains
@@ -819,11 +812,11 @@ keys
 
 ::
 
-    Array|null keys(Object $obj)
+    array keys(object $obj)
 
-Returns an Array containing the hash keys of the provided Object.
+Returns an array containing the hash keys of the provided object.
 
-This function MUST return ``null`` if the provided argument is not an Object.
+This function MUST return ``null`` if the provided argument is not an object.
 
 .. list-table:: Examples
    :header-rows: 1
@@ -849,16 +842,16 @@ union
 
 ::
 
-    Object|null union(Object $object1, Object $object2 [, Object $... ])
+    object union(object $object1, object $object2 [, object $... ])
 
-Returns an Object containing all of the provided arguments merged into a single
-Object. If a key collision occurs, the first key value is used.
+Returns an object containing all of the provided arguments merged into a single
+object. If a key collision occurs, the first key value is used.
 
 This function requires at least two arguments. If any of the provided
-arguments are not Objects, those argument are ignored from the resulting merged
+arguments are not objects, those argument are ignored from the resulting merged
 object.
 
-If no Object arguments are found, this function MUST return ``null``.
+If no object arguments are found, this function MUST return ``null``.
 
 .. list-table:: Examples
    :header-rows: 1
@@ -868,6 +861,9 @@ If no Object arguments are found, this function MUST return ``null``.
      - Result
    * - ``[{"foo": "baz", "bar": "bam"}, {"qux": "more"}]``
      - ``union(@[0], @[1])``
+     - ``{"foo": "baz", "bar": "bam", "qux": "more"}``
+   * - ``[{"foo": "baz", "bar": "bam"}, {"qux": "more"}]``
+     - ``union([0], [1])``
      - ``{"foo": "baz", "bar": "bam", "qux": "more"}``
    * - ``[{"foo": "baz", "bar": "bam"}, {"qux": "more", "foo": "ignore"}]``
      - ``union(@[0], @[1])``
@@ -879,7 +875,7 @@ If no Object arguments are found, this function MUST return ``null``.
      - ``union(@[0], @[1])``
      - ``{"foo": "baz", "bar": "bam", "qux": "more"}``
    * - n/a
-     - ``union(false, false)``
+     - ``union(_false, _false)``
      - ``null``
    * - {}
      - ``union(@)``
@@ -890,15 +886,15 @@ values
 
 ::
 
-    Array|null values(Object|Array $obj)
+    array values(object|array $obj)
 
-Returns the values of the provided Object.
+Returns the values of the provided object.
 
-If the given argument is an Array, this function transparently returns the
+If the given argument is an array, this function transparently returns the
 given argument.
 
-This function MUST return ``null`` if the given argument is not an Object or
-Array.
+This function MUST return ``null`` if the given argument is not an object or
+array.
 
 .. list-table:: Examples
    :header-rows: 1
@@ -922,78 +918,23 @@ Array.
 Type functions
 --------------
 
-get
-~~~
-
-::
-
-    mixed|null get(mixed $subject [, mixed $... ])
-
-This function accepts a variable number of arguments, each of which can be of
-any type and returns the first argument that is not "falsey".
-
-This function MUST return ``null`` if all arguments are "falsey".
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Given
-     - Expression
-     - Result
-   * - n/a
-     - ``get(abc)``
-     - "abc"
-   * - n/a
-     - ``get(true, abc)``
-     - ``true``
-   * - n/a
-     - ``get(abc, true)``
-     - "abc"
-   * - n/a
-     - ``get(false, true)``
-     - ``true``
-   * - n/a
-     - ``get(null, false, 123)``
-     - 123
-   * - n/a
-     - ``get(0, abc)``
-     - 0
-   * - n/a
-     - ``get("")``
-     - ``null``
-   * - n/a
-     - ``get("", false, null)``
-     - ``null``
-   * - ``[]``
-     - ``get(@, 123)``
-     - 123
-   * - ``{}``
-     - ``get(@, 123)``
-     - 123
-   * - ``{"abc": false}``
-     - ``get(@, 123)``
-     - ``{"abc": false}``
-   * - ``[false]``
-     - ``get(@, 123)``
-     - ``[false]``
-
 type
 ~~~~
 
 ::
 
-    String type(mixed $subject)
+    string type(mixed $subject)
 
 Returns the JavaScript type of the given ``$subject`` argument as a string
 value.
 
 The return value MUST be one of the following:
 
-* Number
-* String
-* Boolean
-* Array
-* Object
+* number
+* string
+* boolean
+* array
+* object
 * null
 
 .. list-table:: Examples
@@ -1004,28 +945,28 @@ The return value MUST be one of the following:
      - Result
    * - "foo"
      - ``type(@)``
-     - "String"
+     - "string"
    * - ``true``
      - ``type(@)``
-     - "Boolean"
+     - "boolean"
    * - ``false``
      - ``type(@)``
-     - "Boolean"
+     - "boolean"
    * - ``null``
      - ``type(@)``
      - "null"
    * - 123
      - ``type(@)``
-     - Number
+     - number
    * - 123.05
      - ``type(@)``
-     - Number
+     - number
    * - ``["abc"]``
      - ``type(@)``
-     - "Array"
+     - "array"
    * - ``{"abc": "123"}``
      - ``type(@)``
-     - "Object"
+     - "object"
 
 Test Cases
 ==========
@@ -1034,20 +975,24 @@ Test Cases
 
     [{
       "given":
-        {
-          "foo": -1,
-          "zero": 0,
-          "arr": [-1, 3, 4, 5, "a", "100"],
-          "strings": ["a", "b", "c"],
-          "dec": [1.01, 1.9, -1.5],
-          "str": "Str",
-          "false": false,
-          "empty": [],
-          "empty2": {}
-        },
+      {
+        "foo": -1,
+        "zero": 0,
+        "arr": [-1, 3, 4, 5, "a", "100"],
+        "strings": ["a", "b", "c"],
+        "dec": [1.01, 1.9, -1.5],
+        "str": "Str",
+        "false": false,
+        "empty": [],
+        "empty2": {}
+      },
       "cases": [
         {
           "expression": "abs(@.foo)",
+          "result": 1
+        },
+        {
+          "expression": "abs(foo)",
           "result": 1
         },
         {
@@ -1055,11 +1000,23 @@ Test Cases
           "result": null
         },
         {
+          "expression": "abs(str)",
+          "result": null
+        },
+        {
           "expression": "abs(@.arr[1])",
           "result": 3
         },
         {
+          "expression": "abs(arr[1])",
+          "result": 3
+        },
+        {
           "expression": "abs(false)",
+          "result": null
+        },
+        {
+          "expression": "abs(_false)",
           "result": null
         },
         {
@@ -1075,11 +1032,19 @@ Test Cases
           "result": 2.75
         },
         {
-          "expression": "avg(\"abc\")",
+          "expression": "avg(arr)",
+          "result": 2.75
+        },
+        {
+          "expression": "avg(_\"abc\")",
           "result": null
         },
         {
           "expression": "avg(@.foo)",
+          "result": null
+        },
+        {
+          "expression": "avg(foo)",
           "result": null
         },
         {
@@ -1091,7 +1056,15 @@ Test Cases
           "result": null
         },
         {
+          "expression": "avg(strings)",
+          "result": null
+        },
+        {
           "expression": "ceil(@.dec[0])",
+          "result": 2
+        },
+        {
+          "expression": "ceil(dec[0])",
           "result": 2
         },
         {
@@ -1099,7 +1072,15 @@ Test Cases
           "result": 2
         },
         {
+          "expression": "ceil(dec[1])",
+          "result": 2
+        },
+        {
           "expression": "ceil(@.dec[2])",
+          "result": -1
+        },
+        {
+          "expression": "ceil(dec[2])",
           "result": -1
         },
         {
@@ -1107,23 +1088,27 @@ Test Cases
           "result": null
         },
         {
-          "expression": "concat(@.strings[0], @.strings[1], @.strings[2])",
-          "result": "abc"
-        },
-        {
-          "expression": "concat(@.strings[0], @.strings[1], @.strings[2], @.foo)",
-          "result": "abc-1"
-        },
-        {
-          "expression": "concat(@.strings[0], @.strings[1], @.strings[2], @)",
-          "result": "abc"
-        },
-        {
-          "expression": "concat(null, false)",
+          "expression": "ceil(_\"abc\")",
           "result": null
         },
         {
-          "expression": "concat(foo)",
+          "expression": "concat(@.strings[0], strings[1], @.strings[2])",
+          "result": "abc"
+        },
+        {
+          "expression": "concat(strings[0], strings[1], @.strings[2], foo)",
+          "result": "abc-1"
+        },
+        {
+          "expression": "concat(@.strings[0], @.strings[1], strings[2], @)",
+          "result": "abc"
+        },
+        {
+          "expression": "concat(_null, _false)",
+          "result": null
+        },
+        {
+          "expression": "concat(_\"foo\")",
           "error": "runtime"
         },
         {
@@ -1131,27 +1116,27 @@ Test Cases
           "error": "runtime"
         },
         {
-          "expression": "contains(abc, a)",
+          "expression": "contains(_\"abc\", _\"a\")",
           "result": true
         },
         {
-          "expression": "contains(abc, d)",
+          "expression": "contains(_\"abc\", _\"d\")",
           "result": false
         },
         {
-          "expression": "contains(false, d)",
+          "expression": "contains(_false, _\"d\")",
           "result": null
         },
         {
-          "expression": "contains(@.strings, a)",
+          "expression": "contains(@.strings, _\"a\")",
           "result": true
         },
         {
-          "expression": "contains(@.dec, 1.9)",
-          "result": false
+          "expression": "contains(@.dec, _1.9)",
+          "error": "runtime"
         },
         {
-          "expression": "contains(@.dec, false)",
+          "expression": "contains(@.dec, _false)",
           "error": "runtime"
         },
         {
@@ -1159,7 +1144,7 @@ Test Cases
           "result": 9
         },
         {
-          "expression": "length(@.arr)",
+          "expression": "length(arr)",
           "result": 6
         },
         {
@@ -1168,6 +1153,10 @@ Test Cases
         },
         {
           "expression": "floor(@.dec[0])",
+          "result": 1
+        },
+        {
+          "expression": "floor(dec[0])",
           "result": 1
         },
         {
@@ -1191,31 +1180,31 @@ Test Cases
           "result": -1
         },
         {
-          "expression": "get(@.zero, 10)",
+          "expression": "get(@.zero, _10)",
           "result": 0
         },
         {
-          "expression": "get(null, false, @.empty, true)",
+          "expression": "get(_null, _false, @.empty, _true)",
           "result": true
         },
         {
-          "expression": "join(\", \", @.str)",
+          "expression": "join(_\", \", str)",
           "result": null
         },
         {
-          "expression": "join(\", \", @.strings)",
+          "expression": "join(_\", \", strings)",
           "result": "a, b, c"
         },
         {
-          "expression": "join(\"|\", @.strings)",
+          "expression": "join(_\"|\", strings)",
           "result": "a|b|c"
         },
         {
-          "expression": "join(\"|\", @.dec)",
+          "expression": "join(_\"|\", @.dec)",
           "result": "1.01|1.9|-1.5"
         },
         {
-          "expression": "join(\"|\", @.empty)",
+          "expression": "join(_\"|\", @.empty)",
           "result": ""
         },
         {
@@ -1231,19 +1220,19 @@ Test Cases
           "result": null
         },
         {
-          "expression": "keys(abc)",
+          "expression": "keys(_\"abc\")",
           "result": null
         },
         {
-          "expression": "keys(false)",
+          "expression": "keys(_false)",
           "result": null
         },
         {
-          "expression": "length(abc)",
+          "expression": "length(_\"abc\")",
           "result": 3
         },
         {
-          "expression": "length(\"\")",
+          "expression": "length(_\"\")",
           "result": 0
         },
         {
@@ -1255,7 +1244,7 @@ Test Cases
           "result": 1
         },
         {
-          "expression": "length(false)",
+          "expression": "length(_false)",
           "result": null
         },
         {
@@ -1263,35 +1252,39 @@ Test Cases
           "result": "str"
         },
         {
-          "expression": "lowercase(false)",
+          "expression": "lowercase(_false)",
           "result": null
         },
         {
-          "expression": "matches(@.str, \"str\")",
+          "expression": "matches(@.str, _\"str\")",
           "result": false
         },
         {
-          "expression": "matches(@.str, \"str\", i)",
+          "expression": "matches(@.str, _\"str\", _\"i\")",
           "result": true
         },
         {
-          "expression": "matches(@.str, false)",
+          "expression": "matches(@.str, _false)",
           "error": "runtime"
         },
         {
-          "expression": "matches(@.str, \"ST\", \"im\")",
+          "expression": "matches(@.str, _\"ST\", _\"im\")",
           "result": true
         },
         {
-          "expression": "matches(false, \"str\")",
+          "expression": "matches(_false, _\"str\")",
           "result": null
         },
         {
-          "expression": "matches(str, \"str\", i, 123)",
+          "expression": "matches(_\"str\", _\"str\", _\"i\", 123)",
           "error": "runtime"
         },
         {
           "expression": "max(@.arr)",
+          "result": 5
+        },
+        {
+          "expression": "max(arr)",
           "result": 5
         },
         {
@@ -1363,27 +1356,27 @@ Test Cases
           "result": null
         },
         {
-          "expression": "substring(abc, 0, -1)",
+          "expression": "substring(_\"abc\", 0, -1)",
           "result": "ab"
         },
         {
-          "expression": "substring(abc, -2)",
+          "expression": "substring(_\"abc\", -2)",
           "result": "bc"
         },
         {
-          "expression": "substring(abc123, 1)",
+          "expression": "substring(_\"abc123\", _1)",
           "result": "bc123"
         },
         {
-          "expression": "substring(false, 1, 1)",
+          "expression": "substring(_false, 1, 1)",
           "result": null
         },
         {
-          "expression": "substring(abc, true)",
+          "expression": "substring(_\"abc\", _true)",
           "error": "runtime"
         },
         {
-          "expression": "substring(abc, 1, false)",
+          "expression": "substring(_\"abc\", 1, _false)",
           "error": "runtime"
         },
         {
@@ -1391,7 +1384,7 @@ Test Cases
           "error": "runtime"
         },
         {
-          "expression": "type(abc)",
+          "expression": "type(_\"abc\")",
           "result": "String"
         },
         {
@@ -1399,19 +1392,27 @@ Test Cases
           "result": "Number"
         },
         {
-          "expression": "type(1.2)",
+          "expression": "type(_123)",
           "result": "Number"
         },
         {
-          "expression": "type(true)",
+          "expression": "type(_1.2)",
+          "result": "Number"
+        },
+        {
+          "expression": "type(_true)",
           "result": "Boolean"
         },
         {
-          "expression": "type(false)",
+          "expression": "type(_false)",
           "result": "Boolean"
         },
         {
           "expression": "type(@.empty)",
+          "result": "Array"
+        },
+        {
+          "expression": "type(empty)",
           "result": "Array"
         },
         {
@@ -1427,7 +1428,7 @@ Test Cases
           "result": "STR"
         },
         {
-          "expression": "uppercase(false)",
+          "expression": "uppercase(_false)",
           "result": null
         }
       ]
