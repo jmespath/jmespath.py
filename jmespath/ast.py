@@ -150,6 +150,8 @@ class WildcardIndex(AST):
 
     """
     def search(self, value):
+        if not isinstance(value, list):
+            return None
         return _Projection(value)
 
     def pretty_print(self, indent=''):
