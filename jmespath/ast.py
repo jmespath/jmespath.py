@@ -150,7 +150,9 @@ class WildcardIndex(AST):
 
     """
     def search(self, value):
-        return _MultiMatch(value)
+        if not isinstance(value, list):
+            return None
+        return _Projection(value)
 
     def pretty_print(self, indent=''):
         return "%sIndex(*)" % indent
@@ -166,7 +168,7 @@ class WildcardValues(AST):
     """
     def search(self, value):
         try:
-            return _MultiMatch(value.values())
+            return _Projection(value.values())
         except AttributeError:
             return None
 
@@ -174,34 +176,57 @@ class WildcardValues(AST):
         return "%sWildcardValues()" % indent
 
 
-class _MultiMatch(list):
+class ListElements(AST):
+    def search(self, value):
+        if isinstance(value, list):
+            # reduce inner list elements into
+            # a single list.
+            merged_list = []
+            for element in value:
+                if isinstance(element, list):
+                    merged_list.extend(element)
+                else:
+                    merged_list.append(element)
+            return _Projection(merged_list)
+        else:
+            return _Projection(value)
+
+    def pretty_print(self, indent=''):
+        return "%sListElements()" % indent
+
+
+class _Projection(list):
     def __init__(self, elements):
         self.extend(elements)
 
     def get(self, value):
-        results = _MultiMatch([])
+        results = self.__class__([])
         for element in self:
-            result = element.get(value)
+            try:
+                result = element.get(value)
+            except AttributeError:
+                continue
             if result is not None:
                 if isinstance(result, list):
-                    result = _MultiMatch(result)
+                    result = self.__class__(result)
                 results.append(result)
         return results
 
     def get_index(self, index):
         matches = []
         for el in self:
+            if not isinstance(el, list):
+                continue
             try:
                 matches.append(el[index])
             except (IndexError, TypeError):
                 pass
-        if matches:
-            return _MultiMatch(matches)
+        return self.__class__(matches)
 
     def multi_get(self, nodes):
-        results = _MultiMatch([])
+        results = self.__class__([])
         for element in self:
-            if isinstance(element, _MultiMatch):
+            if isinstance(element, self.__class__):
                 result = element.multi_get(nodes)
             else:
                 result = {}
@@ -211,15 +236,25 @@ class _MultiMatch(list):
         return results
 
     def multi_get_list(self, nodes):
-        results = _MultiMatch([])
+        results = self.__class__([])
         for element in self:
-            if isinstance(element, _MultiMatch):
+            if isinstance(element, self.__class__):
                 result = element.multi_get_list(nodes)
             else:
                 result = []
                 for node in nodes:
                     result.append(node.search(element))
             results.append(result)
+        return results
+
+    def values(self):
+        results = self.__class__([])
+        for element in self:
+            try:
+                current = self.__class__(element.values())
+                results.append(current)
+            except AttributeError:
+                continue
         return results
 
 

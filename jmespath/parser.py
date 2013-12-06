@@ -75,8 +75,11 @@ class Grammar(object):
     def p_jmespath_bracket_specifier(self, p):
         """bracket-spec : LBRACKET STAR RBRACKET
                         | LBRACKET NUMBER RBRACKET
+                        | LBRACKET RBRACKET
         """
-        if p[2] == '*':
+        if len(p) == 3:
+            p[0] = ast.ListElements()
+        elif p[2] == '*':
             p[0] = ast.WildcardIndex()
         else:
             p[0] = ast.Index(p[2])

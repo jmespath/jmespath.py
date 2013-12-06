@@ -226,6 +226,32 @@ class TestParserWildcards(unittest.TestCase):
         self.assertIn('a', match[1])
         self.assertIn('b', match[1])
 
+class TestMergedLists(unittest.TestCase):
+    def setUp(self):
+        self.parser = parser.Parser()
+        self.data = {
+            "foo": [
+                [["one", "two"], ["three", "four"]],
+                [["five", "six"], ["seven", "eight"]],
+                [["nine"], ["ten"]]
+            ]
+        }
+
+    def test_merge_with_indices(self):
+        parsed = self.parser.parse('foo[][0]')
+        match = parsed.search(self.data)
+        self.assertEqual(match, ["one", "three", "five", "seven",
+                                 "nine", "ten"])
+
+    def test_trailing_merged_operator(self):
+        parsed = self.parser.parse('foo[]')
+        match = parsed.search(self.data)
+        self.assertEqual(
+            match,
+            [["one", "two"], ["three", "four"],
+             ["five", "six"], ["seven", "eight"],
+             ["nine"], ["ten"]])
+
 
 class TestParserCaching(unittest.TestCase):
     def test_compile_lots_of_expressions(self):

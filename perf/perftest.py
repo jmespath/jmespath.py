@@ -29,7 +29,7 @@ def run_tests(tests):
         sys.stdout.write(
             "parse_time: %.8fms, search_time: %.8fms" % (
             1000 * parse_time, 1000 * search_time))
-        sys.stdout.write(" description: %s" % test['description'])
+        sys.stdout.write(" description: %s " % test['description'])
         sys.stdout.write("name: %s\n" % test['name'])
 
 
@@ -63,10 +63,18 @@ def load_tests(filename):
     loaded = []
     with open(filename) as f:
         data = json.load(f)
+    if isinstance(data, list):
+        for i, d in enumerate(data):
+            _add_cases(d, loaded, '%s-%s' % (filename, i))
+    else:
+        _add_cases(data, loaded, filename)
+    return loaded
+
+def _add_cases(data, loaded, filename):
     for case in data['cases']:
-        current = {'description': data['description'],
+        current = {'description': data.get('description', filename),
                    'given': data['given'],
-                   'name': case['name'],
+                   'name': case.get('name', case['expression']),
                    'expression': case['expression'],
                    'result': case['result']}
         loaded.append(current)
@@ -75,10 +83,13 @@ def load_tests(filename):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--directory', default=DIRECTORY)
+    args = parser.parse_args()
     collected_tests = []
-    for filename in os.listdir(DIRECTORY):
+    for filename in os.listdir(args.directory):
         if filename.endswith('.json'):
-            collected_tests.extend(load_tests(filename))
+            full_path = os.path.join(args.directory, filename)
+            collected_tests.extend(load_tests(full_path))
     run_tests(collected_tests)
 
 

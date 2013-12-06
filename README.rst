@@ -50,13 +50,13 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     sub-expression    = expression "." expression
     or-expression     = expression "||" expression
     index-expression  = expression bracket-specifier / bracket-specifier
-    multi-select-list = "[" ( non-branched-expr *( "," non-branched-expr ) "]"
-    multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) "}"
+    multi-select-list = "[" ( non-branched-expr *( "," non-branched-expr ) ) "]"
+    multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) ) "}"
     keyval-expr       = identifier ":" non-branched-expr
     non-branched-expr = identifier /
                         non-branched-expr "." identifier /
                         non-branched-expr "[" number "]"
-    bracket-specifier = "[" (number / "*") "]"
+    bracket-specifier = "[" (number / "*") "]" / "[]"
     number            = [-]1*digit
     digit             = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9" / "0"
     identifier        = 1*char

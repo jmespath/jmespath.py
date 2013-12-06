@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
+from tests import OrderedDict
 
 from jmespath import ast
 
@@ -123,6 +124,47 @@ class TestAST(unittest.TestCase):
         self.assertEqual(sorted(match), ['one', 'two'])
         self.assertEqual(expression.search({'foo': [{'bar': 'one'}]}), None)
 
+    def test_wildcard_dot_wildcard(self):
+        _ = OrderedDict
+        data = _([(
+            "top1", _({
+                "sub1": _({"foo": "one"})
+            })),
+            ("top2", _({
+                "sub1": _({"foo": "two"})
+            })),
+            ("top3", _({
+                "sub3": _({"notfoo": "notfoo"})
+            }))
+        ])
+        # ast for "*.*"
+        expression = ast.SubExpression(
+            ast.WildcardValues(), ast.WildcardValues())
+        match = expression.search(data)
+        self.assertEqual(match, [[{'foo': 'one'}], [{'foo': 'two'}],
+                                 [{'notfoo': 'notfoo'}]])
+
+    def test_wildcard_with_field_node(self):
+        data = {
+            "top1": {
+                "sub1": {"foo": "one"}
+            },
+            "top2": {
+                "sub1": {"foo": "two"}
+            },
+            "top3": {
+                "sub3": {"notfoo": "notfoo"}
+            }
+        }
+        # ast for "*.*.foo"
+        expression = ast.SubExpression(
+            ast.WildcardValues(), ast.SubExpression(ast.WildcardValues(),
+                                                    ast.Field('foo')))
+        match = expression.search(data)
+        self.assertEqual(sorted(match), sorted([[],
+                                                ['one'],
+                                                ['two']]))
+
     def test_wildcard_branches_with_index(self):
         # foo[*].bar
         child = ast.SubExpression(
@@ -156,7 +198,7 @@ class TestAST(unittest.TestCase):
             {'foo': 'foo', 'bar': 'bar'}), 'foo')
 
     def test_multiselect_dict(self):
-        # foo.{bar,baz}
+        # foo.{bar,baz
         field_foo = ast.KeyValPair(key_name='foo', node=ast.Field('foo'))
         field_bar = ast.KeyValPair(key_name='bar', node=ast.Field('bar'))
         field_baz = ast.KeyValPair(key_name='baz', node=ast.Field('baz'))
@@ -207,7 +249,7 @@ class TestAST(unittest.TestCase):
             ast.WildcardValues(),
             ast.SubExpression(ast.Field("foo"), ast.Index(0)))
         data = {"a": {"foo": 1}, "b": {"foo": 1}, "c": {"bar": 1}}
-        self.assertEqual(parsed.search(data), None)
+        self.assertEqual(parsed.search(data), [])
 
     def test_wildcard_values_index_does_exist(self):
         parsed = ast.SubExpression(
@@ -215,6 +257,63 @@ class TestAST(unittest.TestCase):
             ast.SubExpression(ast.Field("foo"), ast.Index(0)))
         data = {"a": {"foo": [1]}, "b": {"foo": 1}, "c": {"bar": 1}}
         self.assertEqual(parsed.search(data), [1])
+
+    def test_flattened_wildcard(self):
+        parsed = ast.SubExpression(
+            # foo[].bar
+            ast.SubExpression(ast.Field("foo"), ast.ListElements()),
+            ast.Field("bar"))
+        data = {'foo': [{'bar': 1}, {'bar': 2}, {'bar': 3}]}
+        self.assertEqual(parsed.search(data), [1, 2, 3])
+
+    def test_multiple_nested_wildcards(self):
+        # foo[].bar[].baz
+        parsed = ast.SubExpression(
+                ast.SubExpression(
+                        ast.Field("foo"),
+                        ast.ListElements()),
+                ast.SubExpression(
+                        ast.SubExpression(
+                                ast.Field("bar"),
+                                ast.ListElements()),
+                        ast.Field("baz")))
+        data = {
+            "foo": [
+                {"bar": [{"baz": 1}, {"baz": 2}]},
+                {"bar": [{"baz": 3}, {"baz": 4}]},
+            ]
+        }
+        self.assertEqual(parsed.search(data), [1, 2, 3, 4])
+
+    def test_multiple_nested_wildcards_with_list_values(self):
+        parsed = ast.SubExpression(
+                ast.SubExpression(
+                        ast.Field("foo"),
+                        ast.ListElements()),
+                ast.SubExpression(
+                        ast.SubExpression(
+                                ast.Field("bar"),
+                                ast.ListElements()),
+                        ast.Field("baz")))
+        data = {
+            "foo": [
+                {"bar": [{"baz": [1]}, {"baz": [2]}]},
+                {"bar": [{"baz": [3]}, {"baz": [4]}]},
+            ]
+        }
+        self.assertEqual(parsed.search(data), [[1], [2], [3], [4]])
+
+    def test_flattened_multiselect_list(self):
+        # foo[].[bar,baz]
+        field_foo = ast.Field('foo')
+        parent = ast.SubExpression(field_foo, ast.ListElements())
+        field_bar = ast.Field('bar')
+        field_baz = ast.Field('baz')
+        multiselect = ast.MultiFieldList([field_bar, field_baz])
+        subexpr = ast.SubExpression(parent, multiselect)
+        self.assertEqual(
+            subexpr.search({'foo': [{'bar': 1, 'baz': 2, 'qux': 3}]}),
+            [[1, 2]])
 
 
 if __name__ == '__main__':

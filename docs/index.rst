@@ -22,7 +22,7 @@ Contents:
    :maxdepth: 2
 
    specification
-
+   proposals
 
 
 Indices and tables
