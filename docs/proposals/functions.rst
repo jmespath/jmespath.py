@@ -590,6 +590,50 @@ a string or number.
      - ``contains(_"foo", @)``
      - Raises an error
 
+has
+~~~
+
+::
+
+    boolean has(array|object $subject, $key)
+
+Checks if the given array or object has the given key. If an object
+``$subject`` is provided, this function returns true if the object has the
+given key of ``$key``. If an array ``$subject`` is provided, this functions
+returns true if the array has the given numeric index of ``$key``.
+
+This function MUST return ``null`` if the provided ``$subject`` is not an
+array or object. This function MUST raise an error if the provided ``$key``
+argument is not a string or number.
+
+.. list-table:: Examples
+   :header-rows: 1
+
+   * - Given
+     - Expression
+     - Result
+   * - ``["a", "b"]``
+     - ``has(@, 0)``
+     - ``true``
+   * - ``["a", "b"]``
+     - ``has(@, 1)``
+     - ``true``
+   * - ``["a", "b"]``
+     - ``has(@, 2)``
+     - ``false``
+   * - ``{"foo": 1}``
+     - ``has(@, _"foo")``
+     - ``true``
+   * - ``{"foo": 1}``
+     - ``has(@, _"bar")``
+     - ``false``
+   * - ``"abc"``
+     - ``has(@, _"bar")``
+     - ``null``
+   * - ``{"foo": 1}``
+     - ``has(@, false)``
+     - Raises an error
+
 join
 ~~~~
 
@@ -1474,6 +1518,30 @@ Test Cases
         {
           "expression": "values(@[4])",
           "result": null
+        },
+        {
+          "expression": "has([0], _\"foo\")",
+          "result": true
+        },
+        {
+          "expression": "has([0], _\"bar\")",
+          "result": true
+        },
+        {
+          "expression": "has([3], _\"foo\")",
+          "result": false
+        },
+        {
+          "expression": "has([3], 0)",
+          "result": true
+        },
+        {
+          "expression": "has([3][0], 0)",
+          "result": null
+        },
+        {
+          "expression": "has([3], false)",
+          "error": "syntax"
         }
       ]
     }]
