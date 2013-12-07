@@ -31,12 +31,9 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     sub-expression    = expression "." expression
     or-expression     = expression "||" expression
     index-expression  = expression bracket-specifier / bracket-specifier
-    multi-select-list = "[" ( non-branched-expr *( "," non-branched-expr ) ) "]"
+    multi-select-list = "[" ( expression *( "," expression ) ) "]"
     multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) ) "}"
-    keyval-expr       = identifier ":" non-branched-expr
-    non-branched-expr = identifier /
-                        non-branched-expr "." identifier /
-                        non-branched-expr "[" number "]"
+    keyval-expr       = identifier ":" expression
     bracket-specifier = "[" (number / "*") "]" / "[]"
     number            = [-]1*digit
     digit             = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9" / "0"
@@ -51,7 +48,6 @@ The grammar is specified using ABNF, as described in `RFC4234`_
                         %x5F /    ; _
                         %x61-7A / ; a-z
                         %x7F-10FFFF
-
 
 
 Identifiers
@@ -235,22 +231,18 @@ MultiSelect List
 
 ::
 
-    multi-select-list = "[" ( non-branched-expr *( "," non-branched-expr ) "]"
-    non-branched-expr = identifier /
-                        non-branched-expr "." identifier /
-                        non-branched-expr "[" number "]"
+    multi-select-list = "[" ( expression *( "," expression ) "]"
 
 A multiselect expression is used to extract a subset of elements from a JSON
 hash.  There are two version of multiselect, one in which the multiselect
 expression is enclosed in ``{...}`` and one which is enclosed in ``[...]``.
-This section describes the ``[...]`` version.
-Within the start and closing characters is one or more non
-branched expressions separated by a comma.  Each non branched expression will
-be evaluated against the JSON document.  Each returned element will be the
-result of evaluating the non branched expression. A ``multi-select-list`` with
-``N`` non branched expressions will result in a list of length ``N``.  Given a
-multiselect expression ``[expr-1,expr-2,...,expr-n]``, the evaluated expression
-will return ``[evaluate(expr-1), evaluate(expr-2), ..., evaluate(expr-n)]``.
+This section describes the ``[...]`` version.  Within the start and closing
+characters is one or more non expressions separated by a comma.  Each
+expression will be evaluated against the JSON document.  Each returned element
+will be the result of evaluating the expression. A ``multi-select-list`` with
+``N`` expressions will result in a list of length ``N``.  Given a multiselect
+expression ``[expr-1,expr-2,...,expr-n]``, the evaluated expression will return
+``[evaluate(expr-1), evaluate(expr-2), ..., evaluate(expr-n)]``.
 
 Examples
 --------
@@ -269,20 +261,17 @@ MultiSelect Hash
 ::
 
     multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) "}"
-    keyval-expr       = identifier ":" non-branched-expr
-    non-branched-expr = identifier /
-                        non-branched-expr "." identifier /
-                        non-branched-expr "[" number "]"
+    keyval-expr       = identifier ":" expression
 
 A ``multi-select-hash`` expression is similar to a ``multi-select-list``
 expression, except that a hash is created instead of a list.  A
 ``multi-select-hash`` expression also requires key names to be provided, as
 specified in the ``keyval-expr`` rule.  Given the following rule::
 
-    keyval-expr       = identifier ":" non-branched-expr
+    keyval-expr       = identifier ":" expression
 
 The ``identifier`` is used as the key name and the result of evaluating the
-``non-branched-expr`` is the value associated with the ``identifier`` key.
+``expression`` is the value associated with the ``identifier`` key.
 
 Each ``keyval-expr`` within the ``multi-select-hash`` will correspond to a
 single key value pair in the created hash.
