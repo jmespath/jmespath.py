@@ -320,17 +320,32 @@ evaluated against each returned element from a wildcard expression.  The
 ``[*]`` syntax applies to a list type and the ``*`` syntax applies to a hash
 type.
 
-The ``[*]`` syntax will return all the elements in a list.  Any subsequent
-expressions will be evaluated against each individual element.  Given an
-expression ``[*].child-expr``, and a list of N elements, the evaluation of
-this expression would be ``[child-expr(el-0), child-expr(el-2), ...,
-child-expr(el-N)]``.
+The ``[*]`` syntax (referred to as a list wildcard expression) will return all
+the elements in a list.  Any subsequent expressions will be evaluated against
+each individual element.  Given an expression ``[*].child-expr``, and a list of
+N elements, the evaluation of this expression would be ``[child-expr(el-0),
+child-expr(el-2), ..., child-expr(el-N)]``.  This is referred to as a
+**projection**, and the ``child-expr`` expression is projected onto the
+elements of the resulting list.
 
-The ``*`` syntax will return a list of the hash element's values.  Any subsequent
-expression will be evaluated against each individual element in the list.
+Once a projection has been created, all subsequent expressions are projected
+onto the resulting list.
+
+The ``*`` syntax (referred to as a hash wildcard expression) will return a list
+of the hash element's values.  Any subsequent expression will be evaluated
+against each individual element in the list (this is also referred to as a
+**projection**).
 
 Note that if any subsequent expression after a wildcard expression returns a
 ``null`` value, it is omitted from the final result list.
+
+A list wildcard expression is only valid for the JSON array type.  If a list
+wildcard expression is applied to any other JSON type, a value of ``null`` is
+returned.
+
+Similarly, a hash wildcard expression is only valid for the JSON object type.
+If a hash wildcard expression is applied to any other JSON type, a value of
+``null`` is returned.
 
 Examples
 --------
