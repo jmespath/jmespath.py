@@ -50,10 +50,17 @@ The function grammar will require the following grammar additions:
 
     function-expression = identifier "(" *(function-arg *("," function-arg ) ) ")"
     function-arg        = expression
-    literal             = "_null" / "_true" / "_false"
-    literal             =/ "_" quote 1*(unescaped-char / escaped-quote) quote
-    literal             =/ "_" number
-    literal             =/ "_" [-]1*digit "." 1*digit
+    literal             = literal-true / literal-false / literal-null
+    literal             =/ literal-number / literal-string / literal-array
+    literal             =/ literal-object / literal-unquoted
+    literal-true        = "`true`"
+    literal-false       = "`false`"
+    literal-null        = "`null`"
+    literal-number      = "`" [-]1*digit ("." 1*digit) "`"
+    literal-string      = "`" quote *(char) quote "`"
+    literal-array       = "`[" *(char) "]`"
+    literal-object      = "`{" *(char) "}`"
+    literal-unquoted    = "`" *(char) "`"
 
 ``expression`` will need to be updated to add the ``current-node`` and
 ``literal`` tokens:
@@ -72,25 +79,38 @@ literal
 -------
 
 With the addition of the literal token, the JMESPath syntax can now contain
-JavaScript literals for ``true``, ``false``, ``null``, numbers, and literal
-strings. Literal tokens allow function arguments to be passed to the function
-as the literal JavaScript value instead of the result of an expression the
-descends into the current node. More flexible output structures are possible
-with the addition of literal tokens.
+JavaScript literals for ``true``, ``false``, ``null``, numbers, literal
+strings, and unquoted literal strings. Literal tokens allow function arguments
+to be passed to the function as the literal JavaScript value instead of the
+result of an expression the descends into the current node. More flexible
+output structures are possible with the addition of literal tokens.
+
+The value of a literal token can be any valid JSON string including quoted
+strings, Booleans, nulls, numbers, objects, arrays, and unquoted strings. If
+the value passed between the two backticks of a JSON literal statement is not
+``true``, ``false``, ``null``, a number, or a quoted string, then the value
+MUST be treated as a JSON string. This allows users the convenience of passing
+in JSON literal strings without having to quote the string.  For example, the
+JSON literal of ```foo``` would be equivalent to the JSON literal of
+```"foo"```. All other values MUST be JSON decoded using the rules described
+at http://www.json.org/.
 
 Given the following data, ``{"foo": {"bar": "bar"}}``, and the following
-expression, ``foo.[bar, _true, _false, _null, _"literal"]``, the result would
+expression, ``foo.[bar, `true`, `false`, `null`, `literal`]``, the result would
 be ``["bar", true, false, "literal"]``.
 
 The following expressions would be parsed as literal tokens:
 
-* ``_true`` => ``true``
-* ``_false`` => ``false``
-* ``_null`` => ``null``
-* ``_123`` => ``123``
-* ``_-123`` => ``-123``
-* ``_-1.23`` => ``-1.23``
-* ``_"abc"`` => ``"abc"``
+* ```true``` => ``true``
+* ```false``` => ``false``
+* ```null``` => ``null``
+* ```123``` => ``123``
+* ```-123``` => ``-123``
+* ```-1.23``` => ``-1.23``
+* ```"abc"``` => ``"abc"``
+* ```abc``` => ``"abc"``
+* ```[1, 2, 3]``` => ``[1, 2, 3]``
+* ```{"foo": "bar"}``` => ``{"foo": "bar"}``
 
 current-node
 ------------
@@ -114,10 +134,10 @@ number ``3``.
 
 ::
 
-    substring(foo, _1, 3)
+    substring(foo, `1`, 3)
 
 The following expression is equivalent except that it adds the ``current-node``
-and removes the literal token ``_1`` in exchange for the equivalent number
+and removes the literal token ```1``` in exchange for the equivalent number
 token ``1``:
 
 ::
@@ -166,17 +186,17 @@ result. If no arguments are strings or numbers, this function MUST return
 
    * - Expression
      - Result
-   * - ``concat(_"a", _"b")``
+   * - ``concat(`a`, `b`)``
      - "ab"
-   * - ``concat(_"a", _"b", _"c")``
+   * - ``concat(`a`, `b`, `c`)``
      - "abc"
-   * - ``concat(_"a", _"b", 1)``
+   * - ``concat(`a`, `b`, 1)``
      - "ab1"
-   * - ``concat(_"a", _false, _"b")``
+   * - ``concat(`a`, `false`, `b`)``
      - "ab"
-   * - ``concat(_true, _false)``
+   * - ``concat(`true`, `false`)``
      - ``null``
-   * - ``concat(_"a")``
+   * - ``concat(`a`)``
      - raises an error because the function requires at least two arguments
 
 contains
@@ -207,7 +227,7 @@ Returns the length of the given argument using the following types rules:
      - Expression
      - Result
    * - n/a
-     - ``length(_"abc")``
+     - ``length(`abc`)``
      - 3
    * - "current"
      - ``length(@)``
@@ -219,7 +239,7 @@ Returns the length of the given argument using the following types rules:
      - ``length(not_there)``
      - ``null``
    * - n/a
-     - ``length(_false)``
+     - ``length(`false`)``
      - ``null``
    * - n/a
      - ``length(10)``
@@ -258,7 +278,7 @@ If the provided argument is not a string, this function MUST return ``null``.
      - Expression
      - Result
    * - n/a
-     - ``lowercase(_"ABC")``
+     - ``lowercase(`ABC`)``
      - "abc"
    * - "CURRENT"
      - ``lowercase(@)``
@@ -309,37 +329,37 @@ Flags
      - Expression
      - Result
    * - n/a
-     - ``matches(_"foobar", _"foo")``
+     - ``matches(`foobar`, `foo`)``
      - ``true``
    * - n/a
-     - ``matches(_"FOO", _"^foo$", _"i")``
+     - ``matches(`FOO`, `^foo$`, `i`)``
      - ``true``
    * - n/a
-     - ``matches(_"FOO", _"foo", _"im")``
+     - ``matches(`FOO`, `foo`, `im`)``
      - ``true``
    * - n/a
-     - ``matches(_"testing", _"foo")``
+     - ``matches(`testing`, `foo`)``
      - ``false``
    * - "foo"
-     - ``matches(@, _"foo")``
+     - ``matches(@, `foo`)``
      - ``true``
    * - "foo"
      - ``matches(@, @)``
      - ``true``
    * - n/a
-     - ``matches(_"foo123", _"123")``
+     - ``matches(`foo123`, `123`)``
      - ``true``
    * - n/a
-     - ``matches(_false, _"foo")``
+     - ``matches(`false`, `foo`)``
      - ``null``
    * - n/a
-     - ``matches(_"foo123", 123)``
+     - ``matches(`foo123`, 123)``
      - Raises an error
    * - n/a
-     - ``matches(_"foo123", _false)``
+     - ``matches(`foo123`, `false`)``
      - Raises an error
    * - ``[]``
-     - ``matches(_"foo123", @)``
+     - ``matches(`foo123`, @)``
      - Raises an error
 
 substring
@@ -371,21 +391,21 @@ arguments are not numbers.
 
    * - Expression
      - Result
-   * - ``substring(_"testing", 0, 4)``
+   * - ``substring(`testing`, 0, 4)``
      - "test"
-   * - ``substring(_"testing", -2)``
+   * - ``substring(`testing`, -2)``
      - "ng"
-   * - ``substring(_"testing", 0, -3)``
+   * - ``substring(`testing`, 0, -3)``
      - "test"
-   * - ``substring(_"testing", -3)``
+   * - ``substring(`testing`, -3)``
      - "ing"
-   * - ``substring(_"testing", -3, 2)``
+   * - ``substring(`testing`, -3, 2)``
      - "in"
-   * - ``substring(_false, _"abc", 2)``
+   * - ``substring(`false`, `abc`, 2)``
      - ``null``
-   * - ``substring(_"testing", _"abc", 2)``
+   * - ``substring(`testing`, `abc`, 2)``
      - Raises an error
-   * - ``substring(_"testing", 0, _"abc")``
+   * - ``substring(`testing`, 0, `abc`)``
      - Raises an error
 
 uppercase
@@ -404,13 +424,13 @@ If the provided argument is not a string, this function MUST return ``null``.
 
    * - Expression
      - Result
-   * - ``uppercase(_"Foo")``
+   * - ``uppercase(`Foo`)``
      - "FOO"
-   * - ``uppercase(_"123")``
+   * - ``uppercase(`123``)``
      - "123"
    * - ``uppercase(123)``
      - ``null``
-   * - ``uppercase(_null)``
+   * - ``uppercase(`null`)``
      - ``null``
 
 number functions
@@ -436,7 +456,7 @@ If the provided argument is not a number, then this function MUST return ``null`
      - 1
    * - ``abs(-1)``
      - 1
-   * - ``abs(_"abc")``
+   * - ``abs(`abc`)``
      - ``null``
 
 ceil
@@ -455,13 +475,13 @@ This function MUST return ``null`` if the provided argument is not a number.
 
    * - Expression
      - Result
-   * - ``ceil(_1.001)``
+   * - ``ceil(`1.001`)``
      - 2
-   * - ``ceil(_1.9)``
+   * - ``ceil(`1.9`)``
      - 2
-   * - ``ceil(1)``
+   * - ``ceil(`1`)``
      - 1
-   * - ``ceil(_"abc")``
+   * - ``ceil(`abc`)``
      - ``null``
 
 floor
@@ -480,13 +500,13 @@ This function MUST return ``null`` if the provided argument is not a number.
 
    * - Expression
      - Result
-   * - ``floor(_1.001)``
+   * - ``floor(`1.001`)``
      - 1
-   * - ``floor(_1.9)``
+   * - ``floor(`1.9`)``
      - 1
-   * - ``floor(1)``
+   * - ``floor(`1`)``
      - 1
-   * - ``floor(_"abc")``
+   * - ``floor(`abc`)``
      - ``null``
 
 array functions
@@ -557,37 +577,37 @@ a string or number.
      - Expression
      - Result
    * - n/a
-     - ``contains(_"foobar", _"foo")``
+     - ``contains(`foobar`, `foo`)``
      - ``true``
    * - n/a
-     - ``contains(_"foobar", _"not")``
+     - ``contains(`foobar`, `not`)``
      - ``false``
    * - n/a
-     - ``contains(_"foobar", _"bar")``
+     - ``contains(`foobar`, `bar`)``
      - ``true``
    * - n/a
-     - ``contains(_false, _"bar")``
+     - ``contains(`false`, `bar`)``
      - ``null``
    * - n/a
-     - ``contains(123, _"bar")``
+     - ``contains(123, `bar`)``
      - ``null``
    * - n/a
-     - ``contains(_"foobar", 123)``
+     - ``contains(`foobar`, 123)``
      - ``false``
    * - ``["a", "b"]``
-     - ``contains(@, _"a")``
+     - ``contains(@, `a`)``
      - ``true``
    * - ``["a"]``
-     - ``contains(@, _"a")``
+     - ``contains(@, `a`)``
      - ``true``
    * - ``["a"]``
-     - ``contains(@, _"b")``
+     - ``contains(@, `b`)``
      - ``false``
    * - ``{"a": "123"}``
-     - ``contains(@, _"123")``
+     - ``contains(@, `123`)``
      - ``null``
    * - ``{"a": "123"}``
-     - ``contains(_"foo", @)``
+     - ``contains(`foo`, @)``
      - Raises an error
 
 has
@@ -622,13 +642,13 @@ argument is not a string or number.
      - ``has(@, 2)``
      - ``false``
    * - ``{"foo": 1}``
-     - ``has(@, _"foo")``
+     - ``has(@, `foo`)``
      - ``true``
    * - ``{"foo": 1}``
-     - ``has(@, _"bar")``
+     - ``has(@, `bar`)``
      - ``false``
    * - ``"abc"``
-     - ``has(@, _"bar")``
+     - ``has(@, `bar`)``
      - ``null``
    * - ``{"foo": 1}``
      - ``has(@, false)``
@@ -658,22 +678,22 @@ string.
      - Expression
      - Result
    * - ``["a", "b"]``
-     - ``join(_", ", @)``
+     - ``join(`, `, @)``
      - "a, b"
    * - ``["a", "b"]``
-     - ``join(_"", @)``
+     - ``join(``, @)``
      - "ab"
    * - ``["a", false, "b"]``
-     - ``join(_", ", @)``
+     - ``join(`, `, @)``
      - "a, b"
    * - ``[false]``
-     - ``join(_", ", @)``
+     - ``join(`, `, @)``
      - ""
    * - n/a
-     - ``join(_", ", _"foo")``
+     - ``join(`, `, `foo`)``
      - ``null``
    * - ``["a", "b"]``
-     - ``join(_false, @)``
+     - ``join(`false`, @)``
      - Raises an error
 
 length
@@ -919,7 +939,7 @@ If no object arguments are found, this function MUST return ``null``.
      - ``union(@[0], @[1])``
      - ``{"foo": "baz", "bar": "bam", "qux": "more"}``
    * - n/a
-     - ``union(_false, _false)``
+     - ``union(`false`, `false`)``
      - ``null``
    * - {}
      - ``union(@)``
@@ -1060,7 +1080,7 @@ Test Cases
           "result": null
         },
         {
-          "expression": "abs(_false)",
+          "expression": "abs(`false`)",
           "result": null
         },
         {
@@ -1080,7 +1100,7 @@ Test Cases
           "result": 2.75
         },
         {
-          "expression": "avg(_\"abc\")",
+          "expression": "avg(`abc`)",
           "result": null
         },
         {
@@ -1132,7 +1152,7 @@ Test Cases
           "result": null
         },
         {
-          "expression": "ceil(_\"abc\")",
+          "expression": "ceil(`abc`)",
           "result": null
         },
         {
@@ -1148,11 +1168,11 @@ Test Cases
           "result": "abc"
         },
         {
-          "expression": "concat(_null, _false)",
+          "expression": "concat(`null`, `false`)",
           "result": null
         },
         {
-          "expression": "concat(_\"foo\")",
+          "expression": "concat(`foo`)",
           "error": "runtime"
         },
         {
@@ -1160,27 +1180,27 @@ Test Cases
           "error": "runtime"
         },
         {
-          "expression": "contains(_\"abc\", _\"a\")",
+          "expression": "contains(`abc`, `a`)",
           "result": true
         },
         {
-          "expression": "contains(_\"abc\", _\"d\")",
+          "expression": "contains(`abc`, `d`)",
           "result": false
         },
         {
-          "expression": "contains(_false, _\"d\")",
+          "expression": "contains(`false`, `d`)",
           "result": null
         },
         {
-          "expression": "contains(@.strings, _\"a\")",
+          "expression": "contains(@.strings, `a`)",
           "result": true
         },
         {
-          "expression": "contains(@.dec, _1.9)",
+          "expression": "contains(@.dec, `1.9`)",
           "error": "runtime"
         },
         {
-          "expression": "contains(@.dec, _false)",
+          "expression": "contains(@.dec, `false`)",
           "error": "runtime"
         },
         {
@@ -1224,31 +1244,31 @@ Test Cases
           "result": -1
         },
         {
-          "expression": "get(@.zero, _10)",
+          "expression": "get(@.zero, `10`)",
           "result": 0
         },
         {
-          "expression": "get(_null, _false, @.empty, _true)",
+          "expression": "get(`null`, `false`, @.empty, `true`)",
           "result": true
         },
         {
-          "expression": "join(_\", \", str)",
+          "expression": "join(`, `, str)",
           "result": null
         },
         {
-          "expression": "join(_\", \", strings)",
+          "expression": "join(`, `, strings)",
           "result": "a, b, c"
         },
         {
-          "expression": "join(_\"|\", strings)",
+          "expression": "join(`|`, strings)",
           "result": "a|b|c"
         },
         {
-          "expression": "join(_\"|\", @.dec)",
+          "expression": "join(`|`, @.dec)",
           "result": "1.01|1.9|-1.5"
         },
         {
-          "expression": "join(_\"|\", @.empty)",
+          "expression": "join(`\"|\"`, @.empty)",
           "result": ""
         },
         {
@@ -1264,19 +1284,19 @@ Test Cases
           "result": null
         },
         {
-          "expression": "keys(_\"abc\")",
+          "expression": "keys(`abc`)",
           "result": null
         },
         {
-          "expression": "keys(_false)",
+          "expression": "keys(`false`)",
           "result": null
         },
         {
-          "expression": "length(_\"abc\")",
+          "expression": "length(`abc`)",
           "result": 3
         },
         {
-          "expression": "length(_\"\")",
+          "expression": "length(`\"\"`)",
           "result": 0
         },
         {
@@ -1288,7 +1308,7 @@ Test Cases
           "result": 1
         },
         {
-          "expression": "length(_false)",
+          "expression": "length(`false`)",
           "result": null
         },
         {
@@ -1296,31 +1316,31 @@ Test Cases
           "result": "str"
         },
         {
-          "expression": "lowercase(_false)",
+          "expression": "lowercase(`false`)",
           "result": null
         },
         {
-          "expression": "matches(@.str, _\"str\")",
+          "expression": "matches(@.str, `str`)",
           "result": false
         },
         {
-          "expression": "matches(@.str, _\"str\", _\"i\")",
+          "expression": "matches(@.str, `str`, `i`)",
           "result": true
         },
         {
-          "expression": "matches(@.str, _false)",
+          "expression": "matches(@.str, `false`)",
           "error": "runtime"
         },
         {
-          "expression": "matches(@.str, _\"ST\", _\"im\")",
+          "expression": "matches(@.str, `ST`, `im`)",
           "result": true
         },
         {
-          "expression": "matches(_false, _\"str\")",
+          "expression": "matches(`false`, `str`)",
           "result": null
         },
         {
-          "expression": "matches(_\"str\", _\"str\", _\"i\", 123)",
+          "expression": "matches(`str`, `str`, `i`, 123)",
           "error": "runtime"
         },
         {
@@ -1400,27 +1420,27 @@ Test Cases
           "result": null
         },
         {
-          "expression": "substring(_\"abc\", 0, -1)",
+          "expression": "substring(`abc`, 0, -1)",
           "result": "ab"
         },
         {
-          "expression": "substring(_\"abc\", -2)",
+          "expression": "substring(`abc`, -2)",
           "result": "bc"
         },
         {
-          "expression": "substring(_\"abc123\", _1)",
+          "expression": "substring(`abc123`, `1`)",
           "result": "bc123"
         },
         {
-          "expression": "substring(_false, 1, 1)",
+          "expression": "substring(`false`, 1, 1)",
           "result": null
         },
         {
-          "expression": "substring(_\"abc\", _true)",
+          "expression": "substring(`abc`, `true`)",
           "error": "runtime"
         },
         {
-          "expression": "substring(_\"abc\", 1, _false)",
+          "expression": "substring(`abc`, 1, `false`)",
           "error": "runtime"
         },
         {
@@ -1428,7 +1448,7 @@ Test Cases
           "error": "runtime"
         },
         {
-          "expression": "type(_\"abc\")",
+          "expression": "type(`abc`)",
           "result": "String"
         },
         {
@@ -1436,19 +1456,19 @@ Test Cases
           "result": "Number"
         },
         {
-          "expression": "type(_123)",
+          "expression": "type(`123`)",
           "result": "Number"
         },
         {
-          "expression": "type(_1.2)",
+          "expression": "type(`1.2`)",
           "result": "Number"
         },
         {
-          "expression": "type(_true)",
+          "expression": "type(`true`)",
           "result": "Boolean"
         },
         {
-          "expression": "type(_false)",
+          "expression": "type(`false`)",
           "result": "Boolean"
         },
         {
@@ -1472,7 +1492,7 @@ Test Cases
           "result": "STR"
         },
         {
-          "expression": "uppercase(_false)",
+          "expression": "uppercase(`false`)",
           "result": null
         }
       ]
@@ -1518,30 +1538,6 @@ Test Cases
         {
           "expression": "values(@[4])",
           "result": null
-        },
-        {
-          "expression": "has([0], _\"foo\")",
-          "result": true
-        },
-        {
-          "expression": "has([0], _\"bar\")",
-          "result": true
-        },
-        {
-          "expression": "has([3], _\"foo\")",
-          "result": false
-        },
-        {
-          "expression": "has([3], 0)",
-          "result": true
-        },
-        {
-          "expression": "has([3][0], 0)",
-          "result": null
-        },
-        {
-          "expression": "has([3], false)",
-          "error": "syntax"
         }
       ]
     }]
