@@ -79,8 +79,8 @@ The following modified JMESPath grammar supports piped expressions.
     expression        = sub-expression / index-expression / or-expression / identifier / "*"
     expression        =/ multi-select-list / multi-select-hash / pipe-expression
     sub-expression    = expression "." expression
-    or-expression     = expression "||" expression
     pipe-expression   = expression "|" expression
+    or-expression     = expression "||" expression
     index-expression  = expression bracket-specifier / bracket-specifier
     multi-select-list = "[" ( expression *( "," expression ) ) "]"
     multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) ) "}"
@@ -101,6 +101,10 @@ The following modified JMESPath grammar supports piped expressions.
                         %x7F-10FFFF
 
 .. _RFC4234: http://tools.ietf.org/html/rfc4234
+
+.. note::
+
+    ``pipe-expression`` has a higher precendent than the ``or-operator``
 
 Compliance Tests
 ================
@@ -183,6 +187,14 @@ Compliance Tests
         {
           "expression": "{\"a\": foo.bar, \"b\": foo.other} | *.baz",
           "result": ["one", "two"]
+        },
+        {
+          "expression": "foo.bam || foo.bar | baz",
+          "result": "one"
+        },
+        {
+          "expression": "foo | not_there || bar",
+          "result": {"baz": "one"}
         }
       ]
     }]
