@@ -35,19 +35,30 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) ) "}"
     keyval-expr       = identifier ":" expression
     bracket-specifier = "[" (number / "*") "]" / "[]"
-    number            = [-]1*digit
-    digit             = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9" / "0"
-    identifier        = 1*char
-    identifier        =/ quote 1*(unescaped-char / escaped-quote) quote
-    escaped-quote     = escape quote
-    unescaped-char    = %x30-10FFFF
+    number            = ["-"]1*digit
+    digit             = %x30-39
+    identifier        = unquoted-string / quoted-string
+    unquoted-string   = (%x41-5A / %x61-7A / %x5F) *(  ; a-zA-Z_
+                            %x30-39  /  ; 0-9
+                            %x41-5A /  ; A-Z
+                            %x5F    /  ; _
+                            %x61-7A)   ; a-z
+    quoted-string     = quote 1*(unescaped-char / escaped-char) quote
+    unescaped-char    = %x20-21 / %x23-5B / %x5D-10FFFF
     escape            = %x5C   ; Back slash: \
     quote             = %x22   ; Double quote: '"'
-    char              = %x30-39 / ; 0-9
-                        %x41-5A / ; A-Z
-                        %x5F /    ; _
-                        %x61-7A / ; a-z
-                        %x7F-10FFFF
+    escaped-char      = escape (
+                            %x22 /          ; "    quotation mark  U+0022
+                            %x5C /          ; \    reverse solidus U+005C
+                            %x2F /          ; /    solidus         U+002F
+                            %x62 /          ; b    backspace       U+0008
+                            %x66 /          ; f    form feed       U+000C
+                            %x6E /          ; n    line feed       U+000A
+                            %x72 /          ; r    carriage return U+000D
+                            %x74 /          ; t    tab             U+0009
+                            %x75 4HEXDIG )  ; uXXXX                U+XXXX
+
+
 
 
 Identifiers
@@ -56,17 +67,26 @@ Identifiers
 
 ::
 
-    identifier        = 1*char
-    identifier        =/ quote 1*(unescaped-char / escaped-quote) quote
-    escaped-quote     = escape quote
-    unescaped-char    = %x30-10FFFF
+    identifier        = unquoted-string / quoted-string
+    unquoted-string   = (%x41-5A / %x61-7A / %x5F) *(  ; a-zA-Z_
+                            %x30-39  /  ; 0-9
+                            %x41-5A /  ; A-Z
+                            %x5F    /  ; _
+                            %x61-7A)   ; a-z
+    quoted-string     = quote 1*(unescaped-char / escaped-char) quote
+    unescaped-char    = %x20-21 / %x23-5B / %x5D-10FFFF
     escape            = %x5C   ; Back slash: \
     quote             = %x22   ; Double quote: '"'
-    char              = %x30-39 / ; 0-9
-                        %x41-5A / ; A-Z
-                        %x5F /    ; _
-                        %x61-7A / ; a-z
-                        %x7F-10FFFF
+    escaped-char      = escape (
+                            %x22 /          ; "    quotation mark  U+0022
+                            %x5C /          ; \    reverse solidus U+005C
+                            %x2F /          ; /    solidus         U+002F
+                            %x62 /          ; b    backspace       U+0008
+                            %x66 /          ; f    form feed       U+000C
+                            %x6E /          ; n    line feed       U+000A
+                            %x72 /          ; r    carriage return U+000D
+                            %x74 /          ; t    tab             U+0009
+                            %x75 4HEXDIG )  ; uXXXX                U+XXXX
 
 An ``identifier`` is the most basic expression and can be used to extract a single
 element from a JSON document.  The return value for an ``identifier`` is the
@@ -74,14 +94,19 @@ value associated with the identifier.  If the ``identifier`` does not exist in
 the JSON document, than a ``null`` value is returned.
 
 From the grammar rule listed above identifiers can be one of more characters,
-including numbers.  A number is used to extract the value associated with the
-numeric identifier.  It is **not** used to access a list element.  The
-``index-expression`` is used to access list elements.
+and must start with ``A-Za-z_``.
 
 An identifier can also be quoted.  This is necessary when an identifier has
-characters not specified in the ``char`` grammar rule.  In this situation, an
-identifier is specified with a double quote, followed by a number of
-characters, followed by a double quote.
+characters not specified in the ``unquoted-string`` grammar rule.
+In this situation, an identifier is specified with a double quote, followed by
+any number of ``unescaped-char`` or ``escaped-char`` characters, followed by a
+double quote.  The ``quoted-string`` rule is the same grammar rule as a JSON
+string, so any valid string can be used between double quoted, include JSON
+supported escape sequences, and six character unicode escape sequences.
+
+Note that any identifier that does not start with ``A-Za-z_`` **must**
+be quoted.
+
 
 Examples
 --------
@@ -94,6 +119,7 @@ Examples
    search("with space", {"with space": "value"}) -> "value"
    search("special chars: !@#", {"special chars: !@#": "value"}) -> "value"
    search("quote\"char", {"quote\"char": "value"}) -> "value"
+   search("\u2713", {"\u2713": "value"}) -> "value"
 
 
 SubExpressions
