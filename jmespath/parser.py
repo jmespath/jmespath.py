@@ -88,7 +88,7 @@ class Grammar(object):
         """expression : IDENTIFIER
                       | NUMBER
         """
-        p[0] = ast.Field(str(p[1]))
+        p[0] = ast.Field(p[1])
 
     def p_jmespath_multiselect(self, p):
         """expression : LBRACE keyval-exprs RBRACE
