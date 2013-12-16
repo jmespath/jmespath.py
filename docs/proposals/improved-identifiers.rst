@@ -47,8 +47,8 @@ There is an ambiguity between the ``%x30-39`` rule and the ``number`` rule::
 It's ambiguous which rule to use.  Given a string "123", it's not clear whether
 this should be parsed as an identifier or a number. Existing implementations
 **aren't** following this rule (because it's ambiguous) so the grammar should
-be updated to remove the ambiguity, specifically, an identifier **cannot**
-start with ``[0-9]``.
+be updated to remove the ambiguity, specifically, an unquoted identifier can
+only start with the characters ``[a-zA-Z_]``.
 
 Unicode
 -------
@@ -103,9 +103,9 @@ Specification
 The ``char`` rule contains a set of characters that do **not** have to be
 quoted.  The new set of characters that do not have to quoted will be::
 
-    unquoted-string   = (%x41-5A / %x61-7A) *(%30-39 / %x41-5A / %x5F / %x61-7A)
+    unquoted-string   = (%x41-5A / %x61-7A / %x5F) *(%30-39 / %x41-5A / %x5F / %x61-7A)
 
-In order for an identifier to not be quoted, it must start with ``[A-Za-z]``,
+In order for an identifier to not be quoted, it must start with ``[A-Za-z_]``,
 then must be followed by zero or more ``[0-9A-Za-z_]``.
 
 The unquoted rule is updated to account for all JSON supported escape
@@ -116,7 +116,7 @@ sequences::
 The full rule for an identifier is::
 
     identifier        = unquoted-string / quoted-string
-    unquoted-string   = (%x41-5A / %x61-7A) *(  ; a-zA-Z
+    unquoted-string   = (%x41-5A / %x61-7A / %x5F) *(  ; a-zA-Z_
                             %30-39  /  ; 0-9
                             %x41-5A /  ; A-Z
                             %x5F    /  ; _
