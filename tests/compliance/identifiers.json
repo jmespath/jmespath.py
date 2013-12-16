@@ -1233,17 +1233,6 @@
     },
     {
         "given": {
-            "\\": true
-        },
-        "cases": [
-            {
-                "expression": "\"\\\\\"",
-                "result": true
-            }
-        ]
-    },
-    {
-        "given": {
             "_7": true
         },
         "cases": [
