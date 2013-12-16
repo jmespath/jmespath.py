@@ -38,36 +38,15 @@ of features it does not currently support that may be added in the
 future.**
 
 
-Grammar
-=======
+Specification
+=============
 
-The grammar is specified using ABNF, as described in `RFC4234`_
+The grammar is specified using ABNF, as described in `RFC4234`_.
+You can find the most up to date grammar for JMESPath
+`here <http://jmespath.readthedocs.org/en/latest/specification.html#grammar>`__.
 
-::
-
-    expression        = sub-expression / index-expression / or-expression / identifier / "*"
-    expression        =/ multi-select-list / multi-select-hash
-    sub-expression    = expression "." expression
-    or-expression     = expression "||" expression
-    index-expression  = expression bracket-specifier / bracket-specifier
-    multi-select-list = "[" ( expression *( "," expression ) ) "]"
-    multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) ) "}"
-    keyval-expr       = identifier ":" expression
-    bracket-specifier = "[" (number / "*") "]" / "[]"
-    number            = [-]1*digit
-    digit             = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9" / "0"
-    identifier        = 1*char
-    identifier        =/ quote 1*(unescaped-char / escaped-quote) quote
-    escaped-quote     = escape quote
-    unescaped-char    = %x30-10FFFF
-    escape            = %x5C   ; Back slash: \
-    quote             = %x22   ; Double quote: '"'
-    char              = %x30-39 / ; 0-9
-                        %x41-5A / ; A-Z
-                        %x5F /    ; _
-                        %x61-7A / ; a-z
-                        %x7F-10FFFF
-
+You can read the full JMESPath specification
+`here http://jmespath.readthedocs.org/en/latest/specification.html`__.
 
 
 Testing

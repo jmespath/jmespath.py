@@ -76,15 +76,15 @@
         {"foo": {"1": ["one", "two", "three"], "-1": "bar"}},
     "cases": [
          {
-            "expression": "foo.1",
+            "expression": "foo.\"1\"",
             "result": ["one", "two", "three"]
          },
          {
-            "expression": "foo.1[0]",
+            "expression": "foo.\"1\"[0]",
             "result": "one"
          },
          {
-            "expression": "foo.-1",
+            "expression": "foo.\"-1\"",
             "result": "bar"
          }
     ]

@@ -1,4 +1,5 @@
 import re
+from json import loads
 
 from jmespath.compat import with_str_method
 
@@ -58,9 +59,7 @@ class LexerDefinition(object):
         t.type = self.reserved.get(t.value, 'IDENTIFIER')
         i = 0
         if t.value[0] == '"' and t.value[-1] == '"':
-            t.value = t.value[1:-1]
-            if '\\"' in t.value:
-                t.value = t.value.replace('\\"', '"')
+            t.value = loads(t.value)
             return t
         return t
 
