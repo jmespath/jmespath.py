@@ -19,7 +19,7 @@
             "result": "space"
          },
          {
-            "expression": "\"foo\nbar\"",
+            "expression": "\"foo\\nbar\"",
             "result": "newline"
          },
          {
@@ -27,7 +27,7 @@
             "result": "doublequote"
          },
          {
-            "expression": "\"c:\\\\windows\\path\"",
+            "expression": "\"c:\\\\\\\\windows\\\\path\"",
             "result": "windows"
          },
          {

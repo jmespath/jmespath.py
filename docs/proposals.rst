@@ -9,3 +9,4 @@ changes. Proposals are marked as either "draft", "accepted", or "rejected".
    :maxdepth: 1
 
    proposals/nested-expressions
+   proposals/improved-identifiers

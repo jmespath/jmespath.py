@@ -183,22 +183,22 @@ class TestParserWildcards(unittest.TestCase):
         self.assertEqual(sorted(parsed.search(data)), sorted(['a', 'b', 'c']))
 
     def test_escape_sequences(self):
-        self.assertEqual(self.parser.parse('"foo\tbar"').search(
+        self.assertEqual(self.parser.parse(r'"foo\tbar"').search(
             {'foo\tbar': 'baz'}), 'baz')
-        self.assertEqual(self.parser.parse('"foo\nbar"').search(
+        self.assertEqual(self.parser.parse(r'"foo\nbar"').search(
             {'foo\nbar': 'baz'}), 'baz')
-        self.assertEqual(self.parser.parse('"foo\bbar"').search(
+        self.assertEqual(self.parser.parse(r'"foo\bbar"').search(
             {'foo\bbar': 'baz'}), 'baz')
-        self.assertEqual(self.parser.parse('"foo\fbar"').search(
+        self.assertEqual(self.parser.parse(r'"foo\fbar"').search(
             {'foo\fbar': 'baz'}), 'baz')
-        self.assertEqual(self.parser.parse('"foo\rbar"').search(
+        self.assertEqual(self.parser.parse(r'"foo\rbar"').search(
             {'foo\rbar': 'baz'}), 'baz')
 
     def test_consecutive_escape_sequences(self):
-        parsed = self.parser.parse('"foo\\nbar"')
+        parsed = self.parser.parse(r'"foo\\nbar"')
         self.assertEqual(parsed.search({'foo\\nbar': 'baz'}), 'baz')
 
-        parsed = self.parser.parse('"foo\n\t\rbar"')
+        parsed = self.parser.parse(r'"foo\n\t\rbar"')
         self.assertEqual(parsed.search({'foo\n\t\rbar': 'baz'}), 'baz')
 
     def test_escape_sequence_at_end_of_string_not_allowed(self):
