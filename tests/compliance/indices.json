@@ -296,5 +296,51 @@
            "result": [1, 3, 5, 7]
         }
     ]
+},
+{
+    "given": {
+        "string": "string",
+        "hash": {"foo": "bar", "bar": "baz"},
+        "number": 23,
+        "nullvalue": null
+     },
+     "cases": [
+         {
+            "expression": "string[]",
+            "result": null
+         },
+         {
+            "expression": "hash[]",
+            "result": null
+         },
+         {
+            "expression": "number[]",
+            "result": null
+         },
+         {
+            "expression": "nullvalue[]",
+            "result": null
+         },
+         {
+            "expression": "string[].foo",
+            "result": null
+         },
+         {
+            "expression": "hash[].foo",
+            "result": null
+         },
+         {
+            "expression": "number[].foo",
+            "result": null
+         },
+         {
+            "expression": "nullvalue[].foo",
+            "result": null
+         },
+         {
+            "expression": "nullvalue[].foo[].bar",
+            "result": null
+         }
+     ]
 }
 ]

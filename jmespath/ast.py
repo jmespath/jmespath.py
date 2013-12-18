@@ -189,7 +189,7 @@ class ListElements(AST):
                     merged_list.append(element)
             return _Projection(merged_list)
         else:
-            return _Projection(value)
+            return None
 
     def pretty_print(self, indent=''):
         return "%sListElements()" % indent
