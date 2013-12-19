@@ -31,26 +31,33 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     sub-expression    = expression "." expression
     or-expression     = expression "||" expression
     index-expression  = expression bracket-specifier / bracket-specifier
-    multi-select-list = "[" ( non-branched-expr *( "," non-branched-expr ) ) "]"
+    multi-select-list = "[" ( expression *( "," expression ) ) "]"
     multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) ) "}"
-    keyval-expr       = identifier ":" non-branched-expr
-    non-branched-expr = identifier /
-                        non-branched-expr "." identifier /
-                        non-branched-expr "[" number "]"
+    keyval-expr       = identifier ":" expression
     bracket-specifier = "[" (number / "*") "]" / "[]"
-    number            = [-]1*digit
-    digit             = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9" / "0"
-    identifier        = 1*char
-    identifier        =/ quote 1*(unescaped-char / escaped-quote) quote
-    escaped-quote     = escape quote
-    unescaped-char    = %x30-10FFFF
+    number            = ["-"]1*digit
+    digit             = %x30-39
+    identifier        = unquoted-string / quoted-string
+    unquoted-string   = (%x41-5A / %x61-7A / %x5F) *(  ; a-zA-Z_
+                            %x30-39  /  ; 0-9
+                            %x41-5A /  ; A-Z
+                            %x5F    /  ; _
+                            %x61-7A)   ; a-z
+    quoted-string     = quote 1*(unescaped-char / escaped-char) quote
+    unescaped-char    = %x20-21 / %x23-5B / %x5D-10FFFF
     escape            = %x5C   ; Back slash: \
     quote             = %x22   ; Double quote: '"'
-    char              = %x30-39 / ; 0-9
-                        %x41-5A / ; A-Z
-                        %x5F /    ; _
-                        %x61-7A / ; a-z
-                        %x7F-10FFFF
+    escaped-char      = escape (
+                            %x22 /          ; "    quotation mark  U+0022
+                            %x5C /          ; \    reverse solidus U+005C
+                            %x2F /          ; /    solidus         U+002F
+                            %x62 /          ; b    backspace       U+0008
+                            %x66 /          ; f    form feed       U+000C
+                            %x6E /          ; n    line feed       U+000A
+                            %x72 /          ; r    carriage return U+000D
+                            %x74 /          ; t    tab             U+0009
+                            %x75 4HEXDIG )  ; uXXXX                U+XXXX
+
 
 
 
@@ -60,17 +67,26 @@ Identifiers
 
 ::
 
-    identifier        = 1*char
-    identifier        =/ quote 1*(unescaped-char / escaped-quote) quote
-    escaped-quote     = escape quote
-    unescaped-char    = %x30-10FFFF
+    identifier        = unquoted-string / quoted-string
+    unquoted-string   = (%x41-5A / %x61-7A / %x5F) *(  ; a-zA-Z_
+                            %x30-39  /  ; 0-9
+                            %x41-5A /  ; A-Z
+                            %x5F    /  ; _
+                            %x61-7A)   ; a-z
+    quoted-string     = quote 1*(unescaped-char / escaped-char) quote
+    unescaped-char    = %x20-21 / %x23-5B / %x5D-10FFFF
     escape            = %x5C   ; Back slash: \
     quote             = %x22   ; Double quote: '"'
-    char              = %x30-39 / ; 0-9
-                        %x41-5A / ; A-Z
-                        %x5F /    ; _
-                        %x61-7A / ; a-z
-                        %x7F-10FFFF
+    escaped-char      = escape (
+                            %x22 /          ; "    quotation mark  U+0022
+                            %x5C /          ; \    reverse solidus U+005C
+                            %x2F /          ; /    solidus         U+002F
+                            %x62 /          ; b    backspace       U+0008
+                            %x66 /          ; f    form feed       U+000C
+                            %x6E /          ; n    line feed       U+000A
+                            %x72 /          ; r    carriage return U+000D
+                            %x74 /          ; t    tab             U+0009
+                            %x75 4HEXDIG )  ; uXXXX                U+XXXX
 
 An ``identifier`` is the most basic expression and can be used to extract a single
 element from a JSON document.  The return value for an ``identifier`` is the
@@ -78,14 +94,19 @@ value associated with the identifier.  If the ``identifier`` does not exist in
 the JSON document, than a ``null`` value is returned.
 
 From the grammar rule listed above identifiers can be one of more characters,
-including numbers.  A number is used to extract the value associated with the
-numeric identifier.  It is **not** used to access a list element.  The
-``index-expression`` is used to access list elements.
+and must start with ``A-Za-z_``.
 
 An identifier can also be quoted.  This is necessary when an identifier has
-characters not specified in the ``char`` grammar rule.  In this situation, an
-identifier is specified with a double quote, followed by a number of
-characters, followed by a double quote.
+characters not specified in the ``unquoted-string`` grammar rule.
+In this situation, an identifier is specified with a double quote, followed by
+any number of ``unescaped-char`` or ``escaped-char`` characters, followed by a
+double quote.  The ``quoted-string`` rule is the same grammar rule as a JSON
+string, so any valid string can be used between double quoted, include JSON
+supported escape sequences, and six character unicode escape sequences.
+
+Note that any identifier that does not start with ``A-Za-z_`` **must**
+be quoted.
+
 
 Examples
 --------
@@ -98,6 +119,7 @@ Examples
    search("with space", {"with space": "value"}) -> "value"
    search("special chars: !@#", {"special chars: !@#": "value"}) -> "value"
    search("quote\"char", {"quote\"char": "value"}) -> "value"
+   search("\u2713", {"\u2713": "value"}) -> "value"
 
 
 SubExpressions
@@ -235,22 +257,18 @@ MultiSelect List
 
 ::
 
-    multi-select-list = "[" ( non-branched-expr *( "," non-branched-expr ) "]"
-    non-branched-expr = identifier /
-                        non-branched-expr "." identifier /
-                        non-branched-expr "[" number "]"
+    multi-select-list = "[" ( expression *( "," expression ) "]"
 
 A multiselect expression is used to extract a subset of elements from a JSON
 hash.  There are two version of multiselect, one in which the multiselect
 expression is enclosed in ``{...}`` and one which is enclosed in ``[...]``.
-This section describes the ``[...]`` version.
-Within the start and closing characters is one or more non
-branched expressions separated by a comma.  Each non branched expression will
-be evaluated against the JSON document.  Each returned element will be the
-result of evaluating the non branched expression. A ``multi-select-list`` with
-``N`` non branched expressions will result in a list of length ``N``.  Given a
-multiselect expression ``[expr-1,expr-2,...,expr-n]``, the evaluated expression
-will return ``[evaluate(expr-1), evaluate(expr-2), ..., evaluate(expr-n)]``.
+This section describes the ``[...]`` version.  Within the start and closing
+characters is one or more non expressions separated by a comma.  Each
+expression will be evaluated against the JSON document.  Each returned element
+will be the result of evaluating the expression. A ``multi-select-list`` with
+``N`` expressions will result in a list of length ``N``.  Given a multiselect
+expression ``[expr-1,expr-2,...,expr-n]``, the evaluated expression will return
+``[evaluate(expr-1), evaluate(expr-2), ..., evaluate(expr-n)]``.
 
 Examples
 --------
@@ -269,20 +287,17 @@ MultiSelect Hash
 ::
 
     multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) "}"
-    keyval-expr       = identifier ":" non-branched-expr
-    non-branched-expr = identifier /
-                        non-branched-expr "." identifier /
-                        non-branched-expr "[" number "]"
+    keyval-expr       = identifier ":" expression
 
 A ``multi-select-hash`` expression is similar to a ``multi-select-list``
 expression, except that a hash is created instead of a list.  A
 ``multi-select-hash`` expression also requires key names to be provided, as
 specified in the ``keyval-expr`` rule.  Given the following rule::
 
-    keyval-expr       = identifier ":" non-branched-expr
+    keyval-expr       = identifier ":" expression
 
 The ``identifier`` is used as the key name and the result of evaluating the
-``non-branched-expr`` is the value associated with the ``identifier`` key.
+``expression`` is the value associated with the ``identifier`` key.
 
 Each ``keyval-expr`` within the ``multi-select-hash`` will correspond to a
 single key value pair in the created hash.
@@ -331,17 +346,32 @@ evaluated against each returned element from a wildcard expression.  The
 ``[*]`` syntax applies to a list type and the ``*`` syntax applies to a hash
 type.
 
-The ``[*]`` syntax will return all the elements in a list.  Any subsequent
-expressions will be evaluated against each individual element.  Given an
-expression ``[*].child-expr``, and a list of N elements, the evaluation of
-this expression would be ``[child-expr(el-0), child-expr(el-2), ...,
-child-expr(el-N)]``.
+The ``[*]`` syntax (referred to as a list wildcard expression) will return all
+the elements in a list.  Any subsequent expressions will be evaluated against
+each individual element.  Given an expression ``[*].child-expr``, and a list of
+N elements, the evaluation of this expression would be ``[child-expr(el-0),
+child-expr(el-2), ..., child-expr(el-N)]``.  This is referred to as a
+**projection**, and the ``child-expr`` expression is projected onto the
+elements of the resulting list.
 
-The ``*`` syntax will return a list of the hash element's values.  Any subsequent
-expression will be evaluated against each individual element in the list.
+Once a projection has been created, all subsequent expressions are projected
+onto the resulting list.
+
+The ``*`` syntax (referred to as a hash wildcard expression) will return a list
+of the hash element's values.  Any subsequent expression will be evaluated
+against each individual element in the list (this is also referred to as a
+**projection**).
 
 Note that if any subsequent expression after a wildcard expression returns a
 ``null`` value, it is omitted from the final result list.
+
+A list wildcard expression is only valid for the JSON array type.  If a list
+wildcard expression is applied to any other JSON type, a value of ``null`` is
+returned.
+
+Similarly, a hash wildcard expression is only valid for the JSON object type.
+If a hash wildcard expression is applied to any other JSON type, a value of
+``null`` is returned.
 
 Examples
 --------

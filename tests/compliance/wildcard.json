@@ -227,6 +227,23 @@
 },
 {
     "given": {
+        "foo": [
+            {"bar": {"kind": "basic"}},
+            {"bar": {"kind": "intermediate"}},
+            {"bar": {"kind": "advanced"}},
+            {"bar": {"kind": "expert"}},
+            {"bar": "string"}
+        ]
+     },
+     "cases": [
+         {
+            "expression": "foo[*].bar.kind",
+            "result": ["basic", "intermediate", "advanced", "expert"]
+         }
+     ]
+},
+{
+    "given": {
         "foo": [{"bar": ["one", "two"]}, {"bar": ["three", "four"]}, {"bar": ["five"]}]
      },
      "cases": [
@@ -367,6 +384,37 @@
          },
          {
             "expression": "nullvalue[*].foo[*].bar",
+            "result": null
+         }
+     ]
+},
+{
+    "given": {
+        "string": "string",
+        "hash": {"foo": "bar", "bar": "baz"},
+        "number": 23,
+        "array": [1, 2, 3],
+        "nullvalue": null
+     },
+     "cases": [
+         {
+            "expression": "string.*",
+            "result": null
+         },
+         {
+            "expression": "hash.*",
+            "result": ["bar", "baz"]
+         },
+         {
+            "expression": "number.*",
+            "result": null
+         },
+         {
+            "expression": "array.*",
+            "result": null
+         },
+         {
+            "expression": "nullvalue.*",
             "result": null
          }
      ]

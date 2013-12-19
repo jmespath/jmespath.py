@@ -88,7 +88,7 @@ class Grammar(object):
         """expression : IDENTIFIER
                       | NUMBER
         """
-        p[0] = ast.Field(str(p[1]))
+        p[0] = ast.Field(p[1])
 
     def p_jmespath_multiselect(self, p):
         """expression : LBRACE keyval-exprs RBRACE
@@ -96,7 +96,7 @@ class Grammar(object):
         p[0] = ast.MultiFieldDict(p[2])
 
     def p_jmespath_multiselect_list(self, p):
-        """expression : LBRACKET nonbranched-exprs RBRACKET
+        """expression : LBRACKET expressions RBRACKET
         """
         p[0] = ast.MultiFieldList(p[2])
 
@@ -111,33 +111,19 @@ class Grammar(object):
             p[0] = p[1]
 
     def p_jmespath_keyval_expr(self, p):
-        """keyval-expr : IDENTIFIER COLON nonbranched-expr
+        """keyval-expr : IDENTIFIER COLON expression
         """
         p[0] = ast.KeyValPair(p[1], p[3])
 
-    def p_jmespath_multiselect_nonbranched_expressions(self, p):
-        """nonbranched-exprs : nonbranched-exprs COMMA nonbranched-expr
-                             | nonbranched-expr
+    def p_jmespath_multiple_expressions(self, p):
+        """expressions : expressions COMMA expression
+                       | expression
         """
         if len(p) == 2:
             p[0] = [p[1]]
         elif len(p) == 4:
             p[1].append(p[3])
             p[0] = p[1]
-
-    def p_jmespath_nonbranched_expression(self, p):
-        """nonbranched-expr : IDENTIFIER
-                            | nonbranched-expr DOT IDENTIFIER
-                            | nonbranched-expr LBRACKET NUMBER RBRACKET
-        """
-        if len(p) == 2:
-            p[0] = ast.Field(str(p[1]))
-        elif len(p) == 4:
-            # foo . bar
-            p[0] = ast.SubExpression(p[1], ast.Field(str(p[3])))
-        elif len(p) == 5:
-            # <scalaridentifier>[0]
-            p[0] = ast.SubExpression(p[1], ast.Index(p[3]))
 
     def p_jmespath_or_expression(self, p):
         """expression : expression OR expression"""

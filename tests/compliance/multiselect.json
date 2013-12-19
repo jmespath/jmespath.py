@@ -173,7 +173,8 @@
 }, {
     "given": {
       "foo": {
-          "bar": {"baz": [{"one": 1}, {"two": 2}]},
+          "bar": {"baz": [{"common": "first", "one": 1},
+                          {"common": "second", "two": 2}]},
           "ignoreme": 1,
           "includeme": true
       }
@@ -181,11 +182,23 @@
     "cases": [
          {
             "expression": "foo.{bar: bar.baz[1],includeme: includeme}",
-            "result": {"bar": {"two": 2}, "includeme": true}
+            "result": {"bar": {"common": "second", "two": 2}, "includeme": true}
          },
          {
             "expression": "foo.{\"bar.baz.two\": bar.baz[1].two, includeme: includeme}",
             "result": {"bar.baz.two": 2, "includeme": true}
+         },
+         {
+            "expression": "foo.[includeme, bar.baz[*].common]",
+            "result": [true, ["first", "second"]]
+         },
+         {
+            "expression": "foo.[includeme, bar.baz[*].none]",
+            "result": [true, []]
+         },
+         {
+            "expression": "foo.[includeme, bar.baz[].common]",
+            "result": [true, ["first", "second"]]
          }
     ]
 }, {
@@ -286,6 +299,74 @@
         {
            "expression": "foo[].bar[].[baz, qux][]",
            "result": [1, 2, 3, 4, 5, 6, 7, 8]
+        }
+    ]
+},
+{
+    "given": {
+        "foo": {
+            "baz": [
+                {
+                    "bar": "abc"
+                }, {
+                    "bar": "def"
+                }
+            ],
+            "qux": ["zero"]
+        }
+    },
+    "cases": [
+        {
+           "expression": "foo.[baz[*].bar, qux[0]]",
+           "result": [["abc", "def"], "zero"]
+        }
+    ]
+},
+{
+    "given": {
+        "foo": {
+            "baz": [
+                {
+                    "bar": "a",
+                    "bam": "b",
+                    "boo": "c"
+                }, {
+                    "bar": "d",
+                    "bam": "e",
+                    "boo": "f"
+                }
+            ],
+            "qux": ["zero"]
+        }
+    },
+    "cases": [
+        {
+           "expression": "foo.[baz[*].[bar, boo], qux[0]]",
+           "result": [[["a", "c" ], ["d", "f" ]], "zero"]
+        }
+    ]
+},
+{
+    "given": {
+        "foo": {
+            "baz": [
+                {
+                    "bar": "a",
+                    "bam": "b",
+                    "boo": "c"
+                }, {
+                    "bar": "d",
+                    "bam": "e",
+                    "boo": "f"
+                }
+            ],
+            "qux": ["zero"]
+        }
+    },
+    "cases": [
+        {
+           "expression": "foo.[baz[*].not_there || baz[*].bar, qux[0]]",
+           "result": [[], "zero"]
         }
     ]
 }
