@@ -1,0 +1,178 @@
+[
+    {
+        "given": {
+            "foo": [{"name": "a"}, {"name": "b"}],
+            "bar": {"baz": "qux"}
+        },
+        "cases": [
+            {
+                "expression": "`foo`",
+                "result": "foo"
+            },
+            {
+                "expression": "`\"foo\"`",
+                "result": "foo"
+            },
+            {
+                "comment": "Double quotes must be escaped.",
+                "expression": "`foo\\\"quote`",
+                "result": "foo\"quote"
+            },
+            {
+                "expression": "`✓`",
+                "result": "✓"
+            },
+            {
+                "expression": "`[1, 2, 3]`",
+                "result": [1, 2, 3]
+            },
+            {
+                "expression": "`{\"a\": \"b\"}`",
+                "result": {"a": "b"}
+            },
+            {
+                "expression": "`true`",
+                "result": true
+            },
+            {
+                "expression": "`false`",
+                "result": false
+            },
+            {
+                "expression": "`null`",
+                "result": null
+            },
+            {
+                "expression": "`0`",
+                "result": 0
+            },
+            {
+                "expression": "`1`",
+                "result": 1
+            },
+            {
+                "expression": "`2`",
+                "result": 2
+            },
+            {
+                "expression": "`3`",
+                "result": 3
+            },
+            {
+                "expression": "`4`",
+                "result": 4
+            },
+            {
+                "expression": "`5`",
+                "result": 5
+            },
+            {
+                "expression": "`6`",
+                "result": 6
+            },
+            {
+                "expression": "`7`",
+                "result": 7
+            },
+            {
+                "expression": "`8`",
+                "result": 8
+            },
+            {
+                "expression": "`9`",
+                "result": 9
+            },
+            {
+                "comment": "Escaping a backtick",
+                "expression": "`foo\\`bar`",
+                "result": "foo`bar"
+            },
+            {
+                "comment": "Escaping a backtick in quotes",
+                "expression": "`\"foo\\`bar\"`",
+                "result": "foo`bar"
+            },
+            {
+                "comment": "Double quote in literal",
+                "expression": "`foo\\\"bar`",
+                "result": "foo\"bar"
+            },
+            {
+                "expression": "bar.`anything`",
+                "result": "anything"
+            },
+            {
+                "expression": "bar.`\"anything\"`",
+                "result": "anything"
+            },
+            {
+                "expression": "bar.baz.noexists.`literal`",
+                "result": "literal"
+            },
+            {
+                "comment": "Literal wildcard projection",
+                "expression": "foo[*].`literal`",
+                "result": ["literal", "literal"]
+            },
+            {
+                "expression": "foo[*].name.`literal`",
+                "result": ["literal", "literal"]
+            },
+            {
+                "expression": "foo[].name.`literal`",
+                "result": ["literal", "literal"]
+            },
+            {
+                "expression": "foo[].name.`literal`.`subliteral`",
+                "result": ["subliteral", "subliteral"]
+            },
+            {
+                "comment": "Projecting a literal onto an empty list",
+                "expression": "foo[*].name.noexist.`literal`",
+                "result": []
+            },
+            {
+                "expression": "foo[].name.noexist.`literal`",
+                "result": []
+            }
+        ]
+    },
+    {
+        "given": {
+            "twolen": [{"threelen": [{"a": 1}, {"a": 2}, {"a": 3}]},
+                       {"threelen": [{"a": 4}, {"a": 5}, {"a": 6}]}]
+        },
+        "cases": [
+            {
+                "expression": "twolen[*].`foo`",
+                "result": ["foo", "foo"]
+            },
+            {
+                "comment": "Two level projection of a literal",
+                "expression": "twolen[*].threelen[*].`bar`",
+                "result": [["bar", "bar", "bar"], ["bar", "bar", "bar"]]
+            },
+            {
+                "comment": "Two level flattened projection of a literal",
+                "expression": "twolen[].threelen[].`bar`",
+                "result": ["bar", "bar", "bar", "bar", "bar", "bar"]
+            }
+        ]
+    },
+    {
+        "given": {
+            "twolen": [{"threelen": [0, 1, 2]},
+                       {"threelen": [0, 1, 2]}]
+        },
+        "cases": [
+            {
+                "expression": "twolen[].`foo`",
+                "result": ["foo", "foo"]
+            },
+            {
+                "expression": "twolen[].threelen[].`f`",
+                "result": ["f", "f", "f", "f", "f", "f"]
+            }
+        ]
+    }
+]

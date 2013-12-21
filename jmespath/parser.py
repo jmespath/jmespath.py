@@ -46,7 +46,10 @@ class IncompleteExpressionError(ParseError):
 
 class Grammar(object):
     precedence = (
-        ('right', 'DOT', 'LBRACKET'),
+        ('left', 'OR'),
+        ('right', 'DOT', 'STAR'),
+        ('left', 'LT', 'LTE', 'GT', 'GTE', 'EQ'),
+        ('right', 'LBRACKET', 'RBRACKET'),
     )
 
     def p_jmespath_subexpression(self, p):
@@ -84,9 +87,39 @@ class Grammar(object):
         else:
             p[0] = ast.Index(p[2])
 
+    def p_jmespath_bracket_specifier_filter(self, p):
+        """bracket-spec : FILTER filter-expression RBRACKET
+        """
+        p[0] = ast.FilterExpression(p[2])
+
+    def p_jmespath_filter_expression(self, p):
+        """filter-expression : expression comparator expression
+        """
+        # p[1] is a class object (from p_jmespath_comparator), so we
+        # instantiate with the the left hand expression and the right hand
+        # expression (p[1] and p[3] respectively).
+        p[0] = p[2](p[1], p[3])
+
+    def p_jmespath_comparator(self, p):
+        """comparator : LT
+                      | LTE
+                      | GT
+                      | GTE
+                      | EQ
+                      | NE
+        """
+        op_map = {
+            '<': ast.OPLessThan,
+            '<=': ast.OPLessThanEquals,
+            '==': ast.OPEquals,
+            '>': ast.OPGreaterThan,
+            '>=': ast.OPGreaterThanEquals,
+            '!=': ast.OPNotEquals,
+        }
+        p[0] = op_map[p[1]]
+
     def p_jmespath_identifier(self, p):
         """expression : IDENTIFIER
-                      | NUMBER
         """
         p[0] = ast.Field(p[1])
 
@@ -128,6 +161,10 @@ class Grammar(object):
     def p_jmespath_or_expression(self, p):
         """expression : expression OR expression"""
         p[0] = ast.ORExpression(p[1], p[3])
+
+    def p_jmespath_literal_expression(self, p):
+        """expression : LITERAL"""
+        p[0] = ast.Literal(p[1])
 
     def p_error(self, t):
         if t is not None:
