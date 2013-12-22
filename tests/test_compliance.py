@@ -14,12 +14,24 @@ TEST_DIR = os.path.join(
 
 
 def test_compliance():
-    for root, dirnames, filenames in os.walk(TEST_DIR):
-        for filename in filenames:
-            if filename.endswith('.json'):
-                full_path = os.path.join(root, filename)
-                for given, expression, result in _load_cases(full_path):
-                    yield _test_expression, given, expression, result, filename
+    for full_path in _walk_files():
+        if full_path.endswith('.json'):
+            for given, expression, result in _load_cases(full_path):
+                yield (_test_expression, given, expression,
+                       result, os.path.basename(full_path))
+
+
+def _walk_files():
+    # Check for a shortcut when running the tests interactively.
+    # If a JMESPATH_TEST is defined, that file is used as the
+    # only test to run.  Useful when doing feature development.
+    single_file = os.environ.get('JMESPATH_TEST')
+    if single_file is not None:
+        yield os.path.abspath(single_file)
+    else:
+        for root, dirnames, filenames in os.walk(TEST_DIR):
+            for filename in filenames:
+                yield os.path.join(root, filename)
 
 
 def _load_cases(full_path):
