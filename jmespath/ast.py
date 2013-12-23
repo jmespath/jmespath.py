@@ -1,3 +1,7 @@
+from jmespath.compat import with_repr_method
+
+
+@with_repr_method
 class AST(object):
     VALUE_METHODS = []
 

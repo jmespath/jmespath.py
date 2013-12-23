@@ -65,6 +65,14 @@ class TestParser(unittest.TestCase):
         parsed = self.parser.parse('foo || bar')
         self.assertEqual(repr(parsed), 'ORExpression(Field(foo), Field(bar))')
 
+    def test_unicode_literals_escaped(self):
+        parsed = self.parser.parse(r'`"\u2713"`')
+        self.assertEqual(repr(parsed), r'Literal(\u2713)')
+
+    def test_unicode_pretty_print(self):
+        parsed = self.parser.parse(r'`"\u2713"`')
+        self.assertEqual(parsed.pretty_print(), u'Literal(\u2713)')
+
     def test_multiselect(self):
         parsed = self.parser.parse('foo.{bar: bar,baz: baz}')
         self.assertEqual(
