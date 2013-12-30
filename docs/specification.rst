@@ -27,7 +27,7 @@ The grammar is specified using ABNF, as described in `RFC4234`_
 ::
 
     expression        = sub-expression / index-expression / or-expression / identifier / "*"
-    expression        =/ multi-select-list / multi-select-hash
+    expression        =/ multi-select-list / multi-select-hash / literal
     sub-expression    = expression "." expression
     or-expression     = expression "||" expression
     index-expression  = expression bracket-specifier / bracket-specifier
@@ -35,6 +35,13 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) ) "}"
     keyval-expr       = identifier ":" expression
     bracket-specifier = "[" (number / "*") "]" / "[]"
+    bracket-specifier =/ "[?" list-filter-expr "]"
+    list-filter-expr  = expression comparator expression
+    comparator        = "<" / "<=" / "==" / ">=" / ">" / "!="
+    literal           = "`" json-value "`"
+    literal           =/ "`" 1*(unescaped-literal / escaped-literal) "`"
+    unescaped-literal = %x20-21 / %x23-5B / %x5D-5F / %x61-10FFFF
+    escaped-literal   = escaped-char / (escape %x60)
     number            = ["-"]1*digit
     digit             = %x30-39
     identifier        = unquoted-string / quoted-string
@@ -58,6 +65,39 @@ The grammar is specified using ABNF, as described in `RFC4234`_
                             %x74 /          ; t    tab             U+0009
                             %x75 4HEXDIG )  ; uXXXX                U+XXXX
 
+The ``json-value`` is any valid JSON value with the one exception that the
+``%x60`` character must be escaped.  While it's encouraged that implementations
+use any existing JSON parser for this grammar rule (after handling the escaped
+literal characters), the grammar rule is shown below for completeness::
+
+
+    json-value = "false" / "null" / "true" / json-object / json-array /
+                 json-number / json-quoted-string
+    json-quoted-string = %x22 1*(unescaped-literal / escaped-literal) %x22
+    begin-array     = ws %x5B ws  ; [ left square bracket
+    begin-object    = ws %x7B ws  ; { left curly bracket
+    end-array       = ws %x5D ws  ; ] right square bracket
+    end-object      = ws %x7D ws  ; } right curly bracket
+    name-separator  = ws %x3A ws  ; : colon
+    value-separator = ws %x2C ws  ; , comma
+    ws              = *(%x20 /              ; Space
+                        %x09 /              ; Horizontal tab
+                        %x0A /              ; Line feed or New line
+                        %x0D                ; Carriage return
+                       )
+    json-object = begin-object [ member *( value-separator member ) ] end-object
+    member = quoted-string name-separator value
+    json-array = begin-array [ json-value *( value-separator json-value ) ] end-array
+    number = [ minus ] int [ frac ] [ exp ]
+    decimal-point = %x2E       ; .
+    digit1-9 = %x31-39         ; 1-9
+    e = %x65 / %x45            ; e E
+    exp = e [ minus / plus ] 1*DIGIT
+    frac = decimal-point 1*DIGIT
+    int = zero / ( digit1-9 *DIGIT )
+    minus = %x2D               ; -
+    plus = %x2B                ; +
+    zero = %x30                ; 0
 
 
 
