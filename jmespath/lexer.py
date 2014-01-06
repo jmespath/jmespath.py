@@ -72,7 +72,6 @@ class LexerDefinition(object):
     def t_IDENTIFIER(self, t):
         r'(([a-zA-Z_][a-zA-Z_0-9]*)|("(?:\\"|[^"])*"))'
         t.type = self.reserved.get(t.value, 'IDENTIFIER')
-        i = 0
         if t.value[0] == '"' and t.value[-1] == '"':
             try:
                 t.value = loads(t.value)
@@ -87,29 +86,48 @@ class LexerDefinition(object):
     def t_LITERAL(self, t):
         r'(`(?:\\`|[^`])*`)'
         actual_value = t.value[1:-1]
-        if actual_value not in ('true', 'false', 'null') and (
-                not self._looks_like_json(actual_value)):
-            # There's a shortcut syntax where string literals
-            # don't have to be quoted.  This is only true if the
-            # string doesn't start with chars that could start a valid
-            # JSON value.
-            actual_value = '"%s"' % actual_value
-        try:
-            actual_value = actual_value.replace('\\`', '`')
-            t.value = loads(actual_value)
-        except ValueError:
-            raise LexerError(lexer_position=t.lexpos,
-                             lexer_value=t.value,
-                             message=("Bad token %s" % t.value))
+        actual_value = actual_value.replace('\\`', '`')
+        # First, if it looks like JSON then we parse it as
+        # JSON and any json parsing errors propogate as lexing
+        # errors.
+        if self._looks_like_json(actual_value):
+            try:
+                t.value = loads(actual_value)
+            except ValueError:
+                raise LexerError(lexer_position=t.lexpos,
+                                lexer_value=t.value,
+                                message=("Bad token %s" % t.value))
+        else:
+            potential_value = '"%s"' % actual_value
+            try:
+                # There's a shortcut syntax where string literals
+                # don't have to be quoted.  This is only true if the
+                # string doesn't start with chars that could start a valid
+                # JSON value.
+                t.value = loads(potential_value)
+            except ValueError:
+                raise LexerError(lexer_position=t.lexpos,
+                                lexer_value=t.value,
+                                message=("Bad token %s" % t.value))
         return t
 
     def _looks_like_json(self, value):
         # Figure out if the string "value" starts with something
         # that looks like json.
-        if value and value[0] in ['"', '{', '[', '-', '0', '1', '2',
-                                  '3', '4', '5', '6', '7', '8', '9']:
-            # Then this is JSON, return True.
+        if not value:
+            return False
+        elif value[0] in ['"', '{', '[']:
             return True
+        elif value in ['true', 'false', 'null']:
+            return True
+        elif value[0] in ['-', '0', '1', '2', '3', '4', '5',
+                          '6', '7', '8', '9']:
+            # Then this is JSON, return True.
+            try:
+                loads(value)
+                return True
+            except ValueError:
+                return False
         else:
             return False
 

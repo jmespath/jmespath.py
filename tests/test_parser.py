@@ -144,12 +144,6 @@ class TestErrorMessages(unittest.TestCase):
         self.assert_error_message('foo."bar', error_message,
                                   exception=lexer.LexerError)
 
-    def test_bad_lexer_literal_value(self):
-        error_message = ('Bad jmespath expression: '
-                         'Bad token `24.24.24`:\n`24.24.24`\n^')
-        self.assert_error_message('`24.24.24`', error_message,
-                                  exception=lexer.LexerError)
-
     def test_bad_lexer_literal_value_with_json_object(self):
         error_message = ('Bad jmespath expression: '
                          'Bad token `{{}`:\n`{{}`\n^')
