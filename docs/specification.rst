@@ -88,7 +88,7 @@ literal characters), the grammar rule is shown below for completeness::
     json-object = begin-object [ member *( value-separator member ) ] end-object
     member = quoted-string name-separator value
     json-array = begin-array [ json-value *( value-separator json-value ) ] end-array
-    number = [ minus ] int [ frac ] [ exp ]
+    json-number = [ minus ] int [ frac ] [ exp ]
     decimal-point = %x2E       ; .
     digit1-9 = %x31-39         ; 1-9
     e = %x65 / %x45            ; e E
