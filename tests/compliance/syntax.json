@@ -8,11 +8,11 @@
     },
     {
       "expression": "foo.1",
-      "result": null
+      "error": "syntax"
     },
     {
       "expression": "foo.-11",
-      "result": null
+      "error": "syntax"
     },
     {
       "expression": "foo",
@@ -156,11 +156,11 @@
       },
       {
         "expression": "*.[0]",
-        "result": null
+        "error": "syntax"
       },
       {
         "expression": "*.[\"0\"]",
-        "result": null
+        "result": []
       },
       {
         "expression": "[*].bar",
@@ -190,13 +190,12 @@
         "error": "syntax"
       },
       {
-        "comment": "Indexing the 0th element",
         "expression": "foo.[0]",
-        "result": null
+        "error": "syntax"
       },
       {
         "expression": "foo.[*]",
-        "error": null
+        "result": null
       },
       {
         "comment": "Multi-select of a list with trailing comma",
@@ -320,9 +319,8 @@
         "error": "syntax"
       },
       {
-        "comment": "Valid",
         "expression": "a{foo: 0}",
-        "result": null
+        "error": "syntax"
       },
       {
         "comment": "Missing key-value pair",
@@ -424,7 +422,7 @@
       },
       {
         "expression": "foo[? bar == `baz` ]",
-        "error": null
+        "result": null
       },
       {
         "expression": "foo[ ?bar==`baz`]",
@@ -482,6 +480,64 @@
         "expression": "foo[bar==baz]",
         "error": "syntax"
       }
+    ]
+  },
+  {
+    "comment": "Filter expressions",
+    "given": {},
+    "cases": [
+        {
+            "expression": "bar.`anything`",
+            "error": "syntax"
+        },
+        {
+            "expression": "bar.`\"anything\"`",
+            "error": "syntax"
+        },
+        {
+            "expression": "bar.baz.noexists.`literal`",
+            "error": "syntax"
+        },
+        {
+            "comment": "Literal wildcard projection",
+            "expression": "foo[*].`literal`",
+            "error": "syntax"
+        },
+        {
+            "expression": "foo[*].name.`literal`",
+            "error": "syntax"
+        },
+        {
+            "expression": "foo[].name.`literal`",
+            "error": "syntax"
+        },
+        {
+            "expression": "foo[].name.`literal`.`subliteral`",
+            "error": "syntax"
+        },
+        {
+            "comment": "Projecting a literal onto an empty list",
+            "expression": "foo[*].name.noexist.`literal`",
+            "error": "syntax"
+        },
+        {
+            "expression": "foo[].name.noexist.`literal`",
+            "error": "syntax"
+        },
+        {
+            "expression": "twolen[*].`foo`",
+            "error": "syntax"
+        },
+        {
+            "comment": "Two level projection of a literal",
+            "expression": "twolen[*].threelen[*].`bar`",
+            "error": "syntax"
+        },
+        {
+            "comment": "Two level flattened projection of a literal",
+            "expression": "twolen[].threelen[].`bar`",
+            "error": "syntax"
+        }
     ]
   }
 ]

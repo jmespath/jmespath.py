@@ -11,18 +11,22 @@ import jmespath
 TEST_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     'compliance')
+NOT_SPECIFIED = object()
 
 
 def test_compliance():
     for full_path in _walk_files():
         if full_path.endswith('.json'):
             for given, expression, result, error in _load_cases(full_path):
-                if error is None and result is not None:
+                if error is NOT_SPECIFIED and result is not NOT_SPECIFIED:
                     yield (_test_expression, given, expression,
                         result, os.path.basename(full_path))
-                elif result is None and error is not None:
+                elif result is NOT_SPECIFIED and error is not NOT_SPECIFIED:
                     yield (_test_error_expression, given, expression,
                            error, os.path.basename(full_path))
+                else:
+                    parts = (given, expression, result, error)
+                    raise RuntimeError("Invalid test description: %s" % parts)
 
 
 def _walk_files():
@@ -44,7 +48,8 @@ def _load_cases(full_path):
         given = test_data['given']
         for case in test_data['cases']:
             yield (given, case['expression'],
-                   case.get('result'), case.get('error'))
+                   case.get('result', NOT_SPECIFIED),
+                   case.get('error', NOT_SPECIFIED))
 
 
 def _test_expression(given, expression, expected, filename):
