@@ -40,7 +40,11 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     comparator        = "<" / "<=" / "==" / ">=" / ">" / "!="
     literal           = "`" json-value "`"
     literal           =/ "`" 1*(unescaped-literal / escaped-literal) "`"
-    unescaped-literal = %x20-21 / %x23-5B / %x5D-5F / %x61-10FFFF
+    unescaped-literal = %x20-21 /       ; space !
+                            %x23-5A /   ; # - [
+                            %x5D-5F /   ; ] ^ _
+                            %x61-7A     ; a-z
+                            %x7C-10FFFF ; |}~ ...
     escaped-literal   = escaped-char / (escape %x60)
     number            = ["-"]1*digit
     digit             = %x30-39
@@ -86,7 +90,7 @@ literal characters), the grammar rule is shown below for completeness::
                         %x0D                ; Carriage return
                        )
     json-object = begin-object [ member *( value-separator member ) ] end-object
-    member = quoted-string name-separator value
+    member = quoted-string name-separator json-value
     json-array = begin-array [ json-value *( value-separator json-value ) ] end-array
     json-number = [ minus ] int [ frac ] [ exp ]
     decimal-point = %x2E       ; .
