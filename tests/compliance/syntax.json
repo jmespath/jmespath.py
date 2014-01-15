@@ -134,7 +134,7 @@
   },
   {
     "comment": "Flatten syntax",
-    "given": {},
+    "given": {"type": "object"},
     "cases": [
       {
         "expression": "[]",
@@ -144,7 +144,7 @@
   },
   {
     "comment": "Simple bracket syntax",
-    "given": {},
+    "given": {"type": "object"},
     "cases": [
       {
         "expression": "[0]",
@@ -160,7 +160,7 @@
       },
       {
         "expression": "*.[\"0\"]",
-        "result": []
+        "result": [[null]]
       },
       {
         "expression": "[*].bar",
