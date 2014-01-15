@@ -70,7 +70,7 @@ class LexerDefinition(object):
         return t
 
     def t_IDENTIFIER(self, t):
-        r'(([a-zA-Z_][a-zA-Z_0-9]*)|("(?:\\"|[^"])*"))'
+        r'(([a-zA-Z_][a-zA-Z_0-9]*)|("(?:\\\\|\\"|[^"])*"))'
         t.type = self.reserved.get(t.value, 'IDENTIFIER')
         if t.value[0] == '"' and t.value[-1] == '"':
             try:
@@ -87,6 +87,7 @@ class LexerDefinition(object):
         r'(`(?:\\`|[^`])*`)'
         actual_value = t.value[1:-1]
         actual_value = actual_value.replace('\\`', '`')
+        actual_value = actual_value.strip()
         # First, if it looks like JSON then we parse it as
         # JSON and any json parsing errors propogate as lexing
         # errors.
