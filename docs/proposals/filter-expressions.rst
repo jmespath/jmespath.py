@@ -4,7 +4,7 @@ Filter Expressions
 
 :JEP: 7
 :Author: James Saryerwinnie
-:Status: draft
+:Status: accepted
 :Created: 16-Dec-2013
 
 
