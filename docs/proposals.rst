@@ -10,3 +10,4 @@ changes. Proposals are marked as either "draft", "accepted", or "rejected".
 
    proposals/nested-expressions
    proposals/improved-identifiers
+   proposals/filter-expressions
