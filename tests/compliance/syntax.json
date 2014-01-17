@@ -1,6 +1,6 @@
 [{
   "comment": "Dot syntax",
-  "given": {},
+  "given": {"type": "object"},
   "cases": [
     {
       "expression": "foo.bar",
@@ -46,7 +46,7 @@
 },
   {
     "comment": "Simple token errors",
-    "given": {},
+    "given": {"type": "object"},
     "cases": [
       {
         "expression": ".",
@@ -100,11 +100,11 @@
   },
   {
     "comment": "Wildcard syntax",
-    "given": {},
+    "given": {"type": "object"},
     "cases": [
       {
         "expression": "*",
-        "result": []
+        "result": ["object"]
       },
       {
         "expression": "*.*",
@@ -178,7 +178,7 @@
   },
   {
     "comment": "Multi-select list syntax",
-    "given": {},
+    "given": {"type": "object"},
     "cases": [
       {
         "expression": "foo[0]",
@@ -271,7 +271,7 @@
   },
   {
     "comment": "Multi-select hash syntax",
-    "given": {},
+    "given": {"type": "object"},
     "cases": [
       {
         "comment": "No key or value",
@@ -375,13 +375,13 @@
       {
         "comment": "Nested multi select",
         "expression": "{\"\\\\\":{\" \":*}}",
-        "result": {"\\": {" ": []}}
+        "result": {"\\": {" ": ["object"]}}
       }
     ]
   },
   {
     "comment": "Or expressions",
-    "given": {},
+    "given": {"type": "object"},
     "cases": [
       {
         "expression": "foo || bar",
@@ -419,7 +419,7 @@
   },
   {
     "comment": "Filter expressions",
-    "given": {},
+    "given": {"type": "object"},
     "cases": [
       {
         "expression": "foo[?bar==`baz`]",
@@ -488,18 +488,18 @@
       {
         "comment": "Quoted identifier in filter expression no spaces",
         "expression": "[?\"\\\\\">`\"foo\"`]",
-        "result": []
+        "result": null
       },
       {
         "comment": "Quoted identifier in filter expression with spaces",
         "expression": "[?\"\\\\\" > `\"foo\"`]",
-        "result": []
+        "result": null
       }
     ]
   },
   {
     "comment": "Filter expression errors",
-    "given": {},
+    "given": {"type": "object"},
     "cases": [
       {
         "expression": "bar.`anything`",
@@ -557,7 +557,7 @@
   },
   {
     "comment": "Identifiers",
-    "given": {},
+    "given": {"type": "object"},
     "cases": [
       {
         "expression": "foo",
@@ -575,7 +575,7 @@
   },
   {
     "comment": "Literals",
-    "given": {},
+    "given": {"type": "object"},
     "cases": [
       {
         "expression": "`foo`",
