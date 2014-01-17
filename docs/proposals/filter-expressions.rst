@@ -122,7 +122,7 @@ For ``string/number/true/false/null`` types, equality is an exact match. A
 of code points.  The literal values ``true/false/null`` are only equal to their
 own literal values.  Two JSON objects are equal if they have the same set
 of keys (for each key in the first JSON object there exists a key with equal
-value in the second JSON object).  Two JSON arrays are equal they have
+value in the second JSON object).  Two JSON arrays are equal if they have
 equal elements in the same order (given two arrays ``x`` and ``y``,
 for each ``i`` in ``x``, ``x[i] == y[i]``).
 
@@ -131,7 +131,21 @@ Ordering Operators
 
 Ordering operators ``>, >=, <, <=`` are **only** valid for numbers.
 Evaluating any other type with a comparison operator will yield a ``null``
-value.
+value, which will result in the element being excluded from the result list.
+For example, given::
+
+    search('foo[?a<b]', {"foo": [{"a": "char", "b": "char"},
+                                 {"a": 2, "b": 1},
+                                 {"a": 1, "b": 2}]})
+
+The three elements in the foo list are evaluated against ``a < b``.  The first
+element resolves to the comparison ``"char" < "bar"``, and because these types
+are string, the expression results in ``null``, so the first element is not
+included in the result list.  The second element resolves to ``2 < 1``,
+which is ``false``, so the second element is excluded from the result list.
+The third expression resolves to ``1 < 2`` which evalutes to ``true``, so the
+third element is included in the list.  The final result of that expression
+is ``[{"a": 1, "b": 2}]``.
 
 
 Filtering Semantics
