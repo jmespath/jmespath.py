@@ -28,7 +28,10 @@ The grammar is specified using ABNF, as described in `RFC4234`_
 
     expression        = sub-expression / index-expression / or-expression / identifier / "*"
     expression        =/ multi-select-list / multi-select-hash / literal
-    sub-expression    = expression "." expression
+    sub-expression    = expression "." ( identifier /
+                                         multi-select-list /
+                                         multi-select hash /
+                                         "*" )
     or-expression     = expression "||" expression
     index-expression  = expression bracket-specifier / bracket-specifier
     multi-select-list = "[" ( expression *( "," expression ) ) "]"
