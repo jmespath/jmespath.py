@@ -30,7 +30,7 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     expression        =/ multi-select-list / multi-select-hash / literal
     sub-expression    = expression "." ( identifier /
                                          multi-select-list /
-                                         multi-select hash /
+                                         multi-select-hash /
                                          "*" )
     or-expression     = expression "||" expression
     index-expression  = expression bracket-specifier / bracket-specifier
@@ -72,14 +72,16 @@ The grammar is specified using ABNF, as described in `RFC4234`_
                             %x74 /          ; t    tab             U+0009
                             %x75 4HEXDIG )  ; uXXXX                U+XXXX
 
-The ``json-value`` is any valid JSON value with the one exception that the
-``%x60`` character must be escaped.  While it's encouraged that implementations
-use any existing JSON parser for this grammar rule (after handling the escaped
-literal characters), the grammar rule is shown below for completeness::
+    ; The ``json-value`` is any valid JSON value with the one exception that the
+    ; ``%x60`` character must be escaped.  While it's encouraged that implementations
+    ; use any existing JSON parser for this grammar rule (after handling the escaped
+    ; literal characters), the grammar rule is shown below for completeness::
 
-
-    json-value = "false" / "null" / "true" / json-object / json-array /
+    json-value = false / null / true / json-object / json-array /
                  json-number / json-quoted-string
+    false = %x66.61.6c.73.65   ; false
+    null  = %x6e.75.6c.6c      ; null
+    true  = %x74.72.75.65      ; true
     json-quoted-string = %x22 1*(unescaped-literal / escaped-literal) %x22
     begin-array     = ws %x5B ws  ; [ left square bracket
     begin-object    = ws %x7B ws  ; { left curly bracket
@@ -105,7 +107,6 @@ literal characters), the grammar rule is shown below for completeness::
     minus = %x2D               ; -
     plus = %x2B                ; +
     zero = %x30                ; 0
-
 
 
 Identifiers
@@ -174,7 +175,10 @@ SubExpressions
 
 ::
 
-  sub-expression    = expression "." expression
+    sub-expression    = expression "." ( identifier /
+                                         multi-select-list /
+                                         multi-select-hash /
+                                         "*" )
 
 A subexpression is a combination of two expressions separated by the '.' char.
 A subexpression is evaluted as follows:
