@@ -27,14 +27,28 @@ The grammar is specified using ABNF, as described in `RFC4234`_
 ::
 
     expression        = sub-expression / index-expression / or-expression / identifier / "*"
-    expression        =/ multi-select-list / multi-select-hash
-    sub-expression    = expression "." expression
+    expression        =/ multi-select-list / multi-select-hash / literal
+    sub-expression    = expression "." ( identifier /
+                                         multi-select-list /
+                                         multi-select-hash /
+                                         "*" )
     or-expression     = expression "||" expression
     index-expression  = expression bracket-specifier / bracket-specifier
     multi-select-list = "[" ( expression *( "," expression ) ) "]"
     multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) ) "}"
     keyval-expr       = identifier ":" expression
     bracket-specifier = "[" (number / "*") "]" / "[]"
+    bracket-specifier =/ "[?" list-filter-expr "]"
+    list-filter-expr  = expression comparator expression
+    comparator        = "<" / "<=" / "==" / ">=" / ">" / "!="
+    literal           = "`" json-value "`"
+    literal           =/ "`" 1*(unescaped-literal / escaped-literal) "`"
+    unescaped-literal = %x20-21 /       ; space !
+                            %x23-5A /   ; # - [
+                            %x5D-5F /   ; ] ^ _
+                            %x61-7A     ; a-z
+                            %x7C-10FFFF ; |}~ ...
+    escaped-literal   = escaped-char / (escape %x60)
     number            = ["-"]1*digit
     digit             = %x30-39
     identifier        = unquoted-string / quoted-string
@@ -58,7 +72,41 @@ The grammar is specified using ABNF, as described in `RFC4234`_
                             %x74 /          ; t    tab             U+0009
                             %x75 4HEXDIG )  ; uXXXX                U+XXXX
 
+    ; The ``json-value`` is any valid JSON value with the one exception that the
+    ; ``%x60`` character must be escaped.  While it's encouraged that implementations
+    ; use any existing JSON parser for this grammar rule (after handling the escaped
+    ; literal characters), the grammar rule is shown below for completeness::
 
+    json-value = false / null / true / json-object / json-array /
+                 json-number / json-quoted-string
+    false = %x66.61.6c.73.65   ; false
+    null  = %x6e.75.6c.6c      ; null
+    true  = %x74.72.75.65      ; true
+    json-quoted-string = %x22 1*(unescaped-literal / escaped-literal) %x22
+    begin-array     = ws %x5B ws  ; [ left square bracket
+    begin-object    = ws %x7B ws  ; { left curly bracket
+    end-array       = ws %x5D ws  ; ] right square bracket
+    end-object      = ws %x7D ws  ; } right curly bracket
+    name-separator  = ws %x3A ws  ; : colon
+    value-separator = ws %x2C ws  ; , comma
+    ws              = *(%x20 /              ; Space
+                        %x09 /              ; Horizontal tab
+                        %x0A /              ; Line feed or New line
+                        %x0D                ; Carriage return
+                       )
+    json-object = begin-object [ member *( value-separator member ) ] end-object
+    member = quoted-string name-separator json-value
+    json-array = begin-array [ json-value *( value-separator json-value ) ] end-array
+    json-number = [ minus ] int [ frac ] [ exp ]
+    decimal-point = %x2E       ; .
+    digit1-9 = %x31-39         ; 1-9
+    e = %x65 / %x45            ; e E
+    exp = e [ minus / plus ] 1*DIGIT
+    frac = decimal-point 1*DIGIT
+    int = zero / ( digit1-9 *DIGIT )
+    minus = %x2D               ; -
+    plus = %x2B                ; +
+    zero = %x30                ; 0
 
 
 Identifiers
@@ -127,7 +175,10 @@ SubExpressions
 
 ::
 
-  sub-expression    = expression "." expression
+    sub-expression    = expression "." ( identifier /
+                                         multi-select-list /
+                                         multi-select-hash /
+                                         "*" )
 
 A subexpression is a combination of two expressions separated by the '.' char.
 A subexpression is evaluted as follows:
@@ -381,6 +432,124 @@ Examples
   search([*].foo, [{"foo": 1}, {"foo": 2}, {"foo": 3}]) -> [1, 2, 3]
   search([*].foo, [{"foo": 1}, {"foo": 2}, {"bar": 3}]) -> [1, 2]
   search('*.foo', {"a": {"foo": 1}, "b": {"foo": 2}, "c": {"bar": 1}}) -> [1, 2]
+
+
+Literal Expressions
+===================
+
+::
+
+    literal           = "`" json-value "`"
+    literal           =/ "`" 1*(unescaped-literal / escaped-literal) "`"
+    unescaped-literal = %x20-21 /       ; space !
+                            %x23-5A /   ; # - [
+                            %x5D-5F /   ; ] ^ _
+                            %x61-7A     ; a-z
+                            %x7C-10FFFF ; |}~ ...
+    escaped-literal   = escaped-char / (escape %x60)
+
+A literal expression is an expression that allows arbitrary JSON objects to be
+specified.  This is useful in filter expressions as well as multi select hashes
+(to create arbitrary key value pairs), but is allowed anywhere an expression is
+allowed.  The specification includes the ABNF for JSON, implementations should
+use an existing JSON parser to parse literal values.  Note that the ``\```
+character must now be escaped in a ``json-value`` which means implementations
+need to handle this case before passing the resulting string to a JSON parser.
+
+Note the second literal rule.  This is used to specify a string such that
+double quotes do not have to be included.  This means that the literal
+expression ``\`"foo"\``` is equivalent to ``\`foo\```.
+
+
+Examples
+--------
+
+::
+
+  search(`foo`, "anything") -> "foo"
+  search(`"foo"`, "anything") -> "foo"
+  search(`[1, 2]`, "anything") -> [1, 2]
+  search(`true`, "anything") -> true
+  search(`{"a": "b"}`.a, "anything") -> "b"
+  search({first: a, type: `mytype`}, {"a": "b", "c": "d"}) -> {"first": "b", "type": "mytype"}
+
+
+Filter Expressions
+==================
+
+::
+
+  list-filter-expr  = expression comparator expression
+  comparator        = "<" / "<=" / "==" / ">=" / ">" / "!="
+
+A filter expression provides a way to select JSON elements based on a
+comparison to another expression.  A filter expression is evaluated as follows:
+for each element in an array evaluate the ``list-filter-expr`` against the
+element.  If the expression evalutes to ``true``, the item (in its entirety) is
+added to the result list.  Otherwise it is excluded from the result list.  A
+filter expression is only defined for a JSON array.  Attempting to evaluate a
+filter expression against any other type will return ``null``.
+
+Comparison Operators
+--------------------
+
+The following operations are supported:
+
+* ``==``, tests for equality.
+* ``!=``, tests for inequality.
+* ``<``, less than.
+* ``<=``, less than or equal to.
+* ``>``, greater than.
+* ``>=``, greater than or equal to.
+
+The behavior of each operation is dependent on the type of each evaluated
+expression.
+
+The comparison semantics for each operator are defined below based on
+the corresponding JSON type:
+
+Equality Operators
+~~~~~~~~~~~~~~~~~~
+
+For ``string/number/true/false/null`` types, equality is an exact match. A
+``string`` is equal to another ``string`` if they they have the exact sequence
+of code points.  The literal values ``true/false/null`` are only equal to their
+own literal values.  Two JSON objects are equal if they have the same set
+of keys (for each key in the first JSON object there exists a key with equal
+value in the second JSON object).  Two JSON arrays are equal if they have
+equal elements in the same order (given two arrays ``x`` and ``y``,
+for each ``i`` in ``x``, ``x[i] == y[i]``).
+
+Ordering Operators
+~~~~~~~~~~~~~~~~~~
+
+Ordering operators ``>, >=, <, <=`` are **only** valid for numbers.
+Evaluating any other type with a comparison operator will yield a ``null``
+value, which will result in the element being excluded from the result list.
+For example, given::
+
+    search('foo[?a<b]', {"foo": [{"a": "char", "b": "char"},
+                                 {"a": 2, "b": 1},
+                                 {"a": 1, "b": 2}]})
+
+The three elements in the foo list are evaluated against ``a < b``.  The first
+element resolves to the comparison ``"char" < "bar"``, and because these types
+are string, the expression results in ``null``, so the first element is not
+included in the result list.  The second element resolves to ``2 < 1``,
+which is ``false``, so the second element is excluded from the result list.
+The third expression resolves to ``1 < 2`` which evalutes to ``true``, so the
+third element is included in the list.  The final result of that expression
+is ``[{"a": 1, "b": 2}]``.
+
+
+Examples
+--------
+
+::
+
+  search(foo[?bar==`10`], {"foo": [{"bar": 1}, {"bar": 10}]}) -> [{"bar": 10}]
+  search([?bar==`10`], [{"bar": 1}, {"bar": 10}]}) -> [{"bar": 10}]
+  search(foo[?a==b], {"foo": [{"a": 1, "b": 2}, {"a": 2, "b": 2}]}) -> [{"a": 2, "b": 2}]
 
 
 .. _RFC4234: http://tools.ietf.org/html/rfc4234

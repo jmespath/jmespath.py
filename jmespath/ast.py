@@ -1,3 +1,8 @@
+import operator
+from jmespath.compat import with_repr_method
+
+
+@with_repr_method
 class AST(object):
     VALUE_METHODS = []
 
@@ -81,6 +86,10 @@ class BaseMultiField(AST):
             return method(self.nodes)
         else:
             return self._multi_get(value)
+
+    def _multi_get(self, value):
+        # Subclasses must define this method.
+        raise NotImplementedError("_multi_get")
 
     def pretty_print(self, indent=''):
         return "%s%s(%s)" % (indent, self.__class__.__name__, self.nodes)
@@ -195,6 +204,133 @@ class ListElements(AST):
         return "%sListElements()" % indent
 
 
+class ORExpression(AST):
+    def __init__(self, first, remaining):
+        self.first = first
+        self.remaining = remaining
+
+    def search(self, value):
+        matched = self.first.search(value)
+        if matched is None:
+            matched = self.remaining.search(value)
+        return matched
+
+    def pretty_print(self, indent=''):
+        return "%sORExpression(%s, %s)" % (indent, self.first,
+                                           self.remaining)
+
+
+class FilterExpression(AST):
+    VALUE_METHODS = ['multi_filter']
+
+    def __init__(self, expression):
+        self.expression = expression
+
+    def search(self, value):
+        if not isinstance(value, list):
+            return None
+        method = self._get_value_method(value)
+        if method is not None:
+            return method(self.expression)
+        else:
+            result = []
+            for element in value:
+                if self.expression.search(element):
+                    result.append(element)
+            return _Projection(result)
+
+    def pretty_print(self, indent=''):
+        return '%sFilterExpression(%s)' % (indent, self.expression)
+
+
+class Literal(AST):
+    VALUE_METHODS = ['get_literal']
+    def __init__(self, literal_value):
+        self.literal_value = literal_value
+
+    def search(self, value):
+        method = self._get_value_method(value)
+        if method is not None:
+            return method(self.literal_value)
+        else:
+            return self.literal_value
+
+    def pretty_print(self, indent=''):
+        return '%sLiteral(%s)' % (indent, self.literal_value)
+
+
+class Comparator(AST):
+    # Subclasses must define the operation function.
+    operation = None
+
+    def __init__(self, first, second):
+        self.first = first
+        self.second = second
+
+    def search(self, data):
+        return self.operation(self.first.search(data),
+                              self.second.search(data))
+
+    def pretty_print(self, indent=''):
+        return '%s%s(%s, %s)' % (indent, self.__class__.__name__,
+                                 self.first, self.second)
+
+
+class OPEquals(Comparator):
+    def _equals(self, first, second):
+        if self._is_special_integer_case(first, second):
+            return False
+        else:
+            return first == second
+
+    def _is_special_integer_case(self, first, second):
+        # We need to special case comparing 0 or 1 to
+        # True/False.  While normally comparing any
+        # integer other than 0/1 to True/False will always
+        # return False.  However 0/1 have this:
+        # >>> 0 == True
+        # False
+        # >>> 0 == False
+        # True
+        # >>> 1 == True
+        # True
+        # >>> 1 == False
+        # False
+        #
+        # Also need to consider that:
+        # >>> 0 in [True, False]
+        # True
+        if first is 0 or first is 1:
+            return second is True or second is False
+        elif second is 0 or second is 1:
+            return first is True or first is False
+
+    operation = _equals
+
+
+class OPNotEquals(OPEquals):
+    def _not_equals(self, first, second):
+        return not super(OPNotEquals, self)._equals(first, second)
+
+    operation = _not_equals
+
+
+class OPLessThan(Comparator):
+    operation = operator.lt
+
+
+class OPLessThanEquals(Comparator):
+    operation = operator.le
+
+
+class OPGreaterThan(Comparator):
+    operation = operator.gt
+
+
+class OPGreaterThanEquals(Comparator):
+    operation = operator.ge
+
+
 class _Projection(list):
     def __init__(self, elements):
         self.extend(elements)
@@ -257,18 +393,24 @@ class _Projection(list):
                 continue
         return results
 
+    def get_literal(self, literal_value):
+        # To adhere to projection semantics, a literal value is projected for
+        # each element of the list.
+        results = self.__class__([])
+        for element in self:
+            if isinstance(element, self.__class__):
+                results.append(element.get_literal(literal_value))
+            else:
+                results.append(literal_value)
+        return results
 
-class ORExpression(AST):
-    def __init__(self, first, remaining):
-        self.first = first
-        self.remaining = remaining
-
-    def search(self, value):
-        matched = self.first.search(value)
-        if matched is None:
-            matched = self.remaining.search(value)
-        return matched
-
-    def pretty_print(self, indent=''):
-        return "%sORExpression(%s, %s)" % (indent, self.first,
-                                           self.remaining)
+    def multi_filter(self, expression):
+        results = self.__class__([])
+        for element in self:
+            if isinstance(element, self.__class__):
+                sub_results = element.multi_filter(expression)
+                results.append(sub_results)
+            else:
+                if expression.search(element):
+                    results.append(element)
+        return results
