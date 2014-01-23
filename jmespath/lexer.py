@@ -84,7 +84,7 @@ class LexerDefinition(object):
         return t
 
     def t_LITERAL(self, t):
-        r'(`(?:\\`|[^`])*`)'
+        r'(`(?:\\\\|\\`|[^`])*`)'
         actual_value = t.value[1:-1]
         actual_value = actual_value.replace('\\`', '`')
         actual_value = actual_value.strip()
