@@ -105,6 +105,21 @@
                 "comment": "Multiple literal expressions with escapes",
                 "expression": "`\\\\`.{a:`b`}",
                 "result": {"a": "b"}
+            },
+            {
+                "comment": "literal . identifier",
+                "expression": "`{\"a\": \"b\"}`.a",
+                "result": "b"
+            },
+            {
+                "comment": "literal . identifier . identifier",
+                "expression": "`{\"a\": {\"b\": \"c\"}}`.a.b",
+                "result": "c"
+            },
+            {
+                "comment": "literal . identifier bracket-expr",
+                "expression": "`[0, 1, 2]`[1]",
+                "result": 1
             }
         ]
     }
