@@ -46,12 +46,16 @@ class IncompleteExpressionError(ParseError):
 
 class Grammar(object):
     precedence = (
-        ('right', 'DOT', 'LBRACKET'),
+        ('left', 'OR'),
+        ('right', 'DOT', 'STAR'),
+        ('left', 'LT', 'LTE', 'GT', 'GTE', 'EQ'),
+        ('right', 'LBRACKET', 'RBRACKET'),
     )
 
     def p_jmespath_subexpression(self, p):
-        """ expression : expression DOT expression
-                       | STAR
+        """expression : expression DOT multi-select-list
+                      | expression DOT multi-select-hash
+                      | STAR
         """
         if len(p) == 2:
             # Then this is the STAR rule.
@@ -59,6 +63,16 @@ class Grammar(object):
         else:
             # This is the expression DOT expression rule.
             p[0] = ast.SubExpression(p[1], p[3])
+
+    def p_jmespath_subexpression_identifier(self, p):
+        """expression : expression DOT IDENTIFIER
+        """
+        p[0] = ast.SubExpression(p[1], ast.Field(p[3]))
+
+    def p_jmespath_subexpression_wildcard(self, p):
+        """expression : expression DOT STAR
+        """
+        p[0] = ast.SubExpression(p[1], ast.WildcardValues())
 
     def p_jmespath_index(self, p):
         """expression : expression bracket-spec
@@ -84,19 +98,55 @@ class Grammar(object):
         else:
             p[0] = ast.Index(p[2])
 
+    def p_jmespath_bracket_specifier_filter(self, p):
+        """bracket-spec : FILTER filter-expression RBRACKET
+        """
+        p[0] = ast.FilterExpression(p[2])
+
+    def p_jmespath_filter_expression(self, p):
+        """filter-expression : expression comparator expression
+        """
+        # p[2] is a class object (from p_jmespath_comparator), so we
+        # instantiate with the the left hand expression and the right hand
+        # expression (p[1] and p[3] respectively).
+        p[0] = p[2](p[1], p[3])
+
+    def p_jmespath_comparator(self, p):
+        """comparator : LT
+                      | LTE
+                      | GT
+                      | GTE
+                      | EQ
+                      | NE
+        """
+        op_map = {
+            '<': ast.OPLessThan,
+            '<=': ast.OPLessThanEquals,
+            '==': ast.OPEquals,
+            '>': ast.OPGreaterThan,
+            '>=': ast.OPGreaterThanEquals,
+            '!=': ast.OPNotEquals,
+        }
+        p[0] = op_map[p[1]]
+
     def p_jmespath_identifier(self, p):
         """expression : IDENTIFIER
-                      | NUMBER
         """
         p[0] = ast.Field(p[1])
 
+    def p_jmespath_multiselect_expressions(self, p):
+        """expression : multi-select-hash
+                      | multi-select-list
+        """
+        p[0] = p[1]
+
     def p_jmespath_multiselect(self, p):
-        """expression : LBRACE keyval-exprs RBRACE
+        """multi-select-hash : LBRACE keyval-exprs RBRACE
         """
         p[0] = ast.MultiFieldDict(p[2])
 
     def p_jmespath_multiselect_list(self, p):
-        """expression : LBRACKET expressions RBRACKET
+        """multi-select-list : LBRACKET expressions RBRACKET
         """
         p[0] = ast.MultiFieldList(p[2])
 
@@ -128,6 +178,10 @@ class Grammar(object):
     def p_jmespath_or_expression(self, p):
         """expression : expression OR expression"""
         p[0] = ast.ORExpression(p[1], p[3])
+
+    def p_jmespath_literal_expression(self, p):
+        """expression : LITERAL"""
+        p[0] = ast.Literal(p[1])
 
     def p_error(self, t):
         if t is not None:
