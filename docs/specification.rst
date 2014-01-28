@@ -514,11 +514,12 @@ Equality Operators
 For ``string/number/true/false/null`` types, equality is an exact match. A
 ``string`` is equal to another ``string`` if they they have the exact sequence
 of code points.  The literal values ``true/false/null`` are only equal to their
-own literal values.  Two JSON objects are equal if they have the same set
-of keys (for each key in the first JSON object there exists a key with equal
-value in the second JSON object).  Two JSON arrays are equal if they have
-equal elements in the same order (given two arrays ``x`` and ``y``,
-for each ``i`` in ``x``, ``x[i] == y[i]``).
+own literal values.  Two JSON objects are equal if they have the same set of
+keys and values (given two JSON objeccts ``x`` and ``y``, for each key value
+pair ``(i, j)`` in ``x``, there exists an equivalent pair ``(i, j)`` in ``y``).
+Two JSON arrays are equal if they have equal elements in the same order (given
+two arrays ``x`` and ``y``, for each ``i`` from ``0`` until ``length(x)``,
+``x[i] == y[i]``).
 
 Ordering Operators
 ~~~~~~~~~~~~~~~~~~
