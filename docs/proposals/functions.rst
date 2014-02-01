@@ -22,7 +22,7 @@ in ``multi-select-list`` and ``multi-select-hash`` expressions to format the
 output of an expression to contain data that might not have been in the
 original JSON input. If filtered projections are added to JMESPath, functions
 would be a powerful mechanism to perform any kind of special comparisons for
-things like ``length()``, ``matches()``, ``substring()``, etc.
+things like ``length()``, ``matches()``, etc.
 
 Data Types
 ==========
@@ -49,21 +49,9 @@ The function grammar will require the following grammar additions:
 ::
 
     function-expression = identifier "(" *(function-arg *("," function-arg ) ) ")"
-    function-arg        = expression
-    literal             = literal-true / literal-false / literal-null
-    literal             =/ literal-number / literal-string / literal-array
-    literal             =/ literal-object / literal-unquoted
-    literal-true        = "`true`"
-    literal-false       = "`false`"
-    literal-null        = "`null`"
-    literal-number      = "`" [-]1*digit ("." 1*digit) "`"
-    literal-string      = "`" quote *(char) quote "`"
-    literal-array       = "`[" *(char) "]`"
-    literal-object      = "`{" *(char) "}`"
-    literal-unquoted    = "`" *(char) "`"
+    function-arg        = expression / number
 
-``expression`` will need to be updated to add the ``current-node`` and
-``literal`` tokens:
+``expression`` will need to be updated to add the ``current-node`` production:
 
 ::
 
@@ -74,43 +62,6 @@ The function grammar will require the following grammar additions:
 
 A function can accept any number of arguments, and each argument can be an
 expression.
-
-literal
--------
-
-With the addition of the literal token, the JMESPath syntax can now contain
-JavaScript literals for ``true``, ``false``, ``null``, numbers, literal
-strings, and unquoted literal strings. Literal tokens allow function arguments
-to be passed to the function as the literal JavaScript value instead of the
-result of an expression the descends into the current node. More flexible
-output structures are possible with the addition of literal tokens.
-
-The value of a literal token can be any valid JSON string including quoted
-strings, Booleans, nulls, numbers, objects, arrays, and unquoted strings. If
-the value passed between the two backticks of a JSON literal statement is not
-``true``, ``false``, ``null``, a number, or a quoted string, then the value
-MUST be treated as a JSON string. This allows users the convenience of passing
-in JSON literal strings without having to quote the string.  For example, the
-JSON literal of ```foo``` would be equivalent to the JSON literal of
-```"foo"```. All other values MUST be JSON decoded using the rules described
-at http://www.json.org/.
-
-Given the following data, ``{"foo": {"bar": "bar"}}``, and the following
-expression, ``foo.[bar, `true`, `false`, `null`, `literal`]``, the result would
-be ``["bar", true, false, "literal"]``.
-
-The following expressions would be parsed as literal tokens:
-
-* ```true``` => ``true``
-* ```false``` => ``false``
-* ```null``` => ``null``
-* ```123``` => ``123``
-* ```-123``` => ``-123``
-* ```-1.23``` => ``-1.23``
-* ```"abc"``` => ``"abc"``
-* ```abc``` => ``"abc"``
-* ```[1, 2, 3]``` => ``[1, 2, 3]``
-* ```{"foo": "bar"}``` => ``{"foo": "bar"}``
 
 current-node
 ------------
@@ -780,37 +731,6 @@ This function MUST return ``null`` if the provided argument is not an array.
      - ``min(@)``
      - ``null``
 
-reverse
-~~~~~~~
-
-::
-
-    array reverse(array $list)
-
-This function accepts an array ``$list`` argument and returns the the elements
-in reverse order.
-
-This function MUST return ``null`` if the provided argument is not an array.
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Given
-     - Expression
-     - Result
-   * - ``["a", "b", "c"]``
-     - ``reverse(@)``
-     - ``["c", "b", "a"]``
-   * - ``[1, "a", "c"]``
-     - ``reverse(@)``
-     - ``["c", "a", 1]``
-   * - ``{"a": 1, "b": 2}``
-     - ``reverse(@)``
-     - ``null``
-   * - ``false``
-     - ``reverse(@)``
-     - ``null``
-
 sort
 ~~~~
 
@@ -1380,26 +1300,6 @@ Test Cases
           "result": null
         },
         {
-          "expression": "reverse(@.arr)",
-          "result": ["100", "a", 5, 4, 3, -1]
-        },
-        {
-          "expression": "reverse(@.strings)",
-          "result":  ["c", "b", "a"]
-        },
-        {
-          "expression": "reverse(abc)",
-          "result": null
-        },
-        {
-          "expression": "reverse(@.empty)",
-          "result": null
-        },
-        {
-          "expression": "reverse(@)",
-          "result": null
-        },
-        {
           "expression": "sort(@.arr)",
           "result": [-1, 3, 4, 5, "a", "100"]
         },
@@ -1418,34 +1318,6 @@ Test Cases
         {
           "expression": "sort(@)",
           "result": null
-        },
-        {
-          "expression": "substring(`abc`, 0, -1)",
-          "result": "ab"
-        },
-        {
-          "expression": "substring(`abc`, -2)",
-          "result": "bc"
-        },
-        {
-          "expression": "substring(`abc123`, `1`)",
-          "result": "bc123"
-        },
-        {
-          "expression": "substring(`false`, 1, 1)",
-          "result": null
-        },
-        {
-          "expression": "substring(`abc`, `true`)",
-          "error": "runtime"
-        },
-        {
-          "expression": "substring(`abc`, 1, `false`)",
-          "error": "runtime"
-        },
-        {
-          "expression": "substring()",
-          "error": "runtime"
         },
         {
           "expression": "type(`abc`)",
@@ -1541,3 +1413,9 @@ Test Cases
         }
       ]
     }]
+
+History
+=======
+
+* This JEP originally proposed the literal syntax. The literal portion of this
+  JEP was removed and added instead to JEP 7.
