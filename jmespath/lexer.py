@@ -28,13 +28,16 @@ class LexerDefinition(object):
         'STAR',
         'DOT',
         'FILTER',
+        'LPAREN',
+        'RPAREN',
         'LBRACKET',
         'RBRACKET',
         'LBRACE',
         'RBRACE',
         'OR',
         'NUMBER',
-        'IDENTIFIER',
+        'UNQUOTED_IDENTIFIER',
+        'QUOTED_IDENTIFIER',
         'COMMA',
         'COLON',
         'LT',
@@ -44,11 +47,14 @@ class LexerDefinition(object):
         'EQ',
         'NE',
         'LITERAL',
+        'CURRENT',
     ) + tuple(reserved.values())
 
     t_STAR = r'\*'
     t_DOT = r'\.'
     t_FILTER = r'\[\?'
+    t_LPAREN = r'\('
+    t_RPAREN = r'\)'
     t_LBRACKET = r'\['
     t_RBRACKET = r'\]'
     t_LBRACE = r'\{'
@@ -62,6 +68,7 @@ class LexerDefinition(object):
     t_GTE = r'>='
     t_EQ = r'=='
     t_NE = r'!='
+    t_CURRENT = r'@'
     t_ignore = ' '
 
     def t_NUMBER(self, t):
@@ -69,18 +76,21 @@ class LexerDefinition(object):
         t.value = int(t.value)
         return t
 
-    def t_IDENTIFIER(self, t):
-        r'(([a-zA-Z_][a-zA-Z_0-9]*)|("(?:\\\\|\\"|[^"])*"))'
-        t.type = self.reserved.get(t.value, 'IDENTIFIER')
-        if t.value[0] == '"' and t.value[-1] == '"':
-            try:
-                t.value = loads(t.value)
-            except ValueError as e:
-                error_message = str(e).split(':')[0]
-                raise LexerError(lexer_position=t.lexpos,
-                                 lexer_value=t.value,
-                                 message=error_message)
-            return t
+    def t_UNQUOTED_IDENTIFIER(self, t):
+        r'([a-zA-Z_][a-zA-Z_0-9]*)'
+        t.type = self.reserved.get(t.value, 'UNQUOTED_IDENTIFIER')
+        return t
+
+    def t_QUOTED_IDENFITIER(self, t):
+        r'("(?:\\\\|\\"|[^"])*")'
+        t.type = self.reserved.get(t.value, 'QUOTED_IDENTIFIER')
+        try:
+            t.value = loads(t.value)
+        except ValueError as e:
+            error_message = str(e).split(':')[0]
+            raise LexerError(lexer_position=t.lexpos,
+                                lexer_value=t.value,
+                                message=error_message)
         return t
 
     def t_LITERAL(self, t):

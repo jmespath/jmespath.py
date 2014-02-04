@@ -1,5 +1,8 @@
 import operator
-from jmespath.compat import with_repr_method
+import math
+import json
+
+from jmespath.compat import with_repr_method, string_type
 
 
 @with_repr_method
@@ -329,6 +332,216 @@ class OPGreaterThan(Comparator):
 
 class OPGreaterThanEquals(Comparator):
     operation = operator.ge
+
+
+class CurrentNode(AST):
+    def search(self, value):
+        return value
+
+
+class FunctionExpression(AST):
+    def __init__(self, name, args):
+        self.name = name
+        self.args = args
+        try:
+            self._function = getattr(self, '_func_%s' % name)
+        except AttributeError:
+            raise ValueError("Unknown function: %s" % self.name)
+        self.arity = self._function.arity
+        self._function = self._resolve_arguments_wrapper(self._function)
+
+    def pretty_print(self, indent=''):
+        return "%sFunctionExpression(name=%s, args=%s)" % (
+            indent, self.name, self.args)
+
+    def search(self, value):
+        return self._function(value)
+
+    def _resolve_arguments_wrapper(self, function):
+        def _call_with_resolved_args(value):
+            resolved_args = []
+            for arg_expression, arg_spec in zip(self.args, function.argspec):
+                if arg_spec['resolve']:
+                    current = arg_expression.search(value)
+                else:
+                    current = arg_expression
+                resolved_args.append(current)
+            return function(*resolved_args)
+        return _call_with_resolved_args
+
+    def arity(amount, argspec=None):
+        def _record_arity(func):
+            func.arity = amount
+            if argspec is not None:
+                # A function that specify additional attributes
+                # about its arguments.  The runtime can infer whatever
+                # it wants about the argspec, the only thing we need to do
+                # is validate the length matches the arity.
+                if len(argspec) != amount:
+                    raise ValueError("Invalid function definition: argspec "
+                                     "length (%s) does not match arity (%s)" %
+                                     (len(argspec), amount))
+                func.argspec = argspec
+            else:
+                # By default, resolve all arguments against the passed in
+                # value.
+                func.argspec = [dict(resolve=True) for _ in range(amount)]
+            return func
+        return _record_arity
+
+    @arity(1)
+    def _func_abs(self, arg):
+        # We need to special case booleans because abs(True) -> 1, which isn't
+        # allowed in the spec.
+        if isinstance(arg, bool):
+            return None
+        try:
+            return abs(arg)
+        except TypeError:
+            return None
+
+    @arity(1)
+    def _func_avg(self, arg):
+        if not isinstance(arg, list) or not arg:
+            return None
+        total = 0
+        for element in arg:
+            try:
+                total += element
+            except TypeError:
+                return None
+        return total / float(len(arg))
+
+    @arity(1)
+    def _func_to_string(self, arg):
+        if isinstance(arg, string_type):
+            return arg
+        else:
+            return json.dumps(arg)
+
+    @arity(1)
+    def _func_to_number(self, arg):
+        if isinstance(arg, (int, float)):
+            return arg
+        else:
+            try:
+                if '.' in arg:
+                    return float(arg)
+                else:
+                    return int(arg)
+            except ValueError:
+                return None
+
+    @arity(2)
+    def _func_contains(self, subject, search):
+        if not isinstance(subject, (list, string_type)):
+            return
+        return search in subject
+
+    @arity(1)
+    def _func_length(self, arg):
+        if isinstance(arg, bool):
+            return None
+        return len(arg)
+
+    @arity(1)
+    def _func_ceil(self, arg):
+        if not isinstance(arg, (int, float)):
+            return None
+        else:
+            return math.ceil(arg)
+
+    @arity(1)
+    def _func_floor(self, arg):
+        if not isinstance(arg, (int, float)):
+            return None
+        else:
+            return math.floor(arg)
+
+    @arity(2)
+    def _func_join(self, separator, array):
+        if not isinstance(array, list) or not isinstance(separator,
+                                                         string_type):
+            return None
+        else:
+            try:
+                return separator.join(array)
+            except TypeError:
+                return None
+
+    @arity(1)
+    def _func_max(self, arg):
+        if not isinstance(arg, list) or not arg:
+            return None
+        best = float('-inf')
+        for element in arg:
+            try:
+                if element > best:
+                    best = element
+            except TypeError:
+                return None
+        return best
+
+    @arity(1)
+    def _func_min(self, arg):
+        if not isinstance(arg, list) or not arg:
+            return None
+        best = float('inf')
+        for element in arg:
+            try:
+                if element < best:
+                    best = element
+            except TypeError:
+                return None
+        return best
+
+    @arity(1)
+    def _func_sort(self, arg):
+        if not isinstance(arg, list):
+            return None
+        else:
+            return list(sorted(arg))
+
+    # The "key" expression is applied to each individual element
+    # so we need to set resolve=False to indicate that we shouldn't
+    # try to resolve the argument against the passed in current node.
+    @arity(2, argspec=[{"resolve": True}, {"resolve": False}])
+    def _func_sort_by(self, arg, key):
+        if not isinstance(arg, list):
+            return None
+        else:
+            return list(sorted(arg, key=lambda x: key.search(x)))
+
+    @arity(1)
+    def _func_keys(self, arg):
+        # To be consistent with .values()
+        # should we also return the indices of a list?
+        if not isinstance(arg, dict):
+            return None
+        else:
+            return list(arg.keys())
+
+    @arity(1)
+    def _func_values(self, arg):
+        if not isinstance(arg, dict):
+            return None
+        else:
+            return list(arg.values())
+
+    @arity(1)
+    def _func_type(self, arg):
+        if isinstance(arg, string_type):
+            return "string"
+        elif isinstance(arg, bool):
+            return "boolean"
+        elif isinstance(arg, list):
+            return "array"
+        elif isinstance(arg, dict):
+            return "object"
+        elif isinstance(arg, (float, int)):
+            return "number"
+        elif arg is None:
+            return "null"
 
 
 class _Projection(list):

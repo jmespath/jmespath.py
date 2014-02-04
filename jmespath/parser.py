@@ -11,11 +11,14 @@ from jmespath.compat import with_repr_method
 
 @with_str_method
 class ParseError(ValueError):
-    def __init__(self, lex_position, token_value, token_type):
+    _ERROR_MESSAGE = 'Invalid jmespath expression'
+    def __init__(self, lex_position, token_value, token_type,
+                 msg=_ERROR_MESSAGE):
         super(ParseError, self).__init__(lex_position, token_value, token_type)
         self.lex_position = lex_position
         self.token_value = token_value
         self.token_type = token_type
+        self.msg = msg
         # Whatever catches the ParseError can fill in the full expression
         self.expression = None
 
@@ -23,12 +26,13 @@ class ParseError(ValueError):
         # self.lex_position +1 to account for the starting double quote char.
         underline = ' ' * (self.lex_position + 1) + '^'
         return (
-            'Invalid jmespath expression: Parse error at column %s near '
+            '%s: Parse error at column %s near '
             'token "%s" (%s) for expression:\n"%s"\n%s' % (
-                self.lex_position, self.token_value, self.token_type,
+                self.msg, self.lex_position, self.token_value, self.token_type,
                 self.expression, underline))
 
 
+@with_str_method
 class IncompleteExpressionError(ParseError):
     def set_expression(self, expression):
         self.expression = expression
@@ -44,6 +48,19 @@ class IncompleteExpressionError(ParseError):
             '"%s"\n%s' % (self.expression, underline))
 
 
+@with_str_method
+class ArityError(ParseError):
+    def __init__(self, function_node):
+        self.expected_arity = function_node.arity
+        self.actual_arity = len(function_node.args)
+        self.function_name = function_node.name
+        self.expression = None
+
+    def __str__(self):
+        return ("Expected %s arguments for function %s, "
+                "received %s" % (self.expected_arity,
+                                 self.function_name,
+                                 self.actual_arity))
 
 class Grammar(object):
     precedence = (
@@ -66,7 +83,7 @@ class Grammar(object):
             p[0] = ast.SubExpression(p[1], p[3])
 
     def p_jmespath_subexpression_identifier(self, p):
-        """expression : expression DOT IDENTIFIER
+        """expression : expression DOT identifier
         """
         p[0] = ast.SubExpression(p[1], ast.Field(p[3]))
 
@@ -130,10 +147,15 @@ class Grammar(object):
         }
         p[0] = op_map[p[1]]
 
-    def p_jmespath_identifier(self, p):
-        """expression : IDENTIFIER
-        """
+    def p_jmespath_identifier_expr(self, p):
+        """expression : identifier"""
         p[0] = ast.Field(p[1])
+
+    def p_jmespath_identifier(self, p):
+        """identifier : UNQUOTED_IDENTIFIER
+                      | QUOTED_IDENTIFIER
+        """
+        p[0] = p[1]
 
     def p_jmespath_multiselect_expressions(self, p):
         """expression : multi-select-hash
@@ -162,7 +184,7 @@ class Grammar(object):
             p[0] = p[1]
 
     def p_jmespath_keyval_expr(self, p):
-        """keyval-expr : IDENTIFIER COLON expression
+        """keyval-expr : identifier COLON expression
         """
         p[0] = ast.KeyValPair(p[1], p[3])
 
@@ -183,6 +205,33 @@ class Grammar(object):
     def p_jmespath_literal_expression(self, p):
         """expression : LITERAL"""
         p[0] = ast.Literal(p[1])
+
+    def p_jmespath_function_expression(self, p):
+        """expression : UNQUOTED_IDENTIFIER LPAREN function-args RPAREN"""
+        function_node = ast.FunctionExpression(p[1], p[3])
+        if function_node.arity != len(function_node.args):
+            raise ArityError(function_node)
+        else:
+            p[0] = function_node
+
+    def p_jmespath_function_args(self, p):
+        """function-args : function-args COMMA function-arg
+                         | function-arg
+        """
+        if len(p) == 2:
+            p[0] = [p[1]]
+        elif len(p) == 4:
+            p[1].append(p[3])
+            p[0] = p[1]
+
+    def p_jmespath_function_arg(self, p):
+        """function-arg : expression
+                        | CURRENT
+        """
+        if p[1] == '@':
+            p[0] = ast.CurrentNode()
+        else:
+            p[0] = p[1]
 
     def p_error(self, t):
         if t is not None:
