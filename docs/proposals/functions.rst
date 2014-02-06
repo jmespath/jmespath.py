@@ -22,7 +22,7 @@ in ``multi-select-list`` and ``multi-select-hash`` expressions to format the
 output of an expression to contain data that might not have been in the
 original JSON input. If filtered projections are added to JMESPath, functions
 would be a powerful mechanism to perform any kind of special comparisons for
-things like ``length()``, ``matches()``, etc.
+things like ``length()``, ``contains()``, etc.
 
 Data Types
 ==========
@@ -76,24 +76,14 @@ expression creates an array containing the total number of elements in the
 
     foo.[count(@), bar]
 
-JMESPath assumes that all function arguments operate on the current node unless
-the argument is a ``literal`` or ``number`` token. It is not necessary to
-prefix a function argument with the ``current-node`` token when descending into
-the current node. The following example calls the ``substring`` function and
-passed the value of the ``current-node["foo"]``, the number ``1``, and the
-number ``3``.
+It is not necessary to prefix a function argument with the ``current-node``
+token when descending into the current node. For example, the following two
+expressions are equivalent:
 
 ::
 
-    substring(foo, `1`, 3)
-
-The following expression is equivalent except that it adds the ``current-node``
-and removes the literal token ```1``` in exchange for the equivalent number
-token ``1``:
-
-::
-
-    substring(@.foo, 1, 3)
+    contains(foo, `bar`)
+    contains(@.foo, `bar`)
 
 current-node state
 ~~~~~~~~~~~~~~~~~~
@@ -210,179 +200,6 @@ Returns the length of the given argument using the following types rules:
    * - ``{"foo": "bar", "baz": "bam"}``
      - ``length(@)``
      - 2
-
-lowercase
-~~~~~~~~~
-
-::
-
-    string lowercase(string $subject)
-
-Returns the provided ``$subject`` argument in lowercase characters.
-
-If the provided argument is not a string, this function MUST return ``null``.
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Given
-     - Expression
-     - Result
-   * - n/a
-     - ``lowercase(`ABC`)``
-     - "abc"
-   * - "CURRENT"
-     - ``lowercase(@)``
-     - "current"
-   * - 123
-     - ``lowercase(@)``
-     - ``null``
-   * - "foo"
-     - ``lowercase(not_there)``
-     - ``null``
-
-matches
-~~~~~~~
-
-::
-
-    string matches(string $subject, string $pattern [, string $flags])
-
-Returns ``true`` if the given PCRE regular expression ``$pattern`` matches the
-provided ``$subject`` string or ``false`` if it does not match.
-
-This function accepts an optional argument, ``$flags``, to set options for
-the interpretation of the regular expression. The argument accepts a
-string in which individual letters are used to set options. The presence of
-a letter within the string indicates that the option is on; its absence
-indicates that the option is off. Letters may appear in any order and may be
-repeated.
-
-This function returns ``null`` if the provided ``$subject`` argument is not a
-string.
-
-This function MUST fail if the provided ``$pattern`` argument is not a string
-or if the provided ``$flags`` argument is not a string.
-
-Flags
-^^^^^
-
-* ``i``: Case-insensitive matching.
-* ``m``: multiline; treat beginning and end characters (^ and $) as working
-  over multiple lines (i.e., match the beginning or end of each line
-  (delimited by \n or \r), not only the very beginning or end of the
-  whole input string)
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Given
-     - Expression
-     - Result
-   * - n/a
-     - ``matches(`foobar`, `foo`)``
-     - ``true``
-   * - n/a
-     - ``matches(`FOO`, `^foo$`, `i`)``
-     - ``true``
-   * - n/a
-     - ``matches(`FOO`, `foo`, `im`)``
-     - ``true``
-   * - n/a
-     - ``matches(`testing`, `foo`)``
-     - ``false``
-   * - "foo"
-     - ``matches(@, `foo`)``
-     - ``true``
-   * - "foo"
-     - ``matches(@, @)``
-     - ``true``
-   * - n/a
-     - ``matches(`foo123`, `123`)``
-     - ``true``
-   * - n/a
-     - ``matches(`false`, `foo`)``
-     - ``null``
-   * - n/a
-     - ``matches(`foo123`, 123)``
-     - Raises an error
-   * - n/a
-     - ``matches(`foo123`, `false`)``
-     - Raises an error
-   * - ``[]``
-     - ``matches(`foo123`, @)``
-     - Raises an error
-
-substring
-~~~~~~~~~
-
-::
-
-    string substring(string $subject, number $start [, number $length])
-
-Returns a subset of the given string in the ``$subject`` argument starting at
-the given ``$start`` position. If no ``$length`` argument is provided, the
-function will return the entire remainder of a string after the given
-``$start`` position. If the ``$length`` argument is provided, the function will
-return a subset of the string starting at the given ``$start`` position and
-ending at the ``$start`` position + ``$length`` position.
-
-The provided ``$start`` and ``$length`` arguments MUST be an integer. If a
-negative integer is provided for the ``$start`` argument, the start position is
-calculated as the total length of the string + the provided ``$start``
-argument.
-
-If the given ``$subject`` is not a string, this function returns ``null``.
-
-This function MUST raise an error if the given ``$start`` or ``$length``
-arguments are not numbers.
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Expression
-     - Result
-   * - ``substring(`testing`, 0, 4)``
-     - "test"
-   * - ``substring(`testing`, -2)``
-     - "ng"
-   * - ``substring(`testing`, 0, -3)``
-     - "test"
-   * - ``substring(`testing`, -3)``
-     - "ing"
-   * - ``substring(`testing`, -3, 2)``
-     - "in"
-   * - ``substring(`false`, `abc`, 2)``
-     - ``null``
-   * - ``substring(`testing`, `abc`, 2)``
-     - Raises an error
-   * - ``substring(`testing`, 0, `abc`)``
-     - Raises an error
-
-uppercase
-~~~~~~~~~
-
-::
-
-    string uppercase(string $subject)
-
-Returns the provided ``$subject`` argument in uppercase characters.
-
-If the provided argument is not a string, this function MUST return ``null``.
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Expression
-     - Result
-   * - ``uppercase(`Foo`)``
-     - "FOO"
-   * - ``uppercase(`123``)``
-     - "123"
-   * - ``uppercase(123)``
-     - ``null``
-   * - ``uppercase(`null`)``
-     - ``null``
 
 number functions
 ----------------
@@ -1232,38 +1049,6 @@ Test Cases
           "result": null
         },
         {
-          "expression": "lowercase(@.str)",
-          "result": "str"
-        },
-        {
-          "expression": "lowercase(`false`)",
-          "result": null
-        },
-        {
-          "expression": "matches(@.str, `str`)",
-          "result": false
-        },
-        {
-          "expression": "matches(@.str, `str`, `i`)",
-          "result": true
-        },
-        {
-          "expression": "matches(@.str, `false`)",
-          "error": "runtime"
-        },
-        {
-          "expression": "matches(@.str, `ST`, `im`)",
-          "result": true
-        },
-        {
-          "expression": "matches(`false`, `str`)",
-          "result": null
-        },
-        {
-          "expression": "matches(`str`, `str`, `i`, 123)",
-          "error": "runtime"
-        },
-        {
           "expression": "max(@.arr)",
           "result": 5
         },
@@ -1358,14 +1143,6 @@ Test Cases
         {
           "expression": "type(@)",
           "result": "Object"
-        },
-        {
-          "expression": "uppercase(@.str)",
-          "result": "STR"
-        },
-        {
-          "expression": "uppercase(`false`)",
-          "result": null
         }
       ]
     }, {
