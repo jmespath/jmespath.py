@@ -48,7 +48,7 @@ The function grammar will require the following grammar additions:
 
 ::
 
-    function-expression = identifier "(" *(function-arg *("," function-arg ) ) ")"
+    function-expression = unquoted-string "(" *(function-arg *("," function-arg ) ) ")"
     function-arg        = expression / number
 
 ``expression`` will need to be updated to add the ``current-node`` production:
