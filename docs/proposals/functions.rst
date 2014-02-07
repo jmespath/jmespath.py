@@ -94,12 +94,16 @@ value the the current node represents MUST change to reflect the node currently
 being evaluated. When in a projection, the current node value MUST be changed
 to the node currently being evaluated by the projection.
 
-Built-in functions
-==================
+Functions
+=========
 
 JMESPath will ship with various built-in functions that operate on different
 data types. Functions can have a required arity or be variadic with a minimum
 number of arguments.
+
+Functions MUST return ``null`` when a specific argument is passed that is not
+of the expected type. Functions MUST raise an error if the provided arguments
+do not match the arity of the function.
 
 .. note::
 
@@ -118,9 +122,8 @@ concat
 
 Returns each argument concatenated one after the other.
 
-Any argument that is not a string or number is excluded from the concatenated
-result. If no arguments are strings or numbers, this function MUST return
-``null``.
+If any argument is provided that is not a string or a number, then this method
+MUST return ``null``.
 
 .. list-table:: Examples
    :header-rows: 1
@@ -134,7 +137,7 @@ result. If no arguments are strings or numbers, this function MUST return
    * - ``concat(`a`, `b`, 1)``
      - "ab1"
    * - ``concat(`a`, `false`, `b`)``
-     - "ab"
+     - ``null``
    * - ``concat(`true`, `false`)``
      - ``null``
    * - ``concat(`a`)``
@@ -321,22 +324,17 @@ contains
 
 ::
 
-    boolean contains(array|string $subject, string|number $search)
+    boolean contains(array|string $subject, $search)
 
 Returns true if the given ``$subject`` contains the provided ``$search``
-string. The ``$search`` argument can be either a string or number.
+string.
 
 If ``$subject`` is an array, this function returns true if one of the elements
-in the array is equal to the provided ``$search`` value.
+in the array is exactly equal to the provided ``$search`` value.
 
 If the provided ``$subject`` is a string, this function returns true if
-the string contains the provided ``$search`` argument.
-
-This function returns ``null`` if the given ``$subject`` argument is not an
-array or string.
-
-This function MUST raise an error if the provided ``$search`` argument is not
-a string or number.
+the string contains the provided ``$search`` argument. In this case, the
+``$search`` argument MUST be a string or the function will return ``null``.
 
 .. list-table:: Examples
    :header-rows: 1
@@ -376,7 +374,7 @@ a string or number.
      - ``null``
    * - ``{"a": "123"}``
      - ``contains(`foo`, @)``
-     - Raises an error
+     - ``null``
 
 has
 ~~~
@@ -391,7 +389,7 @@ given key of ``$key``. If an array ``$subject`` is provided, this functions
 returns true if the array has the given numeric index of ``$key``.
 
 This function MUST return ``null`` if the provided ``$subject`` is not an
-array or object. This function MUST raise an error if the provided ``$key``
+array or object. This function MUST return ``null`` if the provided ``$key``
 argument is not a string or number.
 
 .. list-table:: Examples
@@ -420,7 +418,7 @@ argument is not a string or number.
      - ``null``
    * - ``{"foo": 1}``
      - ``has(@, false)``
-     - Raises an error
+     - ``null``
 
 join
 ~~~~
@@ -434,9 +432,8 @@ together using the ``$glue`` argument as a separator between each.
 
 Any element that is not a string or number is excluded from the joined result.
 
-This function MUST return ``null`` if ``$stringsarray`` is not an array.
-
-This function MUST raise an error if the provided ``$glue`` argument is not a
+This function MUST return ``null`` if ``$stringsarray`` is not an array. This
+function MUST return ``null`` if the provided ``$glue`` argument is not a
 string.
 
 .. list-table:: Examples
@@ -462,7 +459,7 @@ string.
      - ``null``
    * - ``["a", "b"]``
      - ``join(`false`, @)``
-     - Raises an error
+     - ``null``
 
 length
 ~~~~~~
@@ -821,7 +818,7 @@ Test Cases
           "result": null
         },
         {
-          "expression": "abs(1, 2, 3)",
+          "expression": "abs(`1`, `2`, `3`)",
           "error": "runtime"
         },
         {
@@ -902,7 +899,7 @@ Test Cases
         },
         {
           "expression": "concat(@.strings[0], @.strings[1], strings[2], @)",
-          "result": "abc"
+          "result": null
         },
         {
           "expression": "concat(`null`, `false`)",
@@ -933,12 +930,12 @@ Test Cases
           "result": true
         },
         {
-          "expression": "contains(@.dec, `1.9`)",
-          "error": "runtime"
+          "expression": "contains(dec, `1.9`)",
+          "result": true
         },
         {
-          "expression": "contains(@.dec, `false`)",
-          "error": "runtime"
+          "expression": "contains(dec, `false`)",
+          "result": null
         },
         {
           "expression": "length(@)",
@@ -1106,43 +1103,43 @@ Test Cases
         },
         {
           "expression": "type(`abc`)",
-          "result": "String"
-        },
-        {
-          "expression": "type(123)",
-          "result": "Number"
+          "result": "string"
         },
         {
           "expression": "type(`123`)",
-          "result": "Number"
+          "result": "number"
+        },
+        {
+          "expression": "type(`123`)",
+          "result": "number"
         },
         {
           "expression": "type(`1.2`)",
-          "result": "Number"
+          "result": "number"
         },
         {
           "expression": "type(`true`)",
-          "result": "Boolean"
+          "result": "boolean"
         },
         {
           "expression": "type(`false`)",
-          "result": "Boolean"
+          "result": "boolean"
         },
         {
           "expression": "type(@.empty)",
-          "result": "Array"
+          "result": "array"
         },
         {
           "expression": "type(empty)",
-          "result": "Array"
+          "result": "array"
         },
         {
           "expression": "type(@.strings)",
-          "result": "Array"
+          "result": "array"
         },
         {
           "expression": "type(@)",
-          "result": "Object"
+          "result": "object"
         }
       ]
     }, {
@@ -1196,3 +1193,5 @@ History
 
 * This JEP originally proposed the literal syntax. The literal portion of this
   JEP was removed and added instead to JEP 7.
+* Removed several functions that require more work on determining how we will
+  support unicode inputs.
