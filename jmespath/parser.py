@@ -6,6 +6,7 @@ import ply.lex
 from jmespath import ast
 from jmespath import lexer
 from jmespath.compat import with_str_method
+from jmespath.compat import with_repr_method
 
 
 @with_str_method
@@ -220,10 +221,11 @@ class Parser(object):
                                write_tables=False)
         parsed = self._parse_expression(parser=parser, expression=expression,
                                         lexer_obj=lexer)
-        self._cache[expression] = parsed
+        parsed_result = ParsedResult(expression, parsed)
+        self._cache[expression] = parsed_result
         if len(self._cache) > self._max_size:
             self._free_cache_entries()
-        return parsed
+        return parsed_result
 
     def _parse_expression(self, parser, expression, lexer_obj):
         try:
@@ -249,3 +251,27 @@ class Parser(object):
     def purge(cls):
         """Clear the expression compilation cache."""
         cls._cache.clear()
+
+
+@with_repr_method
+class ParsedResult(object):
+    def __init__(self, expression, parsed):
+        self.expression = expression
+        self.parsed = parsed
+
+    def search(self, value):
+        return self.parsed.search(value)
+
+    def pretty_print(self, indent=''):
+        return self.parsed.pretty_print(indent=indent)
+
+    def __repr__(self):
+        return repr(self.parsed)
+
+    def __eq__(self, other):
+        return (isinstance(other, self.__class__)
+                and self.__dict__ == other.__dict__)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+

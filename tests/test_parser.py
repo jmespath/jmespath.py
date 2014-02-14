@@ -33,9 +33,9 @@ class TestParser(unittest.TestCase):
 
     def test_quoted_subexpression(self):
         parsed = self.parser.parse('"foo"."bar"')
-        self.assertIsInstance(parsed, ast.SubExpression)
-        self.assertEqual(parsed.parent.name, 'foo')
-        self.assertEqual(parsed.child.name, 'bar')
+        self.assertIsInstance(parsed.parsed, ast.SubExpression)
+        self.assertEqual(parsed.parsed.parent.name, 'foo')
+        self.assertEqual(parsed.parsed.child.name, 'bar')
 
     def test_wildcard(self):
         parsed = self.parser.parse('foo[*]')
@@ -292,7 +292,15 @@ class TestParserCaching(unittest.TestCase):
         # cache but they should still be equal to compiled.
         for i in range(parser.Parser._max_size + 1):
             compiled2.append(p.parse('foo%s' % i))
+        self.assertEqual(len(compiled), len(compiled2))
         self.assertEqual(compiled, compiled2)
+
+
+class TestParserAddsExpressionAttribute(unittest.TestCase):
+    def test_expression_available_from_parser(self):
+        p = parser.Parser()
+        parsed = p.parse('foo.bar')
+        self.assertEqual(parsed.expression, 'foo.bar')
 
 
 if __name__ == '__main__':
