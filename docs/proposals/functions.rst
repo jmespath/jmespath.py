@@ -3,14 +3,15 @@ Functions
 =========
 
 :JEP: 3
-:Author: Michael Dowling
+:Author: Michael Dowling, James Saryerwinnie
 :Status: Draft
 :Created: 27-Nov-2013
 
 Abstract
 ========
 
-This document proposes modifying the `JMESPath grammar <http://jmespath.readthedocs.org/en/latest/specification.html#grammar>`_
+This document proposes modifying the
+`JMESPath grammar <http://jmespath.readthedocs.org/en/latest/specification.html#grammar>`__
 to support function expressions.
 
 Motivation
@@ -20,48 +21,49 @@ Functions allow users to easily transform and filter data in JMESPath
 expressions. As JMESPath is currently implemented, functions would be very useful
 in ``multi-select-list`` and ``multi-select-hash`` expressions to format the
 output of an expression to contain data that might not have been in the
-original JSON input. If filtered projections are added to JMESPath, functions
+original JSON input. Combined with filtered expressions, functions
 would be a powerful mechanism to perform any kind of special comparisons for
 things like ``length()``, ``contains()``, etc.
 
 Data Types
 ==========
 
-In order to support functions, we must define a type system. Because JMESPath
-is a JSON DSL, we will use JSON types:
+In order to support functions, a type system is needed.  The JSON types are used:
 
-* number (integers and double-precision floating-point format in JavaScript)
+* number (integers and double-precision floating-point format in JSON)
 * string
 * boolean (``true`` or ``false``)
 * array (an ordered, sequence of values)
-* object (an unordered, comma-separated collection of key:value pairs)
+* object (an unordered collection of key value pairs)
 * null
 
 Syntax Changes
 ==============
 
-Functions may be used to start any expression, including but not limited to the
-root of an expression, inside of a ``multi-select`` expression, or at the start
-of an ``or-expression``.
+Functions are defined in the ``function-expression`` rule below.  A function
+expression is an ``expression`` itself, and is valid any place an
+``expression`` is allowed.
 
-The function grammar will require the following grammar additions:
+The grammar will require the following grammar additions:
 
 ::
 
-    function-expression = unquoted-string "(" *(function-arg *("," function-arg ) ) ")"
-    function-arg        = expression / number
+    function-expression = identifier "(" *(function-arg *("," function-arg ) ) ")"
+    function-arg        = expression / number / current-node
+    current-node        = "@"
 
-``expression`` will need to be updated to add the ``current-node`` production:
+``expression`` will need to be updated to add the ``function-expression`` production:
 
 ::
 
     expression        = sub-expression / index-expression / or-expression / identifier / "*"
     expression        =/ multi-select-list / multi-select-hash
-    expression        =/ function-expression / current-node / literal
-    current-node      = "@"
+    expression        =/ literal / function-expression
 
 A function can accept any number of arguments, and each argument can be an
-expression.
+expression.  Each function must define a signature that specifies the number
+and allowed types of its expected arguments.  Functions can be variadic.
+
 
 current-node
 ------------
@@ -74,16 +76,13 @@ expression creates an array containing the total number of elements in the
 
 ::
 
-    foo.[count(@), bar]
+    foo[].[count(@), bar]
 
-It is not necessary to prefix a function argument with the ``current-node``
-token when descending into the current node. For example, the following two
-expressions are equivalent:
+JMESPath assumes that all function arguments operate on the current node unless
+the argument is a ``literal`` or ``number`` token.  Because of this, an
+expression such as ``@.bar`` would be equivalent to just ``bar``, so the
+current node is only allowed as a bare expression.
 
-::
-
-    contains(foo, `bar`)
-    contains(@.foo, `bar`)
 
 current-node state
 ~~~~~~~~~~~~~~~~~~
@@ -94,64 +93,335 @@ value the the current node represents MUST change to reflect the node currently
 being evaluated. When in a projection, the current node value MUST be changed
 to the node currently being evaluated by the projection.
 
-Functions
-=========
+
+Function Evaluation
+===================
+
+Functions are evaluated in applicative order.  Each argument can be an
+expression, each argument expression must be evaluated before evaluating the
+function unless otherwise stated in the function specification.  The function
+is then called with the evaluated function arguments.  The result of the
+``function-expression`` is the result returned by the function call.  If a
+``function-expression`` is evaluated for a function that does not exist, the
+JMESPath implementation must indicate to the caller that an
+``unknown-function`` error occurred.  How and when this error is raised is
+implementation specific, but implementations SHOULD indicate to the caller that
+this specific error occurred.
+
+Functions can either have a specific arity or be variadic with a minimum
+number of arguments.  If a ``function-expression`` is encountered where the
+arity does not match or the minimum number of arguments for a variadic function
+is not provided, then implementations must indicate to the caller than an
+``invalid-arity`` error occurred.  How and when this error is raised is
+implementation specific.
+
+Each function signature declares the types of its input parameters.  If any
+type constraints are not met, implementations must indicate that an
+``invalid-type`` error occurred.
+
+In order to accommodate type contraints, functions are provided to convert
+types to other types (``to_string``, ``to_number``).  No explicit type
+conversion happens unless a user specifically uses one of these type conversion
+functions.
+
+
+Built-in Functions
+==================
 
 JMESPath will ship with various built-in functions that operate on different
-data types. Functions can have a required arity or be variadic with a minimum
-number of arguments.
+data types.  These are documented below.  Each function below has a signature
+that defines the expected types of the input and the type of the returned
+output::
 
-Functions MUST return ``null`` when a specific argument is passed that is not
-of the expected type. Functions MUST raise an error if the provided arguments
-do not match the arity of the function.
+    return_type function_name(type1|type $argname)
+
+If a function can accept multiple types for an input value, then the
+multiple types are separated with ``|``.  If the resolved arguments do not
+match the types specified in the signature, an ``invalid-type`` error occurs.
+
+The ``array`` type can further specify requirements on the type of the elements
+if they want to enforce homogeneous types.  The subtype is surrounded by
+``[type]``, for example, the function signature below requires its input
+argument resolves to an array of numbers::
+
+    return_type foo(array[number] $argname)
+
+The first function below, ``abs`` is discussed in detail to demonstrate the
+above points.  Subsequent function definitions will not include these details
+for brevity, but the same rules apply.
 
 .. note::
 
     All string related functions are defined on the basis of Unicode code
-    points; they do not take collations into account.
+    points; they do not take normalization into account.
 
-string functions
-----------------
 
-concat
-~~~~~~
+abs
+---
 
 ::
 
-    string concat(string|number $string1, string|number $string2 [, string|number $... ])
+    number abs(number $value)
 
-Returns each argument concatenated one after the other.
+Returns the absolute value of the provided argument.  The signature indicates
+that a number is returned, and that the input argument ``$value`` **must**
+resolve to a number, otherwise a ``invalid-type`` error is triggered.
 
-If any argument is provided that is not a string or a number, then this method
-MUST return ``null``.
+Below is a worked example.  Given::
+
+    {"foo": -1, "bar": "2"}
+
+Evaluating ``abs(foo)`` works as follows:
+
+1. Evaluate the input argument against the current data::
+
+     search(foo, {"foo": -11, "bar": 2"}) -> -1
+
+2. Validate the type of the resolved argument.  In this case
+   ``-1`` is of type ``number`` so it passes the type check.
+
+3. Call the function with the resolved argument::
+
+     abs(-1) -> 1
+
+4. The value of ``1`` is the resolved value of the function expression
+     ``abs(foo)``.
+
+
+Below is the same steps for evaluating ``abs(bar)``:
+
+1. Evaluate the input argument against the current data::
+
+     search(foo, {"foo": -1, "bar": 2"}) -> "2"
+
+2. Validate the type of the resolved argument.  In this case
+   ``"2`` is of type ``string`` so the immediate indicate that
+   an ``invalid-type`` error occurred.
+
+
+As a final example, here is the steps for evaluating ``abs(to_number(bar))``:
+
+1. Evaluate the input argument against the current data::
+
+    search(to_number(bar), {"foo": -1, "bar": "2"})
+
+2. In order to evaluate the above expression, we need to evaluate
+   ``to_number(bar)``::
+
+    search(bar, {"foo": -1, "bar": "2"}) -> "2"
+    # Validate "2" passes the type check for to_number, which it does.
+    to_number("2") -> 2
+
+3. Now we can evaluate the original expression::
+
+    search(to_number(bar), {"foo": -1, "bar": "2"}) -> 2
+
+4. Call the function with the final resolved value::
+
+    abs(2) -> 2
+
+5. The value of ``2`` is the resolved value of the function expression
+   ``abs(to_number(bar))``.
+
 
 .. list-table:: Examples
-   :header-rows: 1
+  :header-rows: 1
 
-   * - Expression
-     - Result
-   * - ``concat(`a`, `b`)``
-     - "ab"
-   * - ``concat(`a`, `b`, `c`)``
-     - "abc"
-   * - ``concat(`a`, `b`, 1)``
-     - "ab1"
-   * - ``concat(`a`, `false`, `b`)``
-     - ``null``
-   * - ``concat(`true`, `false`)``
-     - ``null``
-   * - ``concat(`a`)``
-     - raises an error because the function requires at least two arguments
+  * - Expression
+    - Result
+  * - ``abs(1)``
+    - 1
+  * - ``abs(-1)``
+    - 1
+  * - ``abs(`abc`)``
+    - ``<error: invalid-type>``
+
+
+avg
+---
+
+::
+
+    number avg(array[number] $elements)
+
+Returns the average of the elements in the provided array.
+
+An empty array will produce a return value of null.
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``[10, 15, 20]``
+    - ``avg(@)``
+    - 15
+  * - ``[10, false, 20]``
+    - ``avg(@)``
+    - ``<error: invalid-type>``
+  * - ``[false]``
+    - ``avg(@)``
+    - ``<error: invalid-type>``
+  * - ``false``
+    - ``avg(@)``
+    - ``<error: invalid-type>``
+
 
 contains
-~~~~~~~~
+--------
 
-See contains_.
+::
 
-.. _length:
+    boolean contains(array|string $subject, array|object|string|number|boolean $search)
+
+Returns ``true`` if the given ``$subject`` contains the provided ``$search``
+string.
+
+If ``$subject`` is an array, this function returns true if one of the elements
+in the array is equal to the provided ``$search`` value.
+
+If the provided ``$subject`` is a string, this function returns true if
+the string contains the provided ``$search`` argument.
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - n/a
+    - ``contains(`foobar`, `foo`)``
+    - ``true``
+  * - n/a
+    - ``contains(`foobar`, `not`)``
+    - ``false``
+  * - n/a
+    - ``contains(`foobar`, `bar`)``
+    - ``true``
+  * - n/a
+    - ``contains(`false`, `bar`)``
+    - ``<error: invalid-type>``
+  * - n/a
+    - ``contains(`foobar`, 123)``
+    - ``false``
+  * - ``["a", "b"]``
+    - ``contains(@, `a`)``
+    - ``true``
+  * - ``["a"]``
+    - ``contains(@, `a`)``
+    - ``true``
+  * - ``["a"]``
+    - ``contains(@, `b`)``
+    - ``false``
+
+ceil
+----
+
+::
+
+    number ceil(number $value)
+
+Returns the next highest integer value by rounding up if necessary.
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Expression
+    - Result
+  * - ``ceil(`1.001`)``
+    - 2
+  * - ``ceil(`1.9`)``
+    - 2
+  * - ``ceil(`1`)``
+    - 1
+  * - ``ceil(`abc`)``
+    - ``null``
+
+floor
+-----
+
+::
+
+    number floor(number $value)
+
+Returns the next lowest integer value by rounding down if necessary.
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Expression
+    - Result
+  * - ``floor(`1.001`)``
+    - 1
+  * - ``floor(`1.9`)``
+    - 1
+  * - ``floor(`1`)``
+    - 1
+
+
+join
+----
+
+::
+
+    string join(string $glue, array[string] $stringsarray)
+
+Returns all of the elements from the provided ``$stringsarray`` array joined
+together using the ``$glue`` argument as a separator between each.
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``["a", "b"]``
+    - ``join(`, `, @)``
+    - "a, b"
+  * - ``["a", "b"]``
+    - ``join(``, @)``
+    - "ab"
+  * - ``["a", false, "b"]``
+    - ``join(`, `, @)``
+    - ``<error: invalid-type>``
+  * - ``[false]``
+    - ``join(`, `, @)``
+    - ``<error: invalid-type>``
+
+
+keys
+----
+
+::
+
+    array keys(object $obj)
+
+Returns an array containing the keys of the provided object.
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``{"foo": "baz", "bar": "bam"}``
+    - ``keys(@)``
+    - ``["foo", "bar"]``
+  * - ``{}``
+    - ``keys(@)``
+    - ``[]``
+  * - ``false``
+    - ``keys(@)``
+    - ``<error: invalid-type>``
+  * - ``[b, a, c]``
+    - ``keys(@)``
+    - ``<error: invalid-type>``
+
 
 length
-~~~~~~
+------
 
 ::
 
@@ -159,569 +429,203 @@ length
 
 Returns the length of the given argument using the following types rules:
 
-1. string: returns the number of characters in the string
+1. string: returns the number of code points in the string
 2. array: returns the number of elements in the array
 3. object: returns the number of key-value pairs in the object
-4. boolean, null: returns null
 
 .. list-table:: Examples
-   :header-rows: 1
+  :header-rows: 1
 
-   * - Given
-     - Expression
-     - Result
-   * - n/a
-     - ``length(`abc`)``
-     - 3
-   * - "current"
-     - ``length(@)``
-     - 7
-   * - "current"
-     - ``length(@.not_there)``
-     - ``null``
-   * - "current"
-     - ``length(not_there)``
-     - ``null``
-   * - n/a
-     - ``length(`false`)``
-     - ``null``
-   * - n/a
-     - ``length(10)``
-     - ``null``
-   * - n/a
-     - ``length()``
-     - Raises an error
-   * - ``["a", "b", "c"]``
-     - ``length(@)``
-     - 3
-   * - ``[]``
-     - ``length(@)``
-     - 0
-   * - ``{}``
-     - ``length(@)``
-     - 0
-   * - ``{"foo": "bar", "baz": "bam"}``
-     - ``length(@)``
-     - 2
+  * - Given
+    - Expression
+    - Result
+  * - n/a
+    - ``length(`abc`)``
+    - 3
+  * - "current"
+    - ``length(@)``
+    - 7
+  * - "current"
+    - ``length(not_there)``
+    - ``<error: invalid-type>``
+  * - ``["a", "b", "c"]``
+    - ``length(@)``
+    - 3
+  * - ``[]``
+    - ``length(@)``
+    - 0
+  * - ``{}``
+    - ``length(@)``
+    - 0
+  * - ``{"foo": "bar", "baz": "bam"}``
+    - ``length(@)``
+    - 2
 
-number functions
-----------------
-
-abs
-~~~
-
-::
-
-    number abs(number $number)
-
-Returns the absolute value of the provided argument.
-
-If the provided argument is not a number, then this function MUST return ``null``.
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Expression
-     - Result
-   * - ``abs(1)``
-     - 1
-   * - ``abs(-1)``
-     - 1
-   * - ``abs(`abc`)``
-     - ``null``
-
-ceil
-~~~~
-
-::
-
-    number ceil(number $number)
-
-Returns the next highest integer value by rounding up if necessary.
-
-This function MUST return ``null`` if the provided argument is not a number.
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Expression
-     - Result
-   * - ``ceil(`1.001`)``
-     - 2
-   * - ``ceil(`1.9`)``
-     - 2
-   * - ``ceil(`1`)``
-     - 1
-   * - ``ceil(`abc`)``
-     - ``null``
-
-floor
-~~~~~
-
-::
-
-    number floor(number $number)
-
-Returns the next lowest integer value by rounding down if necessary.
-
-This function MUST return ``null`` if the provided argument is not a number.
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Expression
-     - Result
-   * - ``floor(`1.001`)``
-     - 1
-   * - ``floor(`1.9`)``
-     - 1
-   * - ``floor(`1`)``
-     - 1
-   * - ``floor(`abc`)``
-     - ``null``
-
-array functions
----------------
-
-avg
-~~~
-
-::
-
-    number avg(array $arr)
-
-Returns the average of the elements in the provided array.
-
-Elements in the array that are not numbers are excluded from the averaged
-result. If no elements are numbers, then this function MUST return ``null``.
-
-If the provided argument, ``$arr``, is not an array, this function MUST return
-``null``.
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Given
-     - Expression
-     - Result
-   * - ``[10, 15, 20]``
-     - ``avg(@)``
-     - 15
-   * - ``[10, false, 20]``
-     - ``avg(@)``
-     - 15
-   * - ``[false]``
-     - ``avg(@)``
-     - ``null``
-   * - ``false``
-     - ``avg(@)``
-     - ``null``
-
-.. _contains:
-
-contains
-~~~~~~~~
-
-::
-
-    boolean contains(array|string $subject, $search)
-
-Returns true if the given ``$subject`` contains the provided ``$search``
-string.
-
-If ``$subject`` is an array, this function returns true if one of the elements
-in the array is exactly equal to the provided ``$search`` value.
-
-If the provided ``$subject`` is a string, this function returns true if
-the string contains the provided ``$search`` argument. In this case, the
-``$search`` argument MUST be a string or the function will return ``null``.
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Given
-     - Expression
-     - Result
-   * - n/a
-     - ``contains(`foobar`, `foo`)``
-     - ``true``
-   * - n/a
-     - ``contains(`foobar`, `not`)``
-     - ``false``
-   * - n/a
-     - ``contains(`foobar`, `bar`)``
-     - ``true``
-   * - n/a
-     - ``contains(`false`, `bar`)``
-     - ``null``
-   * - n/a
-     - ``contains(123, `bar`)``
-     - ``null``
-   * - n/a
-     - ``contains(`foobar`, 123)``
-     - ``false``
-   * - ``["a", "b"]``
-     - ``contains(@, `a`)``
-     - ``true``
-   * - ``["a"]``
-     - ``contains(@, `a`)``
-     - ``true``
-   * - ``["a"]``
-     - ``contains(@, `b`)``
-     - ``false``
-   * - ``{"a": "123"}``
-     - ``contains(@, `123`)``
-     - ``null``
-   * - ``{"a": "123"}``
-     - ``contains(`foo`, @)``
-     - ``null``
-
-has
-~~~
-
-::
-
-    boolean has(array|object $subject, $key)
-
-Checks if the given array or object has the given key. If an object
-``$subject`` is provided, this function returns true if the object has the
-given key of ``$key``. If an array ``$subject`` is provided, this functions
-returns true if the array has the given numeric index of ``$key``.
-
-This function MUST return ``null`` if the provided ``$subject`` is not an
-array or object. This function MUST return ``null`` if the provided ``$key``
-argument is not a string or number.
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Given
-     - Expression
-     - Result
-   * - ``["a", "b"]``
-     - ``has(@, 0)``
-     - ``true``
-   * - ``["a", "b"]``
-     - ``has(@, 1)``
-     - ``true``
-   * - ``["a", "b"]``
-     - ``has(@, 2)``
-     - ``false``
-   * - ``{"foo": 1}``
-     - ``has(@, `foo`)``
-     - ``true``
-   * - ``{"foo": 1}``
-     - ``has(@, `bar`)``
-     - ``false``
-   * - ``"abc"``
-     - ``has(@, `bar`)``
-     - ``null``
-   * - ``{"foo": 1}``
-     - ``has(@, false)``
-     - ``null``
-
-join
-~~~~
-
-::
-
-    string join(string $glue, array $stringsarray)
-
-Returns all of the elements from the provided ``$stringsarray`` array joined
-together using the ``$glue`` argument as a separator between each.
-
-Any element that is not a string or number is excluded from the joined result.
-
-This function MUST return ``null`` if ``$stringsarray`` is not an array. This
-function MUST return ``null`` if the provided ``$glue`` argument is not a
-string.
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Given
-     - Expression
-     - Result
-   * - ``["a", "b"]``
-     - ``join(`, `, @)``
-     - "a, b"
-   * - ``["a", "b"]``
-     - ``join(``, @)``
-     - "ab"
-   * - ``["a", false, "b"]``
-     - ``join(`, `, @)``
-     - "a, b"
-   * - ``[false]``
-     - ``join(`, `, @)``
-     - ""
-   * - n/a
-     - ``join(`, `, `foo`)``
-     - ``null``
-   * - ``["a", "b"]``
-     - ``join(`false`, @)``
-     - ``null``
-
-length
-~~~~~~
-
-See length_.
 
 max
-~~~
+---
 
 ::
 
-    number max(array $collection)
+    number max(array[number] $collection)
 
-Returns the highest found number in the provided array argument. Any element in
-the sequence that is not a number MUST be ignored from the calculated result.
+Returns the highest found number in the provided array argument.
 
-If the provided argument is not an array, this function MUST return ``null``.
-
-If no Numeric values are found, this function MUST return ``null``.
+An empty array will produce a return value of null.
 
 .. list-table:: Examples
-   :header-rows: 1
+  :header-rows: 1
 
-   * - Given
-     - Expression
-     - Result
-   * - ``[10, 15]``
-     - ``max(@)``
-     - 15
-   * - ``[10, false, 20]``
-     - ``max(@)``
-     - 20
-   * - ``[false]``
-     - ``max(@)``
-     - ``null``
-   * - ``[]``
-     - ``max(@)``
-     - ``null``
-   * - ``{"foo": 10, "bar": 20}``
-     - ``max(@)``
-     - ``null``
-   * - ``false``
-     - ``max(@)``
-     - ``null``
+  * - Given
+    - Expression
+    - Result
+  * - ``[10, 15]``
+    - ``max(@)``
+    - 15
+  * - ``[10, false, 20]``
+    - ``max(@)``
+    - ``<error: invalid-type>``
+
 
 min
-~~~
+---
 
 ::
 
-    number min(array $collection)
+    number min(array[number] $collection)
 
-Returns the lowest found number in the provided array argument.
+Returns the lowest found number in the provided ``$collection`` argument.
 
-Any element in the sequence that is not a number MUST be ignored from the
-calculated result. If no Numeric values are found, this function MUST return
-``null``.
-
-This function MUST return ``null`` if the provided argument is not an array.
 
 .. list-table:: Examples
-   :header-rows: 1
+  :header-rows: 1
 
-   * - Given
-     - Expression
-     - Result
-   * - ``[10, 15]``
-     - ``min(@)``
-     - 10
-   * - ``[10, false, 20]``
-     - ``min(@)``
-     - 10
-   * - ``[false]``
-     - ``min(@)``
-     - ``null``
-   * - ``[]``
-     - ``min(@)``
-     - ``null``
-   * - ``{"foo": 10, "bar": 20}``
-     - ``min(@)``
-     - ``null``
-   * - ``false``
-     - ``min(@)``
-     - ``null``
+  * - Given
+    - Expression
+    - Result
+  * - ``[10, 15]``
+    - ``min(@)``
+    - 10
+  * - ``[10, false, 20]``
+    - ``min(@)``
+    - ``<error: invalid-type>``
+
 
 sort
-~~~~
+----
 
 ::
 
     array sort(array $list)
 
-This function accepts an array ``$list`` argument and returns the
-lexicographically sorted elements of the ``$list`` as an array.
+This function accepts an array ``$list`` argument and returns the sorted
+elements of the ``$list`` as an array.
 
-This function MUST return ``null`` if the provided argument is not an array.
+The array must be a list of strings or numbers.  Sorting strings is based on
+code points.  Locale is not taken into account.
 
-array element types are sorted in the following order (the lower the number
-means the sooner in the list the element appears):
 
-1. object
-2. array
-3. null
-4. boolean
-5. number
-6. string
 
 .. list-table:: Examples
-   :header-rows: 1
+  :header-rows: 1
 
-   * - Given
-     - Expression
-     - Result
-   * - ``[b, a, c]``
-     - ``sort(@)``
-     - ``[a, b, c]``
-   * - ``[1, a, c]``
-     - ``sort(@)``
-     - ``[1, a, c]``
-   * - ``[false, [], null]``
-     - ``sort(@)``
-     - ``[[], null, false]``
-   * - ``[[], {}, false]``
-     - ``sort(@)``
-     - ``[{}, [], false]``
-   * - ``{"a": 1, "b": 2}``
-     - ``sort(@)``
-     - ``null``
-   * - ``false``
-     - ``sort(@)``
-     - ``null``
+  * - Given
+    - Expression
+    - Result
+  * - ``[b, a, c]``
+    - ``sort(@)``
+    - ``[a, b, c]``
+  * - ``[1, a, c]``
+    - ``sort(@)``
+    - ``[1, a, c]``
+  * - ``[false, [], null]``
+    - ``sort(@)``
+    - ``[[], null, false]``
+  * - ``[[], {}, false]``
+    - ``sort(@)``
+    - ``[{}, [], false]``
+  * - ``{"a": 1, "b": 2}``
+    - ``sort(@)``
+    - ``null``
+  * - ``false``
+    - ``sort(@)``
+    - ``null``
 
-object functions
-----------------
 
-contains
-~~~~~~~~
 
-See contains_.
-
-length
-~~~~~~
-
-See length_.
-
-keys
-~~~~
+sort_by
+-------
 
 ::
 
-    array keys(object $obj)
+    array sort_by(array $list, $expression)
 
-Returns an array containing the hash keys of the provided object.
-
-This function MUST return ``null`` if the provided argument is not an object.
+Sort an array using the result of an expression.  The ``$expression`` is
+**not** resolved when the function is invoked.  Instead the ``$expression`` is
+evaluated against each element in the ``$list``.  This can be used to sort
+a list of objects by a certain key for example.  If the resolved value while
+evaluating the expression against each list element is not a ``number`` or a
+``string``, then an ``invalid-type`` error occurs.
 
 .. list-table:: Examples
-   :header-rows: 1
+  :header-rows: 1
 
-   * - Given
-     - Expression
-     - Result
-   * - ``{"foo": "baz", "bar": "bam"}``
-     - ``keys(@)``
-     - ``["foo", "bar"]``
-   * - ``{}``
-     - ``keys(@)``
-     - ``[]``
-   * - ``false``
-     - ``keys(@)``
-     - ``null``
-   * - ``[b, a, c]``
-     - ``keys(@)``
-     - ``null``
+  * - Given
+    - Expression
+    - Result
+  * - ``[{"a": "1", "age": 30}, {"a": 2, "age": 20}]``
+    - ``sort_by(@, age)``
+    - ``[{"a": "2", "age": 20}, {"a": 1, "age": 30}]``
+  * - ``[{"a": "1", "age": 30}, {"a": 2, "age": 20}]``
+    - ``sort_by(@, a)``
+    - ``<error: invalid-type>``
 
-union
-~~~~~
+
+to_string
+---------
 
 ::
 
-    object union(object $object1, object $object2 [, object $... ])
+    string to_string(string|number|array|object|boolean $arg)
 
-Returns an object containing all of the provided arguments merged into a single
-object. If a key collision occurs, the first key value is used.
+* string - Returns the passed in value.
+* number/array/object/boolean - The JSON encoded value of the object.  The
+  JSON encoder should emit the encoded JSON value without adding any additional
+  new lines.
 
-This function requires at least two arguments. If any of the provided
-arguments are not objects, those argument are ignored from the resulting merged
-object.
-
-If no object arguments are found, this function MUST return ``null``.
 
 .. list-table:: Examples
-   :header-rows: 1
+  :header-rows: 1
 
-   * - Given
-     - Expression
-     - Result
-   * - ``[{"foo": "baz", "bar": "bam"}, {"qux": "more"}]``
-     - ``union(@[0], @[1])``
-     - ``{"foo": "baz", "bar": "bam", "qux": "more"}``
-   * - ``[{"foo": "baz", "bar": "bam"}, {"qux": "more"}]``
-     - ``union([0], [1])``
-     - ``{"foo": "baz", "bar": "bam", "qux": "more"}``
-   * - ``[{"foo": "baz", "bar": "bam"}, {"qux": "more", "foo": "ignore"}]``
-     - ``union(@[0], @[1])``
-     - ``{"foo": "baz", "bar": "bam", "qux": "more"}``
-   * - ``[{}, {}]``
-     - ``union(@[0], @[1])``
-     - ``{}``
-   * - ``[{"foo": "baz", "bar": "bam"}, [], false, {"qux": "more", "foo": "ignore"}]``
-     - ``union(@[0], @[1])``
-     - ``{"foo": "baz", "bar": "bam", "qux": "more"}``
-   * - n/a
-     - ``union(`false`, `false`)``
-     - ``null``
-   * - {}
-     - ``union(@)``
-     - Raises an error
+  * - Given
+    - Expression
+    - Result
+  * - ``null``
+    - ``to_string(`2`)``
+    - ``"2"``
 
-values
-~~~~~~
+
+to_number
+---------
 
 ::
 
-    array values(object|array $obj)
+    number to_number(string|number $arg)
 
-Returns the values of the provided object.
+* string - Returns the parsed number.  Any string that conforms to the
+  ``json-number`` production is supported.
+* number - Returns the passed in value.
+* array - null
+* object - null
+* boolean - null
 
-If the given argument is an array, this function transparently returns the
-given argument.
-
-This function MUST return ``null`` if the given argument is not an object or
-array.
-
-.. list-table:: Examples
-   :header-rows: 1
-
-   * - Given
-     - Expression
-     - Result
-   * - ``{"foo": "baz", "bar": "bam"}``
-     - ``values(@)``
-     - ``["baz", "bam"]``
-   * - ``["a", "b"]``
-     - ``values(@)``
-     - ``["a", "b"]``
-   * - ``[{}, {}]``
-     - ``values(@)``
-     - ``[{}, {}]``
-   * - ``false``
-     - ``values(@)``
-     - ``null``
-
-Type functions
---------------
 
 type
-~~~~
+----
 
 ::
 
-    string type(mixed $subject)
+    string type(array|object|string|number|boolean|null $subject)
 
 Returns the JavaScript type of the given ``$subject`` argument as a string
 value.
@@ -735,463 +639,85 @@ The return value MUST be one of the following:
 * object
 * null
 
+
 .. list-table:: Examples
-   :header-rows: 1
+  :header-rows: 1
 
-   * - Given
-     - Expression
-     - Result
-   * - "foo"
-     - ``type(@)``
-     - "string"
-   * - ``true``
-     - ``type(@)``
-     - "boolean"
-   * - ``false``
-     - ``type(@)``
-     - "boolean"
-   * - ``null``
-     - ``type(@)``
-     - "null"
-   * - 123
-     - ``type(@)``
-     - number
-   * - 123.05
-     - ``type(@)``
-     - number
-   * - ``["abc"]``
-     - ``type(@)``
-     - "array"
-   * - ``{"abc": "123"}``
-     - ``type(@)``
-     - "object"
+  * - Given
+    - Expression
+    - Result
+  * - "foo"
+    - ``type(@)``
+    - "string"
+  * - ``true``
+    - ``type(@)``
+    - "boolean"
+  * - ``false``
+    - ``type(@)``
+    - "boolean"
+  * - ``null``
+    - ``type(@)``
+    - "null"
+  * - 123
+    - ``type(@)``
+    - number
+  * - 123.05
+    - ``type(@)``
+    - number
+  * - ``["abc"]``
+    - ``type(@)``
+    - "array"
+  * - ``{"abc": "123"}``
+    - ``type(@)``
+    - "object"
 
-Test Cases
-==========
 
-.. code-block:: json
+values
+------
 
-    [{
-      "given":
-      {
-        "foo": -1,
-        "zero": 0,
-        "arr": [-1, 3, 4, 5, "a", "100"],
-        "strings": ["a", "b", "c"],
-        "dec": [1.01, 1.9, -1.5],
-        "str": "Str",
-        "false": false,
-        "empty": [],
-        "empty2": {}
-      },
-      "cases": [
-        {
-          "expression": "abs(@.foo)",
-          "result": 1
-        },
-        {
-          "expression": "abs(foo)",
-          "result": 1
-        },
-        {
-          "expression": "abs(@.str)",
-          "result": null
-        },
-        {
-          "expression": "abs(str)",
-          "result": null
-        },
-        {
-          "expression": "abs(@.arr[1])",
-          "result": 3
-        },
-        {
-          "expression": "abs(arr[1])",
-          "result": 3
-        },
-        {
-          "expression": "abs(false)",
-          "result": null
-        },
-        {
-          "expression": "abs(`false`)",
-          "result": null
-        },
-        {
-          "expression": "abs(`1`, `2`, `3`)",
-          "error": "runtime"
-        },
-        {
-          "expression": "abs()",
-          "error": "runtime"
-        },
-        {
-          "expression": "avg(@.arr)",
-          "result": 2.75
-        },
-        {
-          "expression": "avg(arr)",
-          "result": 2.75
-        },
-        {
-          "expression": "avg(`abc`)",
-          "result": null
-        },
-        {
-          "expression": "avg(@.foo)",
-          "result": null
-        },
-        {
-          "expression": "avg(foo)",
-          "result": null
-        },
-        {
-          "expression": "avg(@)",
-          "result": null
-        },
-        {
-          "expression": "avg(@.strings)",
-          "result": null
-        },
-        {
-          "expression": "avg(strings)",
-          "result": null
-        },
-        {
-          "expression": "ceil(@.dec[0])",
-          "result": 2
-        },
-        {
-          "expression": "ceil(dec[0])",
-          "result": 2
-        },
-        {
-          "expression": "ceil(@.dec[1])",
-          "result": 2
-        },
-        {
-          "expression": "ceil(dec[1])",
-          "result": 2
-        },
-        {
-          "expression": "ceil(@.dec[2])",
-          "result": -1
-        },
-        {
-          "expression": "ceil(dec[2])",
-          "result": -1
-        },
-        {
-          "expression": "ceil(abc)",
-          "result": null
-        },
-        {
-          "expression": "ceil(`abc`)",
-          "result": null
-        },
-        {
-          "expression": "concat(@.strings[0], strings[1], @.strings[2])",
-          "result": "abc"
-        },
-        {
-          "expression": "concat(strings[0], strings[1], @.strings[2], foo)",
-          "result": "abc-1"
-        },
-        {
-          "expression": "concat(@.strings[0], @.strings[1], strings[2], @)",
-          "result": null
-        },
-        {
-          "expression": "concat(`null`, `false`)",
-          "result": null
-        },
-        {
-          "expression": "concat(`foo`)",
-          "error": "runtime"
-        },
-        {
-          "expression": "concat()",
-          "error": "runtime"
-        },
-        {
-          "expression": "contains(`abc`, `a`)",
-          "result": true
-        },
-        {
-          "expression": "contains(`abc`, `d`)",
-          "result": false
-        },
-        {
-          "expression": "contains(`false`, `d`)",
-          "result": null
-        },
-        {
-          "expression": "contains(@.strings, `a`)",
-          "result": true
-        },
-        {
-          "expression": "contains(dec, `1.9`)",
-          "result": true
-        },
-        {
-          "expression": "contains(dec, `false`)",
-          "result": null
-        },
-        {
-          "expression": "length(@)",
-          "result": 9
-        },
-        {
-          "expression": "length(arr)",
-          "result": 6
-        },
-        {
-          "expression": "length(@.str)",
-          "result": 3
-        },
-        {
-          "expression": "floor(@.dec[0])",
-          "result": 1
-        },
-        {
-          "expression": "floor(dec[0])",
-          "result": 1
-        },
-        {
-          "expression": "floor(@.foo)",
-          "result": -1
-        },
-        {
-          "expression": "floor(@.str)",
-          "result": null
-        },
-        {
-          "expression": "get(@.empty)",
-          "result": null
-        },
-        {
-          "expression": "get(@.empty, @.\"false\")",
-          "result": null
-        },
-        {
-          "expression": "get(@.empty, @.\"false\", @.foo)",
-          "result": -1
-        },
-        {
-          "expression": "get(@.zero, `10`)",
-          "result": 0
-        },
-        {
-          "expression": "get(`null`, `false`, @.empty, `true`)",
-          "result": true
-        },
-        {
-          "expression": "join(`, `, str)",
-          "result": null
-        },
-        {
-          "expression": "join(`, `, strings)",
-          "result": "a, b, c"
-        },
-        {
-          "expression": "join(`|`, strings)",
-          "result": "a|b|c"
-        },
-        {
-          "expression": "join(`|`, @.dec)",
-          "result": "1.01|1.9|-1.5"
-        },
-        {
-          "expression": "join(`\"|\"`, @.empty)",
-          "result": ""
-        },
-        {
-          "expression": "keys(@)",
-          "result": ["foo", "zero", "arr", "strings", "dec", "str", "false", "empty", "empty2"]
-        },
-        {
-          "expression": "keys(@.empty2)",
-          "result": []
-        },
-        {
-          "expression": "keys(@.strings)",
-          "result": null
-        },
-        {
-          "expression": "keys(`abc`)",
-          "result": null
-        },
-        {
-          "expression": "keys(`false`)",
-          "result": null
-        },
-        {
-          "expression": "length(`abc`)",
-          "result": 3
-        },
-        {
-          "expression": "length(`\"\"`)",
-          "result": 0
-        },
-        {
-          "expression": "length(@.foo)",
-          "result": null
-        },
-        {
-          "expression": "length(@.strings[0])",
-          "result": 1
-        },
-        {
-          "expression": "length(`false`)",
-          "result": null
-        },
-        {
-          "expression": "max(@.arr)",
-          "result": 5
-        },
-        {
-          "expression": "max(arr)",
-          "result": 5
-        },
-        {
-          "expression": "max(@.dec)",
-          "result": 1.9
-        },
-        {
-          "expression": "max(abc)",
-          "result": null
-        },
-        {
-          "expression": "max(@.empty)",
-          "result": null
-        },
-        {
-          "expression": "min(@.arr)",
-          "result": -1
-        },
-        {
-          "expression": "min(@.dec)",
-          "result": -1.5
-        },
-        {
-          "expression": "min(abc)",
-          "result": null
-        },
-        {
-          "expression": "min(@.empty)",
-          "result": null
-        },
-        {
-          "expression": "sort(@.arr)",
-          "result": [-1, 3, 4, 5, "a", "100"]
-        },
-        {
-          "expression": "sort(@.strings)",
-          "result":  ["a", "b", "c"]
-        },
-        {
-          "expression": "sort(abc)",
-          "result": null
-        },
-        {
-          "expression": "sort(@.empty)",
-          "result": []
-        },
-        {
-          "expression": "sort(@)",
-          "result": null
-        },
-        {
-          "expression": "type(`abc`)",
-          "result": "string"
-        },
-        {
-          "expression": "type(`123`)",
-          "result": "number"
-        },
-        {
-          "expression": "type(`123`)",
-          "result": "number"
-        },
-        {
-          "expression": "type(`1.2`)",
-          "result": "number"
-        },
-        {
-          "expression": "type(`true`)",
-          "result": "boolean"
-        },
-        {
-          "expression": "type(`false`)",
-          "result": "boolean"
-        },
-        {
-          "expression": "type(@.empty)",
-          "result": "array"
-        },
-        {
-          "expression": "type(empty)",
-          "result": "array"
-        },
-        {
-          "expression": "type(@.strings)",
-          "result": "array"
-        },
-        {
-          "expression": "type(@)",
-          "result": "object"
-        }
-      ]
-    }, {
-      "given":
-        [
-          {"foo": "baz", "bar": "bam"},
-          {"foo": "123"},
-          {"abc": "def", "fez": "qux"},
-          [1, 2, 3],
-          "abc",
-          true
-        ],
-      "cases": [
-        {
-          "expression": "union(@[0], @[1])",
-          "result": {"foo": "baz", "bar": "bam"}
-        },
-        {
-          "expression": "union(@[0], @[2])",
-          "result": {"foo": "baz", "bar": "bam", "abc": "def", "fez": "qux"}
-        },
-        {
-          "expression": "union(@[3], @[4])",
-          "result": null
-        },
-        {
-          "expression": "union(true, false)",
-          "result": null
-        },
-        {
-          "expression": "values(@[0])",
-          "result": ["baz", "bam"]
-        },
-        {
-          "expression": "values(@[1])",
-          "result": ["123"]
-        },
-        {
-          "expression": "values(@[3])",
-          "result": [1, 2, 3]
-        },
-        {
-          "expression": "values(@[4])",
-          "result": null
-        }
-      ]
-    }]
+::
+
+    array values(object $obj)
+
+Returns the values of the provided object.
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``{"foo": "baz", "bar": "bam"}``
+    - ``values(@)``
+    - ``["baz", "bam"]``
+  * - ``["a", "b"]``
+    - ``values(@)``
+    - ``<error: invalid-type>``
+  * - ``false``
+    - ``values(@)``
+    - ``<error: invalid-type>``
+
+
+Compliance Tests
+================
+
+A ``functions.json`` will be added to the compliance test suite.
+The test suite will add the following new error types:
+
+* unknown-function
+* invalid-arity
+* invalid-type
+
+The compliance does not specify **when** the errors are raised, as this will
+depend on implementation details.  For an implementation to be compliant they
+need to indicate that an error occurred while attempting to evaluate the
+JMESPath expression.
 
 History
 =======
 
 * This JEP originally proposed the literal syntax. The literal portion of this
   JEP was removed and added instead to JEP 7.
-* Removed several functions that require more work on determining how we will
-  support unicode inputs.
+* This JEP originally specified that types matches should return null.  This
+  has been updated to specify that an invalid type error should occur instead.
