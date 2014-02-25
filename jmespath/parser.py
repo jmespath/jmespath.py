@@ -92,6 +92,11 @@ class Grammar(object):
         """
         p[0] = ast.SubExpression(p[1], ast.WildcardValues())
 
+    def p_jmespath_subexpression_function(self, p):
+        """expression : expression DOT function-expression
+        """
+        p[0] = ast.SubExpression(p[1], p[3])
+
     def p_jmespath_index(self, p):
         """expression : expression bracket-spec
                       | bracket-spec
@@ -206,8 +211,12 @@ class Grammar(object):
         """expression : LITERAL"""
         p[0] = ast.Literal(p[1])
 
+    def p_jmespath_function(self, p):
+        """expression : function-expression"""
+        p[0] = p[1]
+
     def p_jmespath_function_expression(self, p):
-        """expression : UNQUOTED_IDENTIFIER LPAREN function-args RPAREN"""
+        """function-expression : UNQUOTED_IDENTIFIER LPAREN function-args RPAREN"""
         function_node = ast.FunctionExpression(p[1], p[3])
         if function_node.arity != len(function_node.args):
             raise ArityError(function_node)

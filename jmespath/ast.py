@@ -340,22 +340,24 @@ class CurrentNode(AST):
 
 
 class FunctionExpression(AST):
+    VALUE_METHODS = ['function_call']
+
     def __init__(self, name, args):
         self.name = name
         self.args = args
         try:
-            self._function = getattr(self, '_func_%s' % name)
+            self.function = getattr(self, '_func_%s' % name)
         except AttributeError:
             raise ValueError("Unknown function: %s" % self.name)
-        self.arity = self._function.arity
-        self._function = self._resolve_arguments_wrapper(self._function)
+        self.arity = self.function.arity
+        self.function = self._resolve_arguments_wrapper(self.function)
 
     def pretty_print(self, indent=''):
         return "%sFunctionExpression(name=%s, args=%s)" % (
             indent, self.name, self.args)
 
     def search(self, value):
-        return self._function(value)
+        return self.function(value)
 
     def _resolve_arguments_wrapper(self, function):
         def _call_with_resolved_args(value):
@@ -366,7 +368,11 @@ class FunctionExpression(AST):
                 else:
                     current = arg_expression
                 resolved_args.append(current)
-            return function(*resolved_args)
+            method = self._get_value_method(value)
+            if method is not None:
+                return method(function)
+            else:
+                return function(*resolved_args)
         return _call_with_resolved_args
 
     def arity(amount, argspec=None):
@@ -627,3 +633,11 @@ class _Projection(list):
                 if expression.search(element):
                     results.append(element)
         return results
+
+    def function_call(self, function):
+        result = self.__class__([])
+        for element in self:
+            current = function(element)
+            if current is not None:
+                result.append(current)
+        return _Projection(result)
