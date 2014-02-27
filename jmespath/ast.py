@@ -1,11 +1,11 @@
 import operator
 import math
 import json
-from itertools import izip_longest
 
 from jmespath.compat import with_repr_method
 from jmespath.compat import with_str_method
 from jmespath.compat import string_type as STRING_TYPE
+from jmespath.compat import zip_longest
 
 
 NUMBER_TYPE = (float, int)
@@ -423,7 +423,7 @@ class FunctionExpression(AST):
             if method is not None:
                 return method(_call_with_resolved_args)
             resolved_args = []
-            for arg_expression, arg_spec in izip_longest(
+            for arg_expression, arg_spec in zip_longest(
                     self.args, function.argspec,
                     fillvalue=function.argspec[-1]):
                 if arg_spec.resolve:
@@ -503,26 +503,11 @@ class FunctionExpression(AST):
 
     @signature(_Arg(types=['number']))
     def _func_abs(self, arg):
-        # We need to special case booleans because abs(True) -> 1, which isn't
-        # allowed in the spec.
-        if isinstance(arg, bool):
-            return None
-        try:
-            return abs(arg)
-        except TypeError:
-            return None
+        return abs(arg)
 
     @signature(_Arg(types=['array-number']))
     def _func_avg(self, arg):
-        if not isinstance(arg, list) or not arg:
-            return None
-        total = 0
-        for element in arg:
-            try:
-                total += element
-            except TypeError:
-                return None
-        return total / float(len(arg))
+        return sum(arg) / float(len(arg))
 
     @signature(_Arg())
     def _func_to_string(self, arg):
@@ -533,7 +518,11 @@ class FunctionExpression(AST):
 
     @signature(_Arg())
     def _func_to_number(self, arg):
-        if isinstance(arg, (int, float)):
+        if isinstance(arg, (list, dict, bool)):
+            return None
+        elif arg is None:
+            return None
+        elif isinstance(arg, (int, float)):
             return arg
         else:
             try:
@@ -546,99 +535,86 @@ class FunctionExpression(AST):
 
     @signature(_Arg(types=['array', 'string']), _Arg())
     def _func_contains(self, subject, search):
-        if not isinstance(subject, (list, STRING_TYPE)):
-            return
         return search in subject
 
     @signature(_Arg(types=['string', 'array', 'object']))
     def _func_length(self, arg):
-        if isinstance(arg, bool):
-            return None
         return len(arg)
 
     @signature(_Arg(types=['number']))
     def _func_ceil(self, arg):
-        if not isinstance(arg, (int, float)):
-            return None
-        else:
-            return math.ceil(arg)
+        return math.ceil(arg)
 
     @signature(_Arg(types=['number']))
     def _func_floor(self, arg):
-        if not isinstance(arg, (int, float)):
-            return None
-        else:
-            return math.floor(arg)
+        return math.floor(arg)
 
     @signature(_Arg(types=['string']), _Arg(types=['array-string']))
     def _func_join(self, separator, array):
-        if not isinstance(array, list) or not isinstance(separator,
-                                                         STRING_TYPE):
-            return None
-        else:
-            try:
-                return separator.join(array)
-            except TypeError:
-                return None
+        return separator.join(array)
 
     @signature(_Arg(types=['array-number']))
     def _func_max(self, arg):
-        if not isinstance(arg, list) or not arg:
+        if arg:
+            return max(arg)
+        else:
             return None
-        best = float('-inf')
-        for element in arg:
-            try:
-                if element > best:
-                    best = element
-            except TypeError:
-                return None
-        return best
 
     @signature(_Arg(types=['array-number']))
     def _func_min(self, arg):
-        if not isinstance(arg, list) or not arg:
+        if arg:
+            return min(arg)
+        else:
             return None
-        best = float('inf')
-        for element in arg:
-            try:
-                if element < best:
-                    best = element
-            except TypeError:
-                return None
-        return best
 
     @signature(_Arg(types=['array-string', 'array-number']))
     def _func_sort(self, arg):
-        if not isinstance(arg, list):
-            return None
-        else:
-            return list(sorted(arg))
+        return list(sorted(arg))
 
     # The "key" expression is applied to each individual element
     # so we need to set resolve=False to indicate that we shouldn't
     # try to resolve the argument against the passed in current node.
-    @signature(_Arg(resolve=True), _Arg(resolve=False))
+    @signature(_Arg(types=['array'], resolve=True), _Arg(resolve=False))
     def _func_sort_by(self, arg, key):
-        if not isinstance(arg, list):
-            return None
-        else:
-            return list(sorted(arg, key=lambda x: key.search(x)))
+        string_types = REVERSE_TYPES_MAP['string']
+        number_types = REVERSE_TYPES_MAP['number']
+        chosen = []
+        def keyfunc(x):
+            result = key.search(x)
+            type_name = type(result).__name__
+            if not chosen:
+                if type_name in string_types:
+                    chosen[:] = string_types
+                elif type_name in number_types:
+                    chosen[:] = number_types
+                else:
+                    raise JMESPathTypeError(self.name,
+                                            result,
+                                            type_name,
+                                            ['string', 'number'])
+            else:
+                if type_name not in chosen:
+                    if chosen == string_types:
+                        expected = ['string']
+                    else:
+                        expected = ['number']
+                    raise JMESPathTypeError(self.name,
+                                            result,
+                                            type_name,
+                                            expected)
+            return result
+
+        return list(sorted(arg, key=keyfunc))
 
     @signature(_Arg(types=['object']))
     def _func_keys(self, arg):
         # To be consistent with .values()
         # should we also return the indices of a list?
-        if not isinstance(arg, dict):
-            return None
-        else:
-            return list(arg.keys())
+        return list(arg.keys())
 
     @signature(_Arg(types=['object']))
     def _func_values(self, arg):
-        if not isinstance(arg, dict):
-            return None
-        else:
-            return list(arg.values())
+        return list(arg.values())
 
     @signature(_Arg())
     def _func_type(self, arg):

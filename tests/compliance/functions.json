@@ -368,6 +368,22 @@
       "result": null
     },
     {
+      "expression": "to_number(`false`)",
+      "result": null
+    },
+    {
+      "expression": "to_number(`null`)",
+      "result": null
+    },
+    {
+      "expression": "to_number(`[0]`)",
+      "result": null
+    },
+    {
+      "expression": "to_number(`{\"foo\": 0}`)",
+      "result": null
+    },
+    {
       "expression": "\"to_string\"(`1.0`)",
       "error": "syntax"
     },
@@ -430,11 +446,11 @@
   "given":
   {
     "people": [
-         {"age": 20, "age_str": "20", "name": "a", "extra": "foo"},
-         {"age": 40, "age_str": "40", "name": "b", "extra": "bar"},
-         {"age": 30, "age_str": "30", "name": "c"},
-         {"age": 50, "age_str": "50", "name": "d"},
-         {"age": 10, "age_str": "10", "name": "e"}
+         {"age": 20, "age_str": "20", "bool": true, "name": "a", "extra": "foo"},
+         {"age": 40, "age_str": "40", "bool": false, "name": "b", "extra": "bar"},
+         {"age": 30, "age_str": "30", "bool": true, "name": "c"},
+         {"age": 50, "age_str": "50", "bool": false, "name": "d"},
+         {"age": 10, "age_str": "10", "bool": true, "name": 3}
     ]
   },
   "cases": [
@@ -442,31 +458,42 @@
       "description": "function projection on variadic function",
       "expression": "sort_by(people, age)",
       "result": [
-         {"age": 10, "age_str": "10", "name": "e"},
-         {"age": 20, "age_str": "20", "name": "a", "extra": "foo"},
-         {"age": 30, "age_str": "30", "name": "c"},
-         {"age": 40, "age_str": "40", "name": "b", "extra": "bar"},
-         {"age": 50, "age_str": "50", "name": "d"}
+         {"age": 10, "age_str": "10", "bool": true, "name": 3},
+         {"age": 20, "age_str": "20", "bool": true, "name": "a", "extra": "foo"},
+         {"age": 30, "age_str": "30", "bool": true, "name": "c"},
+         {"age": 40, "age_str": "40", "bool": false, "name": "b", "extra": "bar"},
+         {"age": 50, "age_str": "50", "bool": false, "name": "d"}
       ]
     },
     {
       "description": "function projection on variadic function",
       "expression": "sort_by(people, to_number(age_str))",
       "result": [
-         {"age": 10, "age_str": "10", "name": "e"},
-         {"age": 20, "age_str": "20", "name": "a", "extra": "foo"},
-         {"age": 30, "age_str": "30", "name": "c"},
-         {"age": 40, "age_str": "40", "name": "b", "extra": "bar"},
-         {"age": 50, "age_str": "50", "name": "d"}
+         {"age": 10, "age_str": "10", "bool": true, "name": 3},
+         {"age": 20, "age_str": "20", "bool": true, "name": "a", "extra": "foo"},
+         {"age": 30, "age_str": "30", "bool": true, "name": "c"},
+         {"age": 40, "age_str": "40", "bool": false, "name": "b", "extra": "bar"},
+         {"age": 50, "age_str": "50", "bool": false, "name": "d"}
       ]
     },
     {
       "description": "function projection on variadic function",
       "expression": "sort_by(people, age)[].name",
-      "result": ["e", "a", "c", "b", "d"]
+      "result": [3, "a", "c", "b", "d"]
     },
     {
-      "description": "function projection on variadic function",
+      "expression": "sort_by(people, extra)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "sort_by(people, bool)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "sort_by(people, name)",
+      "error": "invalid-type"
+    },
+    {
       "expression": "sort_by(people, age)[].extra",
       "result": ["foo", "bar"]
     }

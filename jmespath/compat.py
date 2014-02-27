@@ -5,6 +5,7 @@ PY2 = sys.version_info[0] == 2
 if PY2:
     text_type = unicode
     string_type = basestring
+    from itertools import izip_longest as zip_longest
     def with_str_method(cls):
         """Class decorator that handles __str__ compat between py2 and py3."""
         # In python2, the __str__ should be __unicode__
@@ -31,6 +32,7 @@ if PY2:
 else:
     text_type = str
     string_type = str
+    from itertools import zip_longest
     def with_str_method(cls):
         # In python3, we don't need to do anything, we return a str type.
         return cls
