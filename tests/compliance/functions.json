@@ -49,11 +49,15 @@
     },
     {
       "expression": "abs(`1`, `2`)",
-      "error": "syntax"
+      "error": "invalid-arity"
+    },
+    {
+      "expression": "abs()",
+      "error": "invalid-arity"
     },
     {
       "expression": "unknown_function(`1`, `2`)",
-      "error": "syntax"
+      "error": "unknown-function"
     },
     {
       "expression": "avg(numbers)",
@@ -72,32 +76,36 @@
       "error": "invalid-type"
     },
     {
-      "expression": "length(`abc`)",
-      "result": 3
+      "expression": "avg(@)",
+      "error": "invalid-type"
     },
     {
-      "expression": "length(`\"\"`)",
-      "result": 0
+      "expression": "avg(strings)",
+      "error": "invalid-type"
     },
     {
-      "expression": "length(@)",
-      "result": 12
-    },
-    {
-      "expression": "length(strings[0])",
-      "result": 1
-    },
-    {
-      "expression": "length(array)",
-      "result": 6
-    },
-    {
-      "expression": "length(objects)",
+      "expression": "ceil(`1.2`)",
       "result": 2
     },
     {
-      "expression": "length(`false`)",
+      "expression": "ceil(decimals[0])",
+      "result": 2
+    },
+    {
+      "expression": "ceil(decimals[1])",
+      "result": 2
+    },
+    {
+      "expression": "ceil(decimals[2])",
+      "result": -1
+    },
+    {
+      "expression": "ceil(`string`)",
       "error": "invalid-type"
+    },
+    {
+      "expression": "contains(`abc`, `a`)",
+      "result": true
     },
     {
       "expression": "contains(`abc`, `d`)",
@@ -120,6 +128,66 @@
       "result": false
     },
     {
+      "expression": "floor(`1.2`)",
+      "result": 1
+    },
+    {
+      "expression": "floor(`string`)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "floor(decimals[0])",
+      "result": 1
+    },
+    {
+      "expression": "floor(foo)",
+      "result": -1
+    },
+    {
+      "expression": "floor(str)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "length(`abc`)",
+      "result": 3
+    },
+    {
+      "expression": "length(`\"\"`)",
+      "result": 0
+    },
+    {
+      "expression": "length(@)",
+      "result": 12
+    },
+    {
+      "expression": "length(strings[0])",
+      "result": 1
+    },
+    {
+      "expression": "length(str)",
+      "result": 3
+    },
+    {
+      "expression": "length(array)",
+      "result": 6
+    },
+    {
+      "expression": "length(objects)",
+      "result": 2
+    },
+    {
+      "expression": "length(`false`)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "length(foo)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "length(strings[0])",
+      "result": 1
+    },
+    {
       "expression": "max(numbers)",
       "result": 5
     },
@@ -130,6 +198,14 @@
     {
       "expression": "max(abc)",
       "error": "invalid-type"
+    },
+    {
+      "expression": "max(array)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "max(decimals)",
+      "result": 1.9
     },
     {
       "expression": "max(empty_list)",
@@ -148,8 +224,16 @@
       "error": "invalid-type"
     },
     {
+      "expression": "min(array)",
+      "error": "invalid-type"
+    },
+    {
       "expression": "min(empty_list)",
       "result": null
+    },
+    {
+      "expression": "min(decimals)",
+      "result": -1.5
     },
     {
       "expression": "type(`abc`)",
@@ -184,6 +268,10 @@
       "result": "object"
     },
     {
+      "expression": "type(@)",
+      "result": "object"
+    },
+    {
       "expression": "keys(objects)",
       "result": ["foo", "bar"]
     },
@@ -192,36 +280,64 @@
       "error": "invalid-type"
     },
     {
+      "expression": "keys(strings)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "keys(`false`)",
+      "error": "invalid-type"
+    },
+    {
       "expression": "values(objects)",
       "result": ["bar", "baz"]
+    },
+    {
+      "expression": "keys(empty_hash)",
+      "result": []
     },
     {
       "expression": "values(foo)",
       "error": "invalid-type"
     },
     {
-      "expression": "ceil(`1.2`)",
-      "result": 2
+      "expression": "join(`\", \"`, strings)",
+      "result": "a, b, c"
     },
     {
-      "expression": "ceil(`string`)",
-      "error": "invalid-type"
+      "expression": "join(`, `, strings)",
+      "result": "a, b, c"
     },
     {
-      "expression": "floor(`1.2`)",
-      "result": 1
-    },
-    {
-      "expression": "floor(`string`)",
-      "error": "invalid-type"
-    },
-    {
-      "expression": "join(`, `, `[\"a\", \"b\"]`)",
+      "expression": "join(`,`, `[\"a\", \"b\"]`)",
       "result": "a,b"
     },
     {
       "expression": "join(`,`, `[\"a\", 0]`)",
-      "result": null
+      "error": "invalid-type"
+    },
+    {
+      "expression": "join(`, `, str)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "join(`|`, strings)",
+      "result": "a|b|c"
+    },
+    {
+      "expression": "join(`2`, strings)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "join(`|`, decimals)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "join(`|`, decimals[].to_string(@))",
+      "result": "1.01|1.9|-1.5"
+    },
+    {
+      "expression": "join(`|`, empty_list)",
+      "result": ""
     },
     {
       "expression": "to_string(`foo`)",
@@ -268,6 +384,22 @@
       "result": [-1.5, 1.01, 1.9]
     },
     {
+      "expression": "sort(array)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "sort(abc)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "sort(empty_list)",
+      "result": []
+    },
+    {
+      "expression": "sort(@)",
+      "error": "invalid-type"
+    },
+    {
       "expression": "not_null(unknown_key, str)",
       "result": "Str"
     },
@@ -292,6 +424,51 @@
       "description": "function projection on single arg function",
       "expression": "array[].to_number(@)",
       "result": [-1, 3, 4, 5, 100]
+    }
+  ]
+}, {
+  "given":
+  {
+    "people": [
+         {"age": 20, "age_str": "20", "name": "a", "extra": "foo"},
+         {"age": 40, "age_str": "40", "name": "b", "extra": "bar"},
+         {"age": 30, "age_str": "30", "name": "c"},
+         {"age": 50, "age_str": "50", "name": "d"},
+         {"age": 10, "age_str": "10", "name": "e"}
+    ]
+  },
+  "cases": [
+    {
+      "description": "function projection on variadic function",
+      "expression": "sort_by(people, age)",
+      "result": [
+         {"age": 10, "age_str": "10", "name": "e"},
+         {"age": 20, "age_str": "20", "name": "a", "extra": "foo"},
+         {"age": 30, "age_str": "30", "name": "c"},
+         {"age": 40, "age_str": "40", "name": "b", "extra": "bar"},
+         {"age": 50, "age_str": "50", "name": "d"}
+      ]
+    },
+    {
+      "description": "function projection on variadic function",
+      "expression": "sort_by(people, to_number(age_str))",
+      "result": [
+         {"age": 10, "age_str": "10", "name": "e"},
+         {"age": 20, "age_str": "20", "name": "a", "extra": "foo"},
+         {"age": 30, "age_str": "30", "name": "c"},
+         {"age": 40, "age_str": "40", "name": "b", "extra": "bar"},
+         {"age": 50, "age_str": "50", "name": "d"}
+      ]
+    },
+    {
+      "description": "function projection on variadic function",
+      "expression": "sort_by(people, age)[].name",
+      "result": ["e", "a", "c", "b", "d"]
+    },
+    {
+      "description": "function projection on variadic function",
+      "expression": "sort_by(people, age)[].extra",
+      "result": ["foo", "bar"]
     }
   ]
 }, {

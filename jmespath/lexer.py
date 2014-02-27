@@ -96,8 +96,7 @@ class LexerDefinition(object):
     def t_LITERAL(self, t):
         r'(`(?:\\\\|\\`|[^`])*`)'
         actual_value = t.value[1:-1]
-        actual_value = actual_value.replace('\\`', '`')
-        actual_value = actual_value.strip()
+        actual_value = actual_value.replace('\\`', '`').lstrip()
         # First, if it looks like JSON then we parse it as
         # JSON and any json parsing errors propogate as lexing
         # errors.

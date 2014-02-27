@@ -23,13 +23,14 @@ TYPES_MAP = {
     'float': 'number',
     'int': 'number',
     'OrderedDict': 'object',
+    '_Projection': 'array',
 }
 
 
 # jmespath types -> python types
 REVERSE_TYPES_MAP = {
     'boolean': ('bool',),
-    'array': ('list',),
+    'array': ('list', '_Projection'),
     'object': ('dict', 'OrderedDict',),
     'null': ('None',),
     'string': ('unicode', 'str'),
@@ -46,7 +47,7 @@ class JMESPathTypeError(ValueError):
         self.expected_types = expected_types
 
     def __str__(self):
-        jmespath_actual = TYPES_MAP[self.actual_type]
+        jmespath_actual = TYPES_MAP.get(self.actual_type, 'unknown')
         return ('In function %s(), invalid type for value: %s, '
                 'expected one of: %s, received: "%s"' % (
                     self.function_name, self.current_value,
@@ -436,7 +437,7 @@ class FunctionExpression(AST):
                         type_ = t.split('-', 1)
                         if len(type_) == 2:
                             type_, subtype = type_
-                            allowed_subtypes.extend(REVERSE_TYPES_MAP[subtype])
+                            allowed_subtypes.append(REVERSE_TYPES_MAP[subtype])
                         else:
                             type_ = type_[0]
                         allowed_types.extend(REVERSE_TYPES_MAP[type_])
@@ -454,10 +455,31 @@ class FunctionExpression(AST):
                     # elements (for example a function can require a
                     # list of numbers or a list of strings).
                     # Arrays are the only types that can have subtypes.
-                    if allowed_subtypes:
+                    if len(allowed_subtypes) == 1:
+                        # The easy case, we know up front what type
+                        # we need to validate.
+                        allowed_subtypes = allowed_subtypes[0]
                         for element in current:
                             actual_typename = type(element).__name__
                             if actual_typename not in allowed_subtypes:
+                                raise JMESPathTypeError(self.name, element,
+                                                        actual_typename,
+                                                        arg_spec.types)
+                    elif len(allowed_subtypes) > 1 and current:
+                        # Dynamic type validation.  Based on the first
+                        # type we see, we validate that the remaining types
+                        # match.
+                        first = type(current[0]).__name__
+                        for subtypes in allowed_subtypes:
+                            if first in subtypes:
+                                allowed = subtypes
+                                break
+                        else:
+                            raise JMESPathTypeError(self.name, current[0],
+                                                    first, arg_spec.types)
+                        for element in current:
+                            actual_typename = type(element).__name__
+                            if actual_typename not in allowed:
                                 raise JMESPathTypeError(self.name, element,
                                                         actual_typename,
                                                         arg_spec.types)
@@ -548,7 +570,7 @@ class FunctionExpression(AST):
         else:
             return math.floor(arg)
 
-    @signature(_Arg(types=['string']), _Arg(types=['array']))
+    @signature(_Arg(types=['string']), _Arg(types=['array-string']))
     def _func_join(self, separator, array):
         if not isinstance(array, list) or not isinstance(separator,
                                                          STRING_TYPE):
@@ -559,7 +581,7 @@ class FunctionExpression(AST):
             except TypeError:
                 return None
 
-    @signature(_Arg(types=['array']))
+    @signature(_Arg(types=['array-number']))
     def _func_max(self, arg):
         if not isinstance(arg, list) or not arg:
             return None
@@ -572,7 +594,7 @@ class FunctionExpression(AST):
                 return None
         return best
 
-    @signature(_Arg(types=['array']))
+    @signature(_Arg(types=['array-number']))
     def _func_min(self, arg):
         if not isinstance(arg, list) or not arg:
             return None
@@ -595,7 +617,7 @@ class FunctionExpression(AST):
     # The "key" expression is applied to each individual element
     # so we need to set resolve=False to indicate that we shouldn't
     # try to resolve the argument against the passed in current node.
-    @signature(_Arg(types=['array'], resolve=True), _Arg(resolve=False))
+    @signature(_Arg(resolve=True), _Arg(resolve=False))
     def _func_sort_by(self, arg, key):
         if not isinstance(arg, list):
             return None
