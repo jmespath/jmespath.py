@@ -271,9 +271,16 @@ class ORExpression(AST):
 
     def search(self, value):
         matched = self.first.search(value)
-        if matched is None:
+        if self._is_false(matched):
             matched = self.remaining.search(value)
         return matched
+
+    def _is_false(self, value):
+        # This looks weird, but we're explicitly using equality checks
+        # because the truth/false values are different between
+        # python and jmespath.
+        return (value == '' or value == [] or value == {} or value is None or
+                value == False)
 
     def pretty_print(self, indent=''):
         return "%sORExpression(%s, %s)" % (indent, self.first,
