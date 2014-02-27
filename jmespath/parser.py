@@ -62,6 +62,15 @@ class ArityError(ParseError):
                                  self.function_name,
                                  self.actual_arity))
 
+@with_str_method
+class VariadictArityError(ArityError):
+    def __str__(self):
+        return ("Expected at least %s arguments for function %s, "
+                "received %s" % (self.expected_arity,
+                                 self.function_name,
+                                 self.actual_arity))
+
+
 class Grammar(object):
     precedence = (
         ('left', 'OR'),
@@ -216,12 +225,15 @@ class Grammar(object):
         p[0] = p[1]
 
     def p_jmespath_function_expression(self, p):
-        """function-expression : UNQUOTED_IDENTIFIER LPAREN function-args RPAREN"""
+        """function-expression : UNQUOTED_IDENTIFIER LPAREN function-args RPAREN
+        """
         function_node = ast.FunctionExpression(p[1], p[3])
-        if function_node.arity != len(function_node.args):
+        if function_node.variadic:
+            if len(function_node.args) < function_node.arity:
+                raise VariadictArityError(function_node)
+        elif function_node.arity != len(function_node.args):
             raise ArityError(function_node)
-        else:
-            p[0] = function_node
+        p[0] = function_node
 
     def p_jmespath_function_args(self, p):
         """function-args : function-args COMMA function-arg

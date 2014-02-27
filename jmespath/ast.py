@@ -1,6 +1,7 @@
 import operator
 import math
 import json
+from itertools import izip_longest
 
 from jmespath.compat import with_repr_method
 from jmespath.compat import with_str_method
@@ -8,15 +9,8 @@ from jmespath.compat import string_type as STRING_TYPE
 
 
 NUMBER_TYPE = (float, int)
-#TYPES_MAP = {
-#    bool: 'boolean',
-#    list: 'array',
-#    dict: 'object',
-#    None: 'null',
-#    STRING_TYPE: 'string',
-#    float: 'number',
-#    int: 'number',
-#}
+_VARIADIC = object()
+
 
 # python types -> jmespath types
 TYPES_MAP = {
@@ -30,6 +24,8 @@ TYPES_MAP = {
     'int': 'number',
     'OrderedDict': 'object',
 }
+
+
 # jmespath types -> python types
 REVERSE_TYPES_MAP = {
     'boolean': ('bool',),
@@ -39,7 +35,6 @@ REVERSE_TYPES_MAP = {
     'string': ('unicode', 'str'),
     'number': ('float', 'int'),
 }
-
 
 
 @with_str_method
@@ -411,6 +406,7 @@ class FunctionExpression(AST):
         except AttributeError:
             raise ValueError("Unknown function: %s" % self.name)
         self.arity = self.function.arity
+        self.variadic = self.function.variadic
         self.function = self._resolve_arguments_wrapper(self.function)
 
     def pretty_print(self, indent=''):
@@ -422,39 +418,66 @@ class FunctionExpression(AST):
 
     def _resolve_arguments_wrapper(self, function):
         def _call_with_resolved_args(value):
+            method = self._get_value_method(value)
+            if method is not None:
+                return method(_call_with_resolved_args)
             resolved_args = []
-            for arg_expression, arg_spec in zip(self.args, function.argspec):
+            for arg_expression, arg_spec in izip_longest(
+                    self.args, function.argspec,
+                    fillvalue=function.argspec[-1]):
                 if arg_spec.resolve:
                     current = arg_expression.search(value)
                 else:
                     current = arg_expression
                 if arg_spec.types is not None:
                     allowed_types = []
+                    allowed_subtypes = []
                     for t in arg_spec.types:
-                        allowed_types.extend(REVERSE_TYPES_MAP[t])
+                        type_ = t.split('-', 1)
+                        if len(type_) == 2:
+                            type_, subtype = type_
+                            allowed_subtypes.extend(REVERSE_TYPES_MAP[subtype])
+                        else:
+                            type_ = type_[0]
+                        allowed_types.extend(REVERSE_TYPES_MAP[type_])
                     # We're not using isinstance() on purpose.
                     # The type model for jmespath does not map
                     # 1-1 with python types (booleans are considered
-                    # integers for example).
+                    # integers in python for example).
                     actual_typename = type(current).__name__
                     if actual_typename not in allowed_types:
                         raise JMESPathTypeError(self.name, current,
                                                 actual_typename,
                                                 arg_spec.types)
+                    # If we're dealing with a list type, we can have
+                    # additional restrictions on the type of the list
+                    # elements (for example a function can require a
+                    # list of numbers or a list of strings).
+                    # Arrays are the only types that can have subtypes.
+                    if allowed_subtypes:
+                        for element in current:
+                            actual_typename = type(element).__name__
+                            if actual_typename not in allowed_subtypes:
+                                raise JMESPathTypeError(self.name, element,
+                                                        actual_typename,
+                                                        arg_spec.types)
                 resolved_args.append(current)
-            method = self._get_value_method(value)
-            if method is not None:
-                return method(function)
-            else:
-                return function(*resolved_args)
+            return function(*resolved_args)
         return _call_with_resolved_args
 
-    def signature(*arguments):
+    def signature(*arguments, **kwargs):
         def _record_arity(func):
             func.arity = len(arguments)
+            func.variadic = kwargs.get('variadic', False)
             func.argspec = arguments
             return func
         return _record_arity
+
+    @signature(_Arg(), variadic=True)
+    def _func_not_null(self, *arguments):
+        for argument in arguments:
+            if argument is not None:
+                return argument
 
     @signature(_Arg(types=['number']))
     def _func_abs(self, arg):
@@ -467,7 +490,7 @@ class FunctionExpression(AST):
         except TypeError:
             return None
 
-    @signature(_Arg())
+    @signature(_Arg(types=['array-number']))
     def _func_avg(self, arg):
         if not isinstance(arg, list) or not arg:
             return None
@@ -562,7 +585,7 @@ class FunctionExpression(AST):
                 return None
         return best
 
-    @signature(_Arg(types=['array']))
+    @signature(_Arg(types=['array-string', 'array-number']))
     def _func_sort(self, arg):
         if not isinstance(arg, list):
             return None

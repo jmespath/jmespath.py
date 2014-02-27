@@ -11,7 +11,8 @@
     "false": false,
     "empty_list": [],
     "empty_hash": {},
-    "objects": {"foo": "bar", "bar": "baz"}
+    "objects": {"foo": "bar", "bar": "baz"},
+    "null_key": null
   },
   "cases": [
     {
@@ -24,11 +25,7 @@
     },
     {
       "expression": "abs(str)",
-      "result": null
-    },
-    {
-      "expression": "abs(str)",
-      "result": null
+      "error": "invalid-type"
     },
     {
       "expression": "abs(array[1])",
@@ -40,7 +37,7 @@
     },
     {
       "expression": "abs(`false`)",
-      "result": null
+      "error": "invalid-type"
     },
     {
       "expression": "abs(`-24`)",
@@ -64,15 +61,15 @@
     },
     {
       "expression": "avg(array)",
-      "result": null
+      "error": "invalid-type"
     },
     {
       "expression": "avg(`abc`)",
-      "result": null
+      "error": "invalid-type"
     },
     {
       "expression": "avg(foo)",
-      "result": null
+      "error": "invalid-type"
     },
     {
       "expression": "length(`abc`)",
@@ -84,7 +81,7 @@
     },
     {
       "expression": "length(@)",
-      "result": 11
+      "result": 12
     },
     {
       "expression": "length(strings[0])",
@@ -100,7 +97,7 @@
     },
     {
       "expression": "length(`false`)",
-      "result": null
+      "error": "invalid-type"
     },
     {
       "expression": "contains(`abc`, `d`)",
@@ -108,7 +105,7 @@
     },
     {
       "expression": "contains(`false`, `d`)",
-      "result": null
+      "error": "invalid-type"
     },
     {
       "expression": "contains(strings, `a`)",
@@ -132,7 +129,7 @@
     },
     {
       "expression": "max(abc)",
-      "result": null
+      "error": "invalid-type"
     },
     {
       "expression": "max(empty_list)",
@@ -148,7 +145,7 @@
     },
     {
       "expression": "min(abc)",
-      "result": null
+      "error": "invalid-type"
     },
     {
       "expression": "min(empty_list)",
@@ -192,7 +189,7 @@
     },
     {
       "expression": "keys(foo)",
-      "result": null
+      "error": "invalid-type"
     },
     {
       "expression": "values(objects)",
@@ -200,7 +197,7 @@
     },
     {
       "expression": "values(foo)",
-      "result": null
+      "error": "invalid-type"
     },
     {
       "expression": "ceil(`1.2`)",
@@ -208,7 +205,7 @@
     },
     {
       "expression": "ceil(`string`)",
-      "result": null
+      "error": "invalid-type"
     },
     {
       "expression": "floor(`1.2`)",
@@ -216,7 +213,7 @@
     },
     {
       "expression": "floor(`string`)",
-      "result": null
+      "error": "invalid-type"
     },
     {
       "expression": "join(`, `, `[\"a\", \"b\"]`)",
@@ -269,6 +266,50 @@
     {
       "expression": "sort(decimals)",
       "result": [-1.5, 1.01, 1.9]
+    },
+    {
+      "expression": "not_null(unknown_key, str)",
+      "result": "Str"
+    },
+    {
+      "expression": "not_null(unknown_key, foo.bar, empty_list, str)",
+      "result": []
+    },
+    {
+      "expression": "not_null(unknown_key, null_key, empty_list, str)",
+      "result": []
+    },
+    {
+      "expression": "not_null(all, expressions, are_null)",
+      "result": null
+    },
+    {
+      "description": "function projection on single arg function",
+      "expression": "numbers[].to_string(@)",
+      "result": ["-1", "3", "4", "5"]
+    },
+    {
+      "description": "function projection on single arg function",
+      "expression": "array[].to_number(@)",
+      "result": [-1, 3, 4, 5, 100]
+    }
+  ]
+}, {
+  "given":
+  {
+    "foo": [
+         {"b": "b", "a": "a"},
+         {"c": "c", "b": "b"},
+         {"d": "d", "c": "c"},
+         {"e": "e", "d": "d"},
+         {"f": "f", "e": "e"}
+    ]
+  },
+  "cases": [
+    {
+      "description": "function projection on variadic function",
+      "expression": "foo[].not_null(f, e, d, c, b, a)",
+      "result": ["b", "c", "d", "e", "f"]
     }
   ]
 }]
