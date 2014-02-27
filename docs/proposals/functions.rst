@@ -97,15 +97,14 @@ to the node currently being evaluated by the projection.
 Function Evaluation
 ===================
 
-Functions are evaluated in applicative order.  Each argument can be an
+Functions are evaluated in applicative order.  Each argument must be an
 expression, each argument expression must be evaluated before evaluating the
-function unless otherwise stated in the function specification.  The function
-is then called with the evaluated function arguments.  The result of the
-``function-expression`` is the result returned by the function call.  If a
-``function-expression`` is evaluated for a function that does not exist, the
-JMESPath implementation must indicate to the caller that an
+function.  The function is then called with the evaluated function arguments.
+The result of the ``function-expression`` is the result returned by the
+function call.  If a ``function-expression`` is evaluated for a function that
+does not exist, the JMESPath implementation must indicate to the caller that an
 ``unknown-function`` error occurred.  How and when this error is raised is
-implementation specific, but implementations SHOULD indicate to the caller that
+implementation specific, but implementations should indicate to the caller that
 this specific error occurred.
 
 Functions can either have a specific arity or be variadic with a minimum
@@ -120,20 +119,31 @@ type constraints are not met, implementations must indicate that an
 ``invalid-type`` error occurred.
 
 In order to accommodate type contraints, functions are provided to convert
-types to other types (``to_string``, ``to_number``).  No explicit type
-conversion happens unless a user specifically uses one of these type conversion
-functions.
+types to other types (``to_string``, ``to_number``) which are defined below.
+No explicit type conversion happens unless a user specifically uses one of
+these type conversion functions.
+
+Function expressions are also allowed as the child element of a sub expression.
+This allows functions to be used with projections, which can enable functions
+to be applied to every element in a projection.  For example, given the input
+data of ``["1", "2", "3", "notanumber", true]``, the following expression can
+be used to convert (and filter) all elements to numbers::
+
+    search([].to_number(@), ``["1", "2", "3", "notanumber", true]``) -> [1, 2, 3]
+
+This provides a simple mechanism to explicitly convert types when needed.
 
 
 Built-in Functions
 ==================
 
-JMESPath will ship with various built-in functions that operate on different
-data types.  These are documented below.  Each function below has a signature
+JMESPath has various built-in functions that operate on different
+data types, documented below.  Each function below has a signature
 that defines the expected types of the input and the type of the returned
 output::
 
-    return_type function_name(type1|type $argname)
+    return_type function_name(type $argname)
+    return_type function_name2(type1|type2 $argname)
 
 If a function can accept multiple types for an input value, then the
 multiple types are separated with ``|``.  If the resolved arguments do not
@@ -145,6 +155,9 @@ if they want to enforce homogeneous types.  The subtype is surrounded by
 argument resolves to an array of numbers::
 
     return_type foo(array[number] $argname)
+
+As a shorthand, the type ``any`` is used to indicate that the argument can be
+of any type (``array|object|number|string|boolean|null``).
 
 The first function below, ``abs`` is discussed in detail to demonstrate the
 above points.  Subsequent function definitions will not include these details
@@ -550,35 +563,6 @@ code points.  Locale is not taken into account.
   * - ``false``
     - ``sort(@)``
     - ``null``
-
-
-
-sort_by
--------
-
-::
-
-    array sort_by(array $list, $expression)
-
-Sort an array using the result of an expression.  The ``$expression`` is
-**not** resolved when the function is invoked.  Instead the ``$expression`` is
-evaluated against each element in the ``$list``.  This can be used to sort
-a list of objects by a certain key for example.  If the resolved value while
-evaluating the expression against each list element is not a ``number`` or a
-``string``, then an ``invalid-type`` error occurs.
-
-.. list-table:: Examples
-  :header-rows: 1
-
-  * - Given
-    - Expression
-    - Result
-  * - ``[{"a": "1", "age": 30}, {"a": 2, "age": 20}]``
-    - ``sort_by(@, age)``
-    - ``[{"a": "2", "age": 20}, {"a": 1, "age": 30}]``
-  * - ``[{"a": "1", "age": 30}, {"a": 2, "age": 20}]``
-    - ``sort_by(@, a)``
-    - ``<error: invalid-type>``
 
 
 to_string
