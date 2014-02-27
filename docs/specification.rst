@@ -1078,7 +1078,7 @@ sort
 
 ::
 
-    array sort(array $list)
+    array sort(array[number]|array[string] $list)
 
 This function accepts an array ``$list`` argument and returns the sorted
 elements of the ``$list`` as an array.
@@ -1119,7 +1119,7 @@ to_string
 
 ::
 
-    string to_string(string|number|array|object|boolean $arg)
+    string to_string(any $arg)
 
 * string - Returns the passed in value.
 * number/array/object/boolean - The JSON encoded value of the object.  The
@@ -1143,7 +1143,7 @@ to_number
 
 ::
 
-    number to_number(string|number $arg)
+    number to_number(any $arg)
 
 * string - Returns the parsed number.  Any string that conforms to the
   ``json-number`` production is supported.  Note that the floating number
@@ -1154,6 +1154,7 @@ to_number
 * array - null
 * object - null
 * boolean - null
+* null - null
 
 
 type
