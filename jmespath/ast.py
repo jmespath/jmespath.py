@@ -55,10 +55,9 @@ class JMESPathTypeError(ValueError):
 
 
 class _Arg(object):
-    __slots__ = ('resolve', 'types')
+    __slots__ = ('types',)
 
-    def __init__(self, resolve=True, types=None):
-        self.resolve = resolve
+    def __init__(self, types=None):
         self.types = types
 
 
@@ -433,10 +432,7 @@ class FunctionExpression(AST):
             for arg_expression, arg_spec in zip_longest(
                     self.args, function.argspec,
                     fillvalue=function.argspec[-1]):
-                if arg_spec.resolve:
-                    current = arg_expression.search(value)
-                else:
-                    current = arg_expression
+                current = arg_expression.search(value)
                 if arg_spec.types is not None:
                     allowed_types = []
                     allowed_subtypes = []
@@ -577,41 +573,6 @@ class FunctionExpression(AST):
     @signature(_Arg(types=['array-string', 'array-number']))
     def _func_sort(self, arg):
         return list(sorted(arg))
-
-    # The "key" expression is applied to each individual element
-    # so we need to set resolve=False to indicate that we shouldn't
-    # try to resolve the argument against the passed in current node.
-    @signature(_Arg(types=['array'], resolve=True), _Arg(resolve=False))
-    def _func_sort_by(self, arg, key):
-        string_types = REVERSE_TYPES_MAP['string']
-        number_types = REVERSE_TYPES_MAP['number']
-        chosen = []
-        def keyfunc(x):
-            result = key.search(x)
-            type_name = type(result).__name__
-            if not chosen:
-                if type_name in string_types:
-                    chosen[:] = string_types
-                elif type_name in number_types:
-                    chosen[:] = number_types
-                else:
-                    raise JMESPathTypeError(self.name,
-                                            result,
-                                            type_name,
-                                            ['string', 'number'])
-            else:
-                if type_name not in chosen:
-                    if chosen == string_types:
-                        expected = ['string']
-                    else:
-                        expected = ['number']
-                    raise JMESPathTypeError(self.name,
-                                            result,
-                                            type_name,
-                                            expected)
-            return result
-
-        return list(sorted(arg, key=keyfunc))
 
     @signature(_Arg(types=['object']))
     def _func_keys(self, arg):
