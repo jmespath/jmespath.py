@@ -2,7 +2,68 @@ import operator
 import math
 import json
 
-from jmespath.compat import with_repr_method, string_type
+from jmespath.compat import with_repr_method
+from jmespath.compat import with_str_method
+from jmespath.compat import string_type as STRING_TYPE
+
+
+NUMBER_TYPE = (float, int)
+#TYPES_MAP = {
+#    bool: 'boolean',
+#    list: 'array',
+#    dict: 'object',
+#    None: 'null',
+#    STRING_TYPE: 'string',
+#    float: 'number',
+#    int: 'number',
+#}
+
+# python types -> jmespath types
+TYPES_MAP = {
+    'bool': 'boolean',
+    'list': 'array',
+    'dict': 'object',
+    'NoneType': 'null',
+    'unicode': 'string',
+    'str': 'string',
+    'float': 'number',
+    'int': 'number',
+    'OrderedDict': 'object',
+}
+# jmespath types -> python types
+REVERSE_TYPES_MAP = {
+    'boolean': ('bool',),
+    'array': ('list',),
+    'object': ('dict', 'OrderedDict',),
+    'null': ('None',),
+    'string': ('unicode', 'str'),
+    'number': ('float', 'int'),
+}
+
+
+
+@with_str_method
+class JMESPathTypeError(ValueError):
+    def __init__(self, function_name, current_value, actual_type, expected_types):
+        self.function_name = function_name
+        self.current_value = current_value
+        self.actual_type = actual_type
+        self.expected_types = expected_types
+
+    def __str__(self):
+        jmespath_actual = TYPES_MAP[self.actual_type]
+        return ('In function %s(), invalid type for value: %s, '
+                'expected one of: %s, received: "%s"' % (
+                    self.function_name, self.current_value,
+                    self.expected_types, jmespath_actual))
+
+
+class _Arg(object):
+    __slots__ = ('resolve', 'types')
+
+    def __init__(self, resolve=True, types=None):
+        self.resolve = resolve
+        self.types = types
 
 
 @with_repr_method
@@ -363,10 +424,23 @@ class FunctionExpression(AST):
         def _call_with_resolved_args(value):
             resolved_args = []
             for arg_expression, arg_spec in zip(self.args, function.argspec):
-                if arg_spec['resolve']:
+                if arg_spec.resolve:
                     current = arg_expression.search(value)
                 else:
                     current = arg_expression
+                if arg_spec.types is not None:
+                    allowed_types = []
+                    for t in arg_spec.types:
+                        allowed_types.extend(REVERSE_TYPES_MAP[t])
+                    # We're not using isinstance() on purpose.
+                    # The type model for jmespath does not map
+                    # 1-1 with python types (booleans are considered
+                    # integers for example).
+                    actual_typename = type(current).__name__
+                    if actual_typename not in allowed_types:
+                        raise JMESPathTypeError(self.name, current,
+                                                actual_typename,
+                                                arg_spec.types)
                 resolved_args.append(current)
             method = self._get_value_method(value)
             if method is not None:
@@ -375,27 +449,14 @@ class FunctionExpression(AST):
                 return function(*resolved_args)
         return _call_with_resolved_args
 
-    def arity(amount, argspec=None):
+    def signature(*arguments):
         def _record_arity(func):
-            func.arity = amount
-            if argspec is not None:
-                # A function that specify additional attributes
-                # about its arguments.  The runtime can infer whatever
-                # it wants about the argspec, the only thing we need to do
-                # is validate the length matches the arity.
-                if len(argspec) != amount:
-                    raise ValueError("Invalid function definition: argspec "
-                                     "length (%s) does not match arity (%s)" %
-                                     (len(argspec), amount))
-                func.argspec = argspec
-            else:
-                # By default, resolve all arguments against the passed in
-                # value.
-                func.argspec = [dict(resolve=True) for _ in range(amount)]
+            func.arity = len(arguments)
+            func.argspec = arguments
             return func
         return _record_arity
 
-    @arity(1)
+    @signature(_Arg(types=['number']))
     def _func_abs(self, arg):
         # We need to special case booleans because abs(True) -> 1, which isn't
         # allowed in the spec.
@@ -406,7 +467,7 @@ class FunctionExpression(AST):
         except TypeError:
             return None
 
-    @arity(1)
+    @signature(_Arg())
     def _func_avg(self, arg):
         if not isinstance(arg, list) or not arg:
             return None
@@ -418,14 +479,14 @@ class FunctionExpression(AST):
                 return None
         return total / float(len(arg))
 
-    @arity(1)
+    @signature(_Arg())
     def _func_to_string(self, arg):
-        if isinstance(arg, string_type):
+        if isinstance(arg, STRING_TYPE):
             return arg
         else:
             return json.dumps(arg)
 
-    @arity(1)
+    @signature(_Arg())
     def _func_to_number(self, arg):
         if isinstance(arg, (int, float)):
             return arg
@@ -438,36 +499,36 @@ class FunctionExpression(AST):
             except ValueError:
                 return None
 
-    @arity(2)
+    @signature(_Arg(types=['array', 'string']), _Arg())
     def _func_contains(self, subject, search):
-        if not isinstance(subject, (list, string_type)):
+        if not isinstance(subject, (list, STRING_TYPE)):
             return
         return search in subject
 
-    @arity(1)
+    @signature(_Arg(types=['string', 'array', 'object']))
     def _func_length(self, arg):
         if isinstance(arg, bool):
             return None
         return len(arg)
 
-    @arity(1)
+    @signature(_Arg(types=['number']))
     def _func_ceil(self, arg):
         if not isinstance(arg, (int, float)):
             return None
         else:
             return math.ceil(arg)
 
-    @arity(1)
+    @signature(_Arg(types=['number']))
     def _func_floor(self, arg):
         if not isinstance(arg, (int, float)):
             return None
         else:
             return math.floor(arg)
 
-    @arity(2)
+    @signature(_Arg(types=['string']), _Arg(types=['array']))
     def _func_join(self, separator, array):
         if not isinstance(array, list) or not isinstance(separator,
-                                                         string_type):
+                                                         STRING_TYPE):
             return None
         else:
             try:
@@ -475,7 +536,7 @@ class FunctionExpression(AST):
             except TypeError:
                 return None
 
-    @arity(1)
+    @signature(_Arg(types=['array']))
     def _func_max(self, arg):
         if not isinstance(arg, list) or not arg:
             return None
@@ -488,7 +549,7 @@ class FunctionExpression(AST):
                 return None
         return best
 
-    @arity(1)
+    @signature(_Arg(types=['array']))
     def _func_min(self, arg):
         if not isinstance(arg, list) or not arg:
             return None
@@ -501,7 +562,7 @@ class FunctionExpression(AST):
                 return None
         return best
 
-    @arity(1)
+    @signature(_Arg(types=['array']))
     def _func_sort(self, arg):
         if not isinstance(arg, list):
             return None
@@ -511,14 +572,14 @@ class FunctionExpression(AST):
     # The "key" expression is applied to each individual element
     # so we need to set resolve=False to indicate that we shouldn't
     # try to resolve the argument against the passed in current node.
-    @arity(2, argspec=[{"resolve": True}, {"resolve": False}])
+    @signature(_Arg(types=['array'], resolve=True), _Arg(resolve=False))
     def _func_sort_by(self, arg, key):
         if not isinstance(arg, list):
             return None
         else:
             return list(sorted(arg, key=lambda x: key.search(x)))
 
-    @arity(1)
+    @signature(_Arg(types=['object']))
     def _func_keys(self, arg):
         # To be consistent with .values()
         # should we also return the indices of a list?
@@ -527,16 +588,16 @@ class FunctionExpression(AST):
         else:
             return list(arg.keys())
 
-    @arity(1)
+    @signature(_Arg(types=['object']))
     def _func_values(self, arg):
         if not isinstance(arg, dict):
             return None
         else:
             return list(arg.values())
 
-    @arity(1)
+    @signature(_Arg())
     def _func_type(self, arg):
-        if isinstance(arg, string_type):
+        if isinstance(arg, STRING_TYPE):
             return "string"
         elif isinstance(arg, bool):
             return "boolean"
