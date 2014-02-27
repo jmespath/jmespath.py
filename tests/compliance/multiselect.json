@@ -366,7 +366,7 @@
     "cases": [
         {
            "expression": "foo.[baz[*].not_there || baz[*].bar, qux[0]]",
-           "result": [[], "zero"]
+           "result": [["a", "d"], "zero"]
         }
     ]
 }
