@@ -31,6 +31,7 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     sub-expression    = expression "." ( identifier /
                                          multi-select-list /
                                          multi-select-hash /
+                                         function-expression /
                                          "*" )
     or-expression     = expression "||" expression
     index-expression  = expression bracket-specifier / bracket-specifier
@@ -652,6 +653,15 @@ types to other types (``to_string``, ``to_number``) which are defined below.
 No explicit type conversion happens unless a user specifically uses one of
 these type conversion functions.
 
+Function expressions are also allowed as the child element of a sub expression.
+This allows functions to be used with projections, which can enable functions
+to be applied to every element in a projection.  For example, given the input
+data of ``["1", "2", "3", "notanumber", true]``, the following expression can
+be used to convert (and filter) all elements to numbers::
+
+    search([].to_number(@), ``["1", "2", "3", "notanumber", true]``) -> [1, 2, 3]
+
+This provides a simple mechanism to explicitly convert types when needed.
 
 Built-in Functions
 ==================
