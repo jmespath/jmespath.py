@@ -425,6 +425,10 @@ class FunctionExpression(AST):
 
     def _resolve_arguments_wrapper(self, function):
         def _call_with_resolved_args(value):
+            # Before calling the function, we have two things to do:
+            # 1. Resolve the arguments (evaluate the arg expressions
+            #    against the passed in input.
+            # 2. Type check the arguments
             method = self._get_value_method(value)
             if method is not None:
                 return method(_call_with_resolved_args)
@@ -432,62 +436,79 @@ class FunctionExpression(AST):
             for arg_expression, arg_spec in zip_longest(
                     self.args, function.argspec,
                     fillvalue=function.argspec[-1]):
+                # 1. Resolve the arguments.
                 current = arg_expression.search(value)
+                # 2. Type check (provided we have type information).
                 if arg_spec.types is not None:
-                    allowed_types = []
-                    allowed_subtypes = []
-                    for t in arg_spec.types:
-                        type_ = t.split('-', 1)
-                        if len(type_) == 2:
-                            type_, subtype = type_
-                            allowed_subtypes.append(REVERSE_TYPES_MAP[subtype])
-                        else:
-                            type_ = type_[0]
-                        allowed_types.extend(REVERSE_TYPES_MAP[type_])
-                    # We're not using isinstance() on purpose.
-                    # The type model for jmespath does not map
-                    # 1-1 with python types (booleans are considered
-                    # integers in python for example).
-                    actual_typename = type(current).__name__
-                    if actual_typename not in allowed_types:
-                        raise JMESPathTypeError(self.name, current,
-                                                actual_typename,
-                                                arg_spec.types)
-                    # If we're dealing with a list type, we can have
-                    # additional restrictions on the type of the list
-                    # elements (for example a function can require a
-                    # list of numbers or a list of strings).
-                    # Arrays are the only types that can have subtypes.
-                    if len(allowed_subtypes) == 1:
-                        # The easy case, we know up front what type
-                        # we need to validate.
-                        allowed_subtypes = allowed_subtypes[0]
-                        for element in current:
-                            actual_typename = type(element).__name__
-                            if actual_typename not in allowed_subtypes:
-                                raise JMESPathTypeError(self.name, element,
-                                                        actual_typename,
-                                                        arg_spec.types)
-                    elif len(allowed_subtypes) > 1 and current:
-                        # Dynamic type validation.  Based on the first
-                        # type we see, we validate that the remaining types
-                        # match.
-                        first = type(current[0]).__name__
-                        for subtypes in allowed_subtypes:
-                            if first in subtypes:
-                                allowed = subtypes
-                                break
-                        else:
-                            raise JMESPathTypeError(self.name, current[0],
-                                                    first, arg_spec.types)
-                        for element in current:
-                            actual_typename = type(element).__name__
-                            if actual_typename not in allowed:
-                                raise JMESPathTypeError(self.name, element,
-                                                        actual_typename,
-                                                        arg_spec.types)
+                    _type_check(arg_spec.types, current)
                 resolved_args.append(current)
             return function(*resolved_args)
+
+        def _get_allowed_pytypes(types):
+            allowed_types = []
+            allowed_subtypes = []
+            for t in types:
+                type_ = t.split('-', 1)
+                if len(type_) == 2:
+                    type_, subtype = type_
+                    allowed_subtypes.append(REVERSE_TYPES_MAP[subtype])
+                else:
+                    type_ = type_[0]
+                allowed_types.extend(REVERSE_TYPES_MAP[type_])
+            return allowed_types, allowed_subtypes
+
+        def _type_check(types, current):
+            # Type checking involves checking the top level type,
+            # and in the case of arrays, potentially checking the types
+            # of each element.
+            allowed_types, allowed_subtypes = _get_allowed_pytypes(types)
+            # We're not using isinstance() on purpose.
+            # The type model for jmespath does not map
+            # 1-1 with python types (booleans are considered
+            # integers in python for example).
+            actual_typename = type(current).__name__
+            if actual_typename not in allowed_types:
+                raise JMESPathTypeError(self.name, current,
+                                        actual_typename,
+                                        types)
+            # If we're dealing with a list type, we can have
+            # additional restrictions on the type of the list
+            # elements (for example a function can require a
+            # list of numbers or a list of strings).
+            # Arrays are the only types that can have subtypes.
+            if allowed_subtypes:
+                _subtype_check(current, allowed_subtypes, types)
+
+        def _subtype_check(current, allowed_subtypes, types):
+            if len(allowed_subtypes) == 1:
+                # The easy case, we know up front what type
+                # we need to validate.
+                allowed_subtypes = allowed_subtypes[0]
+                for element in current:
+                    actual_typename = type(element).__name__
+                    if actual_typename not in allowed_subtypes:
+                        raise JMESPathTypeError(self.name, element,
+                                                actual_typename,
+                                                types)
+            elif len(allowed_subtypes) > 1 and current:
+                # Dynamic type validation.  Based on the first
+                # type we see, we validate that the remaining types
+                # match.
+                first = type(current[0]).__name__
+                for subtypes in allowed_subtypes:
+                    if first in subtypes:
+                        allowed = subtypes
+                        break
+                else:
+                    raise JMESPathTypeError(self.name, current[0],
+                                            first, types)
+                for element in current:
+                    actual_typename = type(element).__name__
+                    if actual_typename not in allowed:
+                        raise JMESPathTypeError(self.name, element,
+                                                actual_typename,
+                                                types)
+
         return _call_with_resolved_args
 
     def signature(*arguments, **kwargs):
