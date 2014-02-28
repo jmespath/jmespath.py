@@ -5,6 +5,7 @@ from tests import unittest
 from jmespath import parser
 from jmespath import ast
 from jmespath import lexer
+from jmespath import compat
 
 
 class TestParser(unittest.TestCase):
@@ -32,9 +33,9 @@ class TestParser(unittest.TestCase):
 
     def test_quoted_subexpression(self):
         parsed = self.parser.parse('"foo"."bar"')
-        self.assertIsInstance(parsed, ast.SubExpression)
-        self.assertEqual(parsed.parent.name, 'foo')
-        self.assertEqual(parsed.child.name, 'bar')
+        self.assertIsInstance(parsed.parsed, ast.SubExpression)
+        self.assertEqual(parsed.parsed.parent.name, 'foo')
+        self.assertEqual(parsed.parsed.child.name, 'bar')
 
     def test_wildcard(self):
         parsed = self.parser.parse('foo[*]')
@@ -64,6 +65,17 @@ class TestParser(unittest.TestCase):
     def test_or_repr(self):
         parsed = self.parser.parse('foo || bar')
         self.assertEqual(repr(parsed), 'ORExpression(Field(foo), Field(bar))')
+
+    def test_unicode_literals_escaped(self):
+        parsed = self.parser.parse(r'`"\u2713"`')
+        if compat.PY2:
+            self.assertEqual(repr(parsed), r'Literal(\u2713)')
+        else:
+            self.assertEqual(repr(parsed), u'Literal(\u2713)')
+
+    def test_unicode_pretty_print(self):
+        parsed = self.parser.parse(r'`"\u2713"`')
+        self.assertEqual(parsed.pretty_print(), u'Literal(\u2713)')
 
     def test_multiselect(self):
         parsed = self.parser.parse('foo.{bar: bar,baz: baz}')
@@ -130,6 +142,19 @@ class TestErrorMessages(unittest.TestCase):
             'foo."bar\n'
             '    ^')
         self.assert_error_message('foo."bar', error_message,
+                                  exception=lexer.LexerError)
+
+    def test_bad_lexer_literal_value_with_json_object(self):
+        error_message = ('Bad jmespath expression: '
+                         'Bad token `{{}`:\n`{{}`\n^')
+        self.assert_error_message('`{{}`', error_message,
+                                  exception=lexer.LexerError)
+
+
+    def test_bad_unicode_string(self):
+        error_message = ('Bad jmespath expression: '
+                         'Invalid \\uXXXX escape:\n"\\uAZ12"\n^')
+        self.assert_error_message(r'"\uAZ12"', error_message,
                                   exception=lexer.LexerError)
 
 
@@ -267,7 +292,15 @@ class TestParserCaching(unittest.TestCase):
         # cache but they should still be equal to compiled.
         for i in range(parser.Parser._max_size + 1):
             compiled2.append(p.parse('foo%s' % i))
+        self.assertEqual(len(compiled), len(compiled2))
         self.assertEqual(compiled, compiled2)
+
+
+class TestParserAddsExpressionAttribute(unittest.TestCase):
+    def test_expression_available_from_parser(self):
+        p = parser.Parser()
+        parsed = p.parse('foo.bar')
+        self.assertEqual(parsed.expression, 'foo.bar')
 
 
 if __name__ == '__main__':

@@ -43,4 +43,17 @@
             "result": null
          }
      ]
+}, {
+    "given":
+        {"outer": {"foo": "foo", "bool": false, "empty_list": [], "empty_string": ""}},
+     "cases": [
+         {
+            "expression": "outer.empty_string || outer.foo",
+            "result": "foo"
+         },
+         {
+            "expression": "outer.nokey || outer.bool || outer.empty_list || outer.empty_string || outer.foo",
+            "result": "foo"
+         }
+     ]
 }]

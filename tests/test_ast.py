@@ -315,6 +315,39 @@ class TestAST(unittest.TestCase):
             subexpr.search({'foo': [{'bar': 1, 'baz': 2, 'qux': 3}]}),
             [[1, 2]])
 
+    def test_operator_eq(self):
+        field_foo = ast.Field('foo')
+        field_foo2 = ast.Field('foo')
+        eq = ast.OPEquals(field_foo, field_foo2)
+        self.assertTrue(eq.search({'foo': 'bar'}))
+
+    def test_operator_not_equals(self):
+        field_foo = ast.Field('foo')
+        field_bar = ast.Field('bar')
+        eq = ast.OPNotEquals(field_foo, field_bar)
+        self.assertTrue(eq.search({'foo': '1', 'bar': '2'}))
+
+    def test_operator_lt(self):
+        field_foo = ast.Field('foo')
+        field_bar = ast.Field('bar')
+        eq = ast.OPLessThan(field_foo, field_bar)
+        self.assertTrue(eq.search({'foo': 1, 'bar': 2}))
+
+    def test_filter_expression(self):
+        # foo[?bar==`yes`]
+        field_foo = ast.Field('foo')
+        field_bar = ast.Field('bar')
+        literal = ast.Literal('yes')
+        eq = ast.OPEquals(field_bar, literal)
+        filter_expression = ast.FilterExpression(eq)
+        full_expression = ast.SubExpression(field_foo, filter_expression)
+        match = full_expression.search(
+            {'foo': [{'bar': 'yes', 'v': 1},
+                     {'bar': 'no', 'v': 2},
+                     {'bar': 'yes', 'v': 3},]})
+        self.assertEqual(match, [{'bar': 'yes', 'v': 1},
+                                 {'bar': 'yes', 'v': 3}])
+
 
 if __name__ == '__main__':
     unittest.main()

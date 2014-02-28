@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='jmespath',
-    version='0.2.1',
+    version='0.3.0',
     description='JSON Matching Expressions',
     long_description=open('README.rst').read(),
     author='James Saryerwinnie',
@@ -28,7 +28,6 @@ setup(
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
     ),
 )

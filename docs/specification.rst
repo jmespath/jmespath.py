@@ -27,14 +27,33 @@ The grammar is specified using ABNF, as described in `RFC4234`_
 ::
 
     expression        = sub-expression / index-expression / or-expression / identifier / "*"
-    expression        =/ multi-select-list / multi-select-hash
-    sub-expression    = expression "." expression
+    expression        =/ multi-select-list / multi-select-hash / literal / function-expression
+    sub-expression    = expression "." ( identifier /
+                                         multi-select-list /
+                                         multi-select-hash /
+                                         function-expression /
+                                         "*" )
     or-expression     = expression "||" expression
     index-expression  = expression bracket-specifier / bracket-specifier
     multi-select-list = "[" ( expression *( "," expression ) ) "]"
     multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) ) "}"
     keyval-expr       = identifier ":" expression
     bracket-specifier = "[" (number / "*") "]" / "[]"
+    bracket-specifier =/ "[?" list-filter-expr "]"
+    list-filter-expr  = expression comparator expression
+    comparator        = "<" / "<=" / "==" / ">=" / ">" / "!="
+    function-expression = identifier "(" *(function-arg *("," function-arg ) ) ")"
+    function-arg        = expression / current-node
+    current-node        = "@"
+
+    literal           = "`" json-value "`"
+    literal           =/ "`" 1*(unescaped-literal / escaped-literal) "`"
+    unescaped-literal = %x20-21 /       ; space !
+                            %x23-5A /   ; # - [
+                            %x5D-5F /   ; ] ^ _
+                            %x61-7A     ; a-z
+                            %x7C-10FFFF ; |}~ ...
+    escaped-literal   = escaped-char / (escape %x60)
     number            = ["-"]1*digit
     digit             = %x30-39
     identifier        = unquoted-string / quoted-string
@@ -58,7 +77,41 @@ The grammar is specified using ABNF, as described in `RFC4234`_
                             %x74 /          ; t    tab             U+0009
                             %x75 4HEXDIG )  ; uXXXX                U+XXXX
 
+    ; The ``json-value`` is any valid JSON value with the one exception that the
+    ; ``%x60`` character must be escaped.  While it's encouraged that implementations
+    ; use any existing JSON parser for this grammar rule (after handling the escaped
+    ; literal characters), the grammar rule is shown below for completeness::
 
+    json-value = false / null / true / json-object / json-array /
+                 json-number / json-quoted-string
+    false = %x66.61.6c.73.65   ; false
+    null  = %x6e.75.6c.6c      ; null
+    true  = %x74.72.75.65      ; true
+    json-quoted-string = %x22 1*(unescaped-literal / escaped-literal) %x22
+    begin-array     = ws %x5B ws  ; [ left square bracket
+    begin-object    = ws %x7B ws  ; { left curly bracket
+    end-array       = ws %x5D ws  ; ] right square bracket
+    end-object      = ws %x7D ws  ; } right curly bracket
+    name-separator  = ws %x3A ws  ; : colon
+    value-separator = ws %x2C ws  ; , comma
+    ws              = *(%x20 /              ; Space
+                        %x09 /              ; Horizontal tab
+                        %x0A /              ; Line feed or New line
+                        %x0D                ; Carriage return
+                       )
+    json-object = begin-object [ member *( value-separator member ) ] end-object
+    member = quoted-string name-separator json-value
+    json-array = begin-array [ json-value *( value-separator json-value ) ] end-array
+    json-number = [ minus ] int [ frac ] [ exp ]
+    decimal-point = %x2E       ; .
+    digit1-9 = %x31-39         ; 1-9
+    e = %x65 / %x45            ; e E
+    exp = e [ minus / plus ] 1*DIGIT
+    frac = decimal-point 1*DIGIT
+    int = zero / ( digit1-9 *DIGIT )
+    minus = %x2D               ; -
+    plus = %x2B                ; +
+    zero = %x30                ; 0
 
 
 Identifiers
@@ -127,7 +180,10 @@ SubExpressions
 
 ::
 
-  sub-expression    = expression "." expression
+    sub-expression    = expression "." ( identifier /
+                                         multi-select-list /
+                                         multi-select-hash /
+                                         "*" )
 
 A subexpression is a combination of two expressions separated by the '.' char.
 A subexpression is evaluted as follows:
@@ -233,10 +289,20 @@ Or Expressions
   or-expression     = expression "||" expression
 
 An or expression will evaluate to either the left expression or the right
-expression.  If the evaluation of the left expression is not null it is used as
-the return value.  If the evaluation of the right expression is not null it is
+expression.  If the evaluation of the left expression is not false it is used as
+the return value.  If the evaluation of the right expression is not false it is
 used as the return value.  If neither the left or right expression are
-non-null, then a value of null is returned.
+non-null, then a value of null is returned.  A false value corresponds to any
+of the following conditions::
+
+* Empty list: ``[]``
+* Empty object: ``{}``
+* Empty string: ``""``
+* False boolean: ``false``
+* Null value: ``null``
+
+A true value corresponds to any value that is not false.
+
 
 Examples
 --------
@@ -383,4 +449,801 @@ Examples
   search('*.foo', {"a": {"foo": 1}, "b": {"foo": 2}, "c": {"bar": 1}}) -> [1, 2]
 
 
+Literal Expressions
+===================
+
+::
+
+    literal           = "`" json-value "`"
+    literal           =/ "`" 1*(unescaped-literal / escaped-literal) "`"
+    unescaped-literal = %x20-21 /       ; space !
+                            %x23-5A /   ; # - [
+                            %x5D-5F /   ; ] ^ _
+                            %x61-7A     ; a-z
+                            %x7C-10FFFF ; |}~ ...
+    escaped-literal   = escaped-char / (escape %x60)
+
+A literal expression is an expression that allows arbitrary JSON objects to be
+specified.  This is useful in filter expressions as well as multi select hashes
+(to create arbitrary key value pairs), but is allowed anywhere an expression is
+allowed.  The specification includes the ABNF for JSON, implementations should
+use an existing JSON parser to parse literal values.  Note that the ``\```
+character must now be escaped in a ``json-value`` which means implementations
+need to handle this case before passing the resulting string to a JSON parser.
+
+Note the second literal rule.  This is used to specify a string such that
+double quotes do not have to be included.  This means that the literal
+expression ``\`"foo"\``` is equivalent to ``\`foo\```.
+
+
+Examples
+--------
+
+::
+
+  search(`foo`, "anything") -> "foo"
+  search(`"foo"`, "anything") -> "foo"
+  search(`[1, 2]`, "anything") -> [1, 2]
+  search(`true`, "anything") -> true
+  search(`{"a": "b"}`.a, "anything") -> "b"
+  search({first: a, type: `mytype`}, {"a": "b", "c": "d"}) -> {"first": "b", "type": "mytype"}
+
+
+Filter Expressions
+==================
+
+::
+
+  list-filter-expr  = expression comparator expression
+  comparator        = "<" / "<=" / "==" / ">=" / ">" / "!="
+
+A filter expression provides a way to select JSON elements based on a
+comparison to another expression.  A filter expression is evaluated as follows:
+for each element in an array evaluate the ``list-filter-expr`` against the
+element.  If the expression evalutes to ``true``, the item (in its entirety) is
+added to the result list.  Otherwise it is excluded from the result list.  A
+filter expression is only defined for a JSON array.  Attempting to evaluate a
+filter expression against any other type will return ``null``.
+
+Comparison Operators
+--------------------
+
+The following operations are supported:
+
+* ``==``, tests for equality.
+* ``!=``, tests for inequality.
+* ``<``, less than.
+* ``<=``, less than or equal to.
+* ``>``, greater than.
+* ``>=``, greater than or equal to.
+
+The behavior of each operation is dependent on the type of each evaluated
+expression.
+
+The comparison semantics for each operator are defined below based on
+the corresponding JSON type:
+
+Equality Operators
+~~~~~~~~~~~~~~~~~~
+
+For ``string/number/true/false/null`` types, equality is an exact match. A
+``string`` is equal to another ``string`` if they they have the exact sequence
+of code points.  The literal values ``true/false/null`` are only equal to their
+own literal values.  Two JSON objects are equal if they have the same set of
+keys and values (given two JSON objeccts ``x`` and ``y``, for each key value
+pair ``(i, j)`` in ``x``, there exists an equivalent pair ``(i, j)`` in ``y``).
+Two JSON arrays are equal if they have equal elements in the same order (given
+two arrays ``x`` and ``y``, for each ``i`` from ``0`` until ``length(x)``,
+``x[i] == y[i]``).
+
+Ordering Operators
+~~~~~~~~~~~~~~~~~~
+
+Ordering operators ``>, >=, <, <=`` are **only** valid for numbers.
+Evaluating any other type with a comparison operator will yield a ``null``
+value, which will result in the element being excluded from the result list.
+For example, given::
+
+    search('foo[?a<b]', {"foo": [{"a": "char", "b": "char"},
+                                 {"a": 2, "b": 1},
+                                 {"a": 1, "b": 2}]})
+
+The three elements in the foo list are evaluated against ``a < b``.  The first
+element resolves to the comparison ``"char" < "bar"``, and because these types
+are string, the expression results in ``null``, so the first element is not
+included in the result list.  The second element resolves to ``2 < 1``,
+which is ``false``, so the second element is excluded from the result list.
+The third expression resolves to ``1 < 2`` which evalutes to ``true``, so the
+third element is included in the list.  The final result of that expression
+is ``[{"a": 1, "b": 2}]``.
+
+
+Examples
+--------
+
+::
+
+  search(foo[?bar==`10`], {"foo": [{"bar": 1}, {"bar": 10}]}) -> [{"bar": 10}]
+  search([?bar==`10`], [{"bar": 1}, {"bar": 10}]}) -> [{"bar": 10}]
+  search(foo[?a==b], {"foo": [{"a": 1, "b": 2}, {"a": 2, "b": 2}]}) -> [{"a": 2, "b": 2}]
+
+
 .. _RFC4234: http://tools.ietf.org/html/rfc4234
+
+
+Functions Expressions
+=====================
+
+::
+
+  function-expression = identifier "(" *(function-arg *("," function-arg ) ) ")"
+  function-arg        = expression / number / current-node
+  current-node        = "@"
+
+
+Functions allow users to easily transform and filter data in JMESPath
+expressions.
+
+Data Types
+----------
+
+In order to support functions, a type system is needed.  The JSON types are used:
+
+* number (integers and double-precision floating-point format in JSON)
+* string
+* boolean (``true`` or ``false``)
+* array (an ordered, sequence of values)
+* object (an unordered collection of key value pairs)
+* null
+
+current-node
+------------
+
+The ``current-node`` token can be used to represent the current node being
+evaluated. The ``current-node`` token is useful for functions that require the
+current node being evaluated as an argument. For example, the following
+expression creates an array containing the total number of elements in the
+``foo`` object followed by the value of ``foo["bar"]``.
+
+::
+
+    foo[].[count(@), bar]
+
+JMESPath assumes that all function arguments operate on the current node unless
+the argument is a ``literal`` or ``number`` token.  Because of this, an
+expression such as ``@.bar`` would be equivalent to just ``bar``, so the
+current node is only allowed as a bare expression.
+
+
+current-node state
+~~~~~~~~~~~~~~~~~~
+
+At the start of an expression, the value of the current node is the data
+being evaluated by the JMESPath expression. As an expression is evaluated, the
+value the the current node represents MUST change to reflect the node currently
+being evaluated. When in a projection, the current node value must be changed
+to the node currently being evaluated by the projection.
+
+Function Evaluation
+-------------------
+
+Functions are evaluated in applicative order.  Each argument must be an
+expression, each argument expression must be evaluated before evaluating the
+function.  The function is then called with the evaluated function arguments.
+The result of the ``function-expression`` is the result returned by the
+function call.  If a ``function-expression`` is evaluated for a function that
+does not exist, the JMESPath implementation must indicate to the caller that an
+``unknown-function`` error occurred.  How and when this error is raised is
+implementation specific, but implementations should indicate to the caller that
+this specific error occurred.
+
+Functions can either have a specific arity or be variadic with a minimum
+number of arguments.  If a ``function-expression`` is encountered where the
+arity does not match or the minimum number of arguments for a variadic function
+is not provided, then implementations must indicate to the caller than an
+``invalid-arity`` error occurred.  How and when this error is raised is
+implementation specific.
+
+Each function signature declares the types of its input parameters.  If any
+type constraints are not met, implementations must indicate that an
+``invalid-type`` error occurred.
+
+In order to accommodate type contraints, functions are provided to convert
+types to other types (``to_string``, ``to_number``) which are defined below.
+No explicit type conversion happens unless a user specifically uses one of
+these type conversion functions.
+
+Function expressions are also allowed as the child element of a sub expression.
+This allows functions to be used with projections, which can enable functions
+to be applied to every element in a projection.  For example, given the input
+data of ``["1", "2", "3", "notanumber", true]``, the following expression can
+be used to convert (and filter) all elements to numbers::
+
+    search([].to_number(@), ``["1", "2", "3", "notanumber", true]``) -> [1, 2, 3]
+
+This provides a simple mechanism to explicitly convert types when needed.
+
+Built-in Functions
+==================
+
+JMESPath has various built-in functions that operate on different
+data types, documented below.  Each function below has a signature
+that defines the expected types of the input and the type of the returned
+output::
+
+    return_type function_name(type $argname)
+    return_type function_name2(type1|type2 $argname)
+
+If a function can accept multiple types for an input value, then the
+multiple types are separated with ``|``.  If the resolved arguments do not
+match the types specified in the signature, an ``invalid-type`` error occurs.
+
+The ``array`` type can further specify requirements on the type of the elements
+if they want to enforce homogeneous types.  The subtype is surrounded by
+``[type]``, for example, the function signature below requires its input
+argument resolves to an array of numbers::
+
+    return_type foo(array[number] $argname)
+
+As a shorthand, the type ``any`` is used to indicate that the argument can be
+of any type (``array|object|number|string|boolean|null``).
+
+The first function below, ``abs`` is discussed in detail to demonstrate the
+above points.  Subsequent function definitions will not include these details
+for brevity, but the same rules apply.
+
+.. note::
+
+    All string related functions are defined on the basis of Unicode code
+    points; they do not take normalization into account.
+
+
+abs
+---
+
+::
+
+    number abs(number $value)
+
+Returns the absolute value of the provided argument.  The signature indicates
+that a number is returned, and that the input argument ``$value`` **must**
+resolve to a number, otherwise a ``invalid-type`` error is triggered.
+
+Below is a worked example.  Given::
+
+    {"foo": -1, "bar": "2"}
+
+Evaluating ``abs(foo)`` works as follows:
+
+1. Evaluate the input argument against the current data::
+
+     search(foo, {"foo": -1, "bar": 2"}) -> -1
+
+2. Validate the type of the resolved argument.  In this case
+   ``-1`` is of type ``number`` so it passes the type check.
+
+3. Call the function with the resolved argument::
+
+     abs(-1) -> 1
+
+4. The value of ``1`` is the resolved value of the function expression
+   ``abs(foo)``.
+
+
+Below is the same steps for evaluating ``abs(bar)``:
+
+1. Evaluate the input argument against the current data::
+
+     search(bar, {"foo": -1, "bar": 2"}) -> "2"
+
+2. Validate the type of the resolved argument.  In this case
+   ``"2"`` is of type ``string`` so we immediately indicate that
+   an ``invalid-type`` error occurred.
+
+
+As a final example, here is the steps for evaluating ``abs(to_number(bar))``:
+
+1. Evaluate the input argument against the current data::
+
+    search(to_number(bar), {"foo": -1, "bar": "2"})
+
+2. In order to evaluate the above expression, we need to evaluate
+   ``to_number(bar)``::
+
+    search(bar, {"foo": -1, "bar": "2"}) -> "2"
+    # Validate "2" passes the type check for to_number, which it does.
+    to_number("2") -> 2
+
+   Note that `to_number`_ is defined below.
+
+3. Now we can evaluate the original expression::
+
+    search(to_number(bar), {"foo": -1, "bar": "2"}) -> 2
+
+4. Call the function with the final resolved value::
+
+    abs(2) -> 2
+
+5. The value of ``2`` is the resolved value of the function expression
+   ``abs(to_number(bar))``.
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Expression
+    - Result
+  * - ``abs(1)``
+    - 1
+  * - ``abs(-1)``
+    - 1
+  * - ``abs(`abc`)``
+    - ``<error: invalid-type>``
+
+
+avg
+---
+
+::
+
+    number avg(array[number] $elements)
+
+Returns the average of the elements in the provided array.
+
+An empty array will produce a return value of null.
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``[10, 15, 20]``
+    - ``avg(@)``
+    - 15
+  * - ``[10, false, 20]``
+    - ``avg(@)``
+    - ``<error: invalid-type>``
+  * - ``[false]``
+    - ``avg(@)``
+    - ``<error: invalid-type>``
+  * - ``false``
+    - ``avg(@)``
+    - ``<error: invalid-type>``
+
+
+contains
+--------
+
+::
+
+    boolean contains(array|string $subject, any $search)
+
+Returns ``true`` if the given ``$subject`` contains the provided ``$search``
+string.
+
+If ``$subject`` is an array, this function returns true if one of the elements
+in the array is equal to the provided ``$search`` value.
+
+If the provided ``$subject`` is a string, this function returns true if
+the string contains the provided ``$search`` argument.
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - n/a
+    - ``contains(`foobar`, `foo`)``
+    - ``true``
+  * - n/a
+    - ``contains(`foobar`, `not`)``
+    - ``false``
+  * - n/a
+    - ``contains(`foobar`, `bar`)``
+    - ``true``
+  * - n/a
+    - ``contains(`false`, `bar`)``
+    - ``<error: invalid-type>``
+  * - n/a
+    - ``contains(`foobar`, 123)``
+    - ``false``
+  * - ``["a", "b"]``
+    - ``contains(@, `a`)``
+    - ``true``
+  * - ``["a"]``
+    - ``contains(@, `a`)``
+    - ``true``
+  * - ``["a"]``
+    - ``contains(@, `b`)``
+    - ``false``
+
+ceil
+----
+
+::
+
+    number ceil(number $value)
+
+Returns the next highest integer value by rounding up if necessary.
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Expression
+    - Result
+  * - ``ceil(`1.001`)``
+    - 2
+  * - ``ceil(`1.9`)``
+    - 2
+  * - ``ceil(`1`)``
+    - 1
+  * - ``ceil(`abc`)``
+    - ``null``
+
+floor
+-----
+
+::
+
+    number floor(number $value)
+
+Returns the next lowest integer value by rounding down if necessary.
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Expression
+    - Result
+  * - ``floor(`1.001`)``
+    - 1
+  * - ``floor(`1.9`)``
+    - 1
+  * - ``floor(`1`)``
+    - 1
+
+
+join
+----
+
+::
+
+    string join(string $glue, array[string] $stringsarray)
+
+Returns all of the elements from the provided ``$stringsarray`` array joined
+together using the ``$glue`` argument as a separator between each.
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``["a", "b"]``
+    - ``join(`, `, @)``
+    - "a, b"
+  * - ``["a", "b"]``
+    - ``join(``, @)``
+    - "ab"
+  * - ``["a", false, "b"]``
+    - ``join(`, `, @)``
+    - ``<error: invalid-type>``
+  * - ``[false]``
+    - ``join(`, `, @)``
+    - ``<error: invalid-type>``
+
+
+keys
+----
+
+::
+
+    array keys(object $obj)
+
+Returns an array containing the keys of the provided object.
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``{"foo": "baz", "bar": "bam"}``
+    - ``keys(@)``
+    - ``["foo", "bar"]``
+  * - ``{}``
+    - ``keys(@)``
+    - ``[]``
+  * - ``false``
+    - ``keys(@)``
+    - ``<error: invalid-type>``
+  * - ``[b, a, c]``
+    - ``keys(@)``
+    - ``<error: invalid-type>``
+
+
+length
+------
+
+::
+
+    number length(string|array|object $subject)
+
+Returns the length of the given argument using the following types rules:
+
+1. string: returns the number of code points in the string
+2. array: returns the number of elements in the array
+3. object: returns the number of key-value pairs in the object
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - n/a
+    - ``length(`abc`)``
+    - 3
+  * - "current"
+    - ``length(@)``
+    - 7
+  * - "current"
+    - ``length(not_there)``
+    - ``<error: invalid-type>``
+  * - ``["a", "b", "c"]``
+    - ``length(@)``
+    - 3
+  * - ``[]``
+    - ``length(@)``
+    - 0
+  * - ``{}``
+    - ``length(@)``
+    - 0
+  * - ``{"foo": "bar", "baz": "bam"}``
+    - ``length(@)``
+    - 2
+
+
+max
+---
+
+::
+
+    number max(array[number] $collection)
+
+Returns the highest found number in the provided array argument.
+
+An empty array will produce a return value of null.
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``[10, 15]``
+    - ``max(@)``
+    - 15
+  * - ``[10, false, 20]``
+    - ``max(@)``
+    - ``<error: invalid-type>``
+
+
+min
+---
+
+::
+
+    number min(array[number] $collection)
+
+Returns the lowest found number in the provided ``$collection`` argument.
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``[10, 15]``
+    - ``min(@)``
+    - 10
+  * - ``[10, false, 20]``
+    - ``min(@)``
+    - ``<error: invalid-type>``
+
+
+.. _not_null:
+
+not_null
+--------
+
+::
+
+    any not_null(any $argument [, any $...])
+
+Returns the first argument that does not resolve to ``null``.  This function
+accepts one or more arguments, and will evaluate them in order until a
+non null argument is encounted.  If all arguments values resolve to ``null``,
+then a value of ``null`` is returned.
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``{"a": null, "b": null, "c": [], "d": "foo"}``
+    - ``not_null(no_exist, a, b, c, d)``
+    - []
+  * - ``{"a": null, "b": null, "c": [], "d": "foo"}``
+    - ``not_null(a, b, `null`, d, c)``
+    - ``"foo"``
+  * - ``{"a": null, "b": null, "c": [], "d": "foo"}``
+    - ``not_null(a, b)``
+    - ``null``
+
+
+sort
+----
+
+::
+
+    array sort(array[number]|array[string] $list)
+
+This function accepts an array ``$list`` argument and returns the sorted
+elements of the ``$list`` as an array.
+
+The array must be a list of strings or numbers.  Sorting strings is based on
+code points.  Locale is not taken into account.
+
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``[b, a, c]``
+    - ``sort(@)``
+    - ``[a, b, c]``
+  * - ``[1, a, c]``
+    - ``sort(@)``
+    - ``[1, a, c]``
+  * - ``[false, [], null]``
+    - ``sort(@)``
+    - ``[[], null, false]``
+  * - ``[[], {}, false]``
+    - ``sort(@)``
+    - ``[{}, [], false]``
+  * - ``{"a": 1, "b": 2}``
+    - ``sort(@)``
+    - ``null``
+  * - ``false``
+    - ``sort(@)``
+    - ``null``
+
+
+to_string
+---------
+
+::
+
+    string to_string(any $arg)
+
+* string - Returns the passed in value.
+* number/array/object/boolean - The JSON encoded value of the object.  The
+  JSON encoder should emit the encoded JSON value without adding any additional
+  new lines.
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``null``
+    - ``to_string(`2`)``
+    - ``"2"``
+
+
+to_number
+---------
+
+::
+
+    number to_number(any $arg)
+
+* string - Returns the parsed number.  Any string that conforms to the
+  ``json-number`` production is supported.  Note that the floating number
+  support will be implementation specific, but implementations should support
+  at least IEEE 754-2008 binary64 (double precision) numbers, as this is
+  generally available and widely used.
+* number - Returns the passed in value.
+* array - null
+* object - null
+* boolean - null
+* null - null
+
+
+type
+----
+
+::
+
+    string type(array|object|string|number|boolean|null $subject)
+
+Returns the JavaScript type of the given ``$subject`` argument as a string
+value.
+
+The return value MUST be one of the following:
+
+* number
+* string
+* boolean
+* array
+* object
+* null
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - "foo"
+    - ``type(@)``
+    - "string"
+  * - ``true``
+    - ``type(@)``
+    - "boolean"
+  * - ``false``
+    - ``type(@)``
+    - "boolean"
+  * - ``null``
+    - ``type(@)``
+    - "null"
+  * - 123
+    - ``type(@)``
+    - number
+  * - 123.05
+    - ``type(@)``
+    - number
+  * - ``["abc"]``
+    - ``type(@)``
+    - "array"
+  * - ``{"abc": "123"}``
+    - ``type(@)``
+    - "object"
+
+
+values
+------
+
+::
+
+    array values(object $obj)
+
+Returns the values of the provided object.
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``{"foo": "baz", "bar": "bam"}``
+    - ``values(@)``
+    - ``["baz", "bam"]``
+  * - ``["a", "b"]``
+    - ``values(@)``
+    - ``<error: invalid-type>``
+  * - ``false``
+    - ``values(@)``
+    - ``<error: invalid-type>``
