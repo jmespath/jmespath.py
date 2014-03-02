@@ -54,6 +54,10 @@ class JMESPathTypeError(ValueError):
                     self.expected_types, jmespath_actual))
 
 
+class UnknownFunctionError(ValueError):
+    pass
+
+
 class _Arg(object):
     __slots__ = ('types',)
 
@@ -411,7 +415,7 @@ class FunctionExpression(AST):
         try:
             self.function = getattr(self, '_func_%s' % name)
         except AttributeError:
-            raise ValueError("Unknown function: %s" % self.name)
+            raise UnknownFunctionError("Unknown function: %s" % self.name)
         self.arity = self.function.arity
         self.variadic = self.function.variadic
         self.function = self._resolve_arguments_wrapper(self.function)

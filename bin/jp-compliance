@@ -55,6 +55,14 @@ import json
 import shlex
 
 
+if sys.version_info[:2] == (2, 6):
+    import simplejson as json
+    from ordereddict import OrderedDict
+else:
+    import json
+    from collections import OrderedDict
+
+
 _abs = os.path.abspath
 _dname = os.path.dirname
 _pjoin = os.path.join
@@ -94,7 +102,7 @@ class ComplianceTestRunner(object):
 
     def _load_test_file(self, test_json_file):
         with open(test_json_file) as f:
-            loaded_test = json.loads(f.read())
+            loaded_test = json.loads(f.read(), object_pairs_hook=OrderedDict)
         return loaded_test
 
     def _load_test_cases(self, filename, group_number, test_group):
@@ -184,6 +192,7 @@ def test_spec(value):
     if len(parts) == 2:
         spec['group_number'] = int(parts[1])
     elif len(parts) == 3:
+        spec['group_number'] = int(parts[1])
         spec['test_number'] = int(parts[2])
     return spec
 
