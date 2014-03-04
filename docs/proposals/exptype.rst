@@ -4,7 +4,7 @@ Expression Types
 
 :JEP: 8
 :Author: James Saryerwinnie
-:Status: draft
+:Status: accepted
 :Created: 02-Mar-2013
 
 Abstract
