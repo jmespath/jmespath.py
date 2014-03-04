@@ -106,6 +106,13 @@ expression.  Similarly how arrays can specify a type within a list using the
 ``array[type]`` syntax, expressions can specify their resolved type using
 ``expression->type`` syntax.
 
+Note that any valid expression is allowed after ``&``, so the following
+expressions are valid::
+
+    sort_by(people, &foo.bar.baz)
+    sort_by(people, &foo.bar[0].baz)
+    sort_by(people, &to_number(foo[0].bar))
+
 
 Additional Functions
 --------------------
@@ -121,7 +128,8 @@ sort_by
 
 Sort an array using an expression ``expr`` as the sort key.
 Below are several examples using the ``people`` array (defined above) as the
-given input.
+given input.  ``sort_by`` follows the same sorting logic as the ``sort``
+function.
 
 
 .. list-table:: Examples
@@ -133,8 +141,6 @@ given input.
     - [10, 20, 30, 40, 50]
   * - ``sort_by(people, &age)[0]``
     - {"age": 10, "age_str": "10", "bool": true, "name": 3}
-  * - ``sort_by(people, &age_str)``
-    - <error: invalid-type>
   * - ``sort_by(people, &to_number(age_str))[0]``
     - {"age": 10, "age_str": "10", "bool": true, "name": 3}
 
@@ -197,3 +203,63 @@ given input.
     - <error: invalid-type>
   * - ``min_by(people, age)``
     - <error: invalid-type>
+
+
+Alternatives
+------------
+
+There were a number of alternative proposals considered.  Below outlines
+several of these alternatives.
+
+Logic in Argument Resolver
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The first proposed choice (which was originally in JEP-3 but later removed) was
+to not have any syntactic construct for specifying functions, and to allow the
+function signature to dictate whether or not an argument was resolved.  The
+signature for ``sort_by`` would be::
+
+    sort_by(array arg1, any arg2)
+    arg1 -> resolved
+    arg2 -> not resolved
+
+Then the argument resolver would introspect the argument specification of a
+function to determine what to do.  Roughly speaking, the pseudocode would be::
+
+    call-function(current-data)
+    arglist = []
+    for each argspec in functions-argspec:
+        if argspect.should_resolve:
+          arglist <- resolve(argument, current-data)
+        else
+          arglist <- argument
+    type-check(arglist)
+    return invoke-function(arglist)
+
+However, there are several reasons not to do this:
+
+* This imposes a specific implementation.  This implementation would be
+  challenging in a bytecode VM, as the CALL bytecode will typically
+  resolve arguments onto the stack and allow the function to then
+  pop arguments off the stack and perform its own arity validation.
+* This deviates from the "standard" model of how functions are
+  traditionally implemented.
+
+
+Specifying Expressions as Strings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Another proposed alternative was to allow the expression to be
+a string type and to give functions the capability to parse/eval
+expressions.  The ``sort_by`` function would look like this::
+
+    sort_by(people, `age`)
+    sort_by(people, `foo.bar.baz`)
+
+The main reasons this proposal was not chosen was because:
+
+* This complicates the implementations.  For implementations that walk the AST
+  inline, this means AST nodes need access to the parser.  For external tree
+  visitors, the visitor needs access to the parser.
+* This moves what *could* by a compile time error into a run time error.  The
+  evaluation of the expression string happens when the function is invoked.
