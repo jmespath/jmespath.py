@@ -43,8 +43,9 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     list-filter-expr  = expression comparator expression
     comparator        = "<" / "<=" / "==" / ">=" / ">" / "!="
     function-expression = identifier "(" *(function-arg *("," function-arg ) ) ")"
-    function-arg        = expression / current-node
+    function-arg        = expression / current-node / expression-type
     current-node        = "@"
+    expression-type     = "&" expression
 
     literal           = "`" json-value "`"
     literal           =/ "`" 1*(unescaped-literal / escaped-literal) "`"
@@ -577,8 +578,9 @@ Functions Expressions
 ::
 
   function-expression = identifier "(" *(function-arg *("," function-arg ) ) ")"
-  function-arg        = expression / number / current-node
+  function-arg        = expression / current-node / expression-type
   current-node        = "@"
+  expression-type     = "&" expression
 
 
 Functions allow users to easily transform and filter data in JMESPath
@@ -595,6 +597,11 @@ In order to support functions, a type system is needed.  The JSON types are used
 * array (an ordered, sequence of values)
 * object (an unordered collection of key value pairs)
 * null
+
+There is also an additional type that is not a JSON type that's used in
+JMESPath functions:
+
+* expression (denoted by ``&expression``)
 
 current-node
 ------------
@@ -687,6 +694,11 @@ argument resolves to an array of numbers::
 
 As a shorthand, the type ``any`` is used to indicate that the argument can be
 of any type (``array|object|number|string|boolean|null``).
+
+Similarly how arrays can specify a type within a list using the
+``array[type]`` syntax, expressions can specify their resolved type using
+``expression->type`` syntax.  This means that the resolved type of the function
+argument must be an expression that itself will resolve to ``type``.
 
 The first function below, ``abs`` is discussed in detail to demonstrate the
 above points.  Subsequent function definitions will not include these details
@@ -925,7 +937,7 @@ together using the ``$glue`` argument as a separator between each.
     - ``join(`, `, @)``
     - "a, b"
   * - ``["a", "b"]``
-    - ``join(``, @)``
+    - ``join(````, @)``
     - "ab"
   * - ``["a", false, "b"]``
     - ``join(`, `, @)``
@@ -1031,6 +1043,36 @@ An empty array will produce a return value of null.
     - ``<error: invalid-type>``
 
 
+max_by
+------
+
+::
+
+    max_by(array elements, expression->number expr)
+
+Return the maximum element in an array using the expression ``expr`` as the
+comparison key.  The entire maximum element is returned.
+Below are several examples using the ``people`` array (defined above) as the
+given input.
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Expression
+    - Result
+  * - ``max_by(people, &age)``
+    - ``{"age": 50, "age_str": "50", "bool": false, "name": "d"}``
+  * - ``max_by(people, &age).age``
+    - 50
+  * - ``max_by(people, &to_number(age_str))``
+    - ``{"age": 50, "age_str": "50", "bool": false, "name": "d"}``
+  * - ``max_by(people, &age_str)``
+    - <error: invalid-type>
+  * - ``max_by(people, age)``
+    - <error: invalid-type>
+
+
 min
 ---
 
@@ -1052,6 +1094,36 @@ Returns the lowest found number in the provided ``$collection`` argument.
     - 10
   * - ``[10, false, 20]``
     - ``min(@)``
+    - ``<error: invalid-type>``
+
+
+min_by
+------
+
+::
+
+    min_by(array elements, expression->number expr)
+
+Return the minimum element in an array using the expression ``expr`` as the
+comparison key.  The entire maximum element is returned.
+Below are several examples using the ``people`` array (defined above) as the
+given input.
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Expression
+    - Result
+  * - ``min_by(people, &age)``
+    - ``{"age": 10, "age_str": "10", "bool": true, "name": 3}``
+  * - ``min_by(people, &age).age``
+    - 10
+  * - ``min_by(people, &to_number(age_str))``
+    - ``{"age": 10, "age_str": "10", "bool": true, "name": 3}``
+  * - ``min_by(people, &age_str)``
+    - ``<error: invalid-type>``
+  * - ``min_by(people, age)``
     - ``<error: invalid-type>``
 
 
@@ -1125,6 +1197,32 @@ code points.  Locale is not taken into account.
   * - ``false``
     - ``sort(@)``
     - ``null``
+
+
+sort_by
+-------
+
+::
+
+    sort_by(array elements, expression->number|expression->string expr)
+
+Sort an array using an expression ``expr`` as the sort key.
+Below are several examples using the ``people`` array (defined above) as the
+given input.  ``sort_by`` follows the same sorting logic as the ``sort``
+function.
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Expression
+    - Result
+  * - ``sort_by(people, &age)[].age``
+    - ``[10, 20, 30, 40, 50]``
+  * - ``sort_by(people, &age)[0]``
+    - ``{"age": 10, "age_str": "10", "bool": true, "name": 3}``
+  * - ``sort_by(people, &to_number(age_str))[0]``
+    - ``{"age": 10, "age_str": "10", "bool": true, "name": 3}``
 
 
 to_string
