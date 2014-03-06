@@ -460,4 +460,104 @@
       "result": ["b", "c", "d", "e", "f"]
     }
   ]
+}, {
+  "given":
+  {
+    "people": [
+         {"age": 20, "age_str": "20", "bool": true, "name": "a", "extra": "foo"},
+         {"age": 40, "age_str": "40", "bool": false, "name": "b", "extra": "bar"},
+         {"age": 30, "age_str": "30", "bool": true, "name": "c"},
+         {"age": 50, "age_str": "50", "bool": false, "name": "d"},
+         {"age": 10, "age_str": "10", "bool": true, "name": 3}
+    ]
+  },
+  "cases": [
+    {
+      "description": "function projection on variadic function",
+      "expression": "sort_by(people, &age)",
+      "result": [
+         {"age": 10, "age_str": "10", "bool": true, "name": 3},
+         {"age": 20, "age_str": "20", "bool": true, "name": "a", "extra": "foo"},
+         {"age": 30, "age_str": "30", "bool": true, "name": "c"},
+         {"age": 40, "age_str": "40", "bool": false, "name": "b", "extra": "bar"},
+         {"age": 50, "age_str": "50", "bool": false, "name": "d"}
+      ]
+    },
+    {
+      "description": "function projection on variadic function",
+      "expression": "sort_by(people, &to_number(age_str))",
+      "result": [
+         {"age": 10, "age_str": "10", "bool": true, "name": 3},
+         {"age": 20, "age_str": "20", "bool": true, "name": "a", "extra": "foo"},
+         {"age": 30, "age_str": "30", "bool": true, "name": "c"},
+         {"age": 40, "age_str": "40", "bool": false, "name": "b", "extra": "bar"},
+         {"age": 50, "age_str": "50", "bool": false, "name": "d"}
+      ]
+    },
+    {
+      "description": "function projection on variadic function",
+      "expression": "sort_by(people, &age)[].name",
+      "result": [3, "a", "c", "b", "d"]
+    },
+    {
+      "expression": "sort_by(people, &extra)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "sort_by(people, &bool)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "sort_by(people, &name)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "sort_by(people, name)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "sort_by(people, &age)[].extra",
+      "result": ["foo", "bar"]
+    },
+    {
+      "expression": "max_by(people, &age)",
+      "result": {"age": 50, "age_str": "50", "bool": false, "name": "d"}
+    },
+    {
+      "expression": "max_by(people, &bool)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "max_by(people, &extra)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "max_by(people, &to_number(age_str))",
+      "result": {"age": 50, "age_str": "50", "bool": false, "name": "d"}
+    },
+    {
+      "expression": "max_by(people, &age_str)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "min_by(people, &age)",
+      "result": {"age": 10, "age_str": "10", "bool": true, "name": 3}
+    },
+    {
+      "expression": "min_by(people, &bool)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "min_by(people, &extra)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "min_by(people, &to_number(age_str))",
+      "result": {"age": 10, "age_str": "10", "bool": true, "name": 3}
+    },
+    {
+      "expression": "min_by(people, &age_str)",
+      "error": "invalid-type"
+    }
+  ]
 }]

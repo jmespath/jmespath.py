@@ -24,6 +24,7 @@ TYPES_MAP = {
     'int': 'number',
     'OrderedDict': 'object',
     '_Projection': 'array',
+    '_Expression': 'expref',
 }
 
 
@@ -35,12 +36,14 @@ REVERSE_TYPES_MAP = {
     'null': ('None',),
     'string': ('unicode', 'str'),
     'number': ('float', 'int'),
+    'expref': ('_Expression',),
 }
 
 
 @with_str_method
 class JMESPathTypeError(ValueError):
-    def __init__(self, function_name, current_value, actual_type, expected_types):
+    def __init__(self, function_name, current_value, actual_type,
+                 expected_types):
         self.function_name = function_name
         self.current_value = current_value
         self.actual_type = actual_type
@@ -623,6 +626,67 @@ class FunctionExpression(AST):
             return "number"
         elif arg is None:
             return "null"
+
+    def _create_key_func(self, expression, allowed_types):
+        py_types = []
+        for type_ in allowed_types:
+            py_types.extend(REVERSE_TYPES_MAP[type_])
+        def keyfunc(x):
+            result = expression.search(x)
+            type_name = type(result).__name__
+            if type_name not in py_types:
+                raise JMESPathTypeError(self.name,
+                                        result,
+                                        type_name,
+                                        allowed_types)
+            return result
+        return keyfunc
+
+    @signature(_Arg(types=['array']), _Arg(types=['expref']))
+    def _func_sort_by(self, array, expref):
+        # sort_by allows for the expref to be either a number of
+        # a string, so we have some special logic to handle this.
+        # We evaluate the first array element and verify that it's
+        # either a string of a number.  We then create a key function
+        # that validates that type, which requires that remaining array
+        # elements resolve to the same type as the first element.
+        if not array:
+            return array
+        required_type = TYPES_MAP.get(
+            type(expref.search(array[0])).__name__)
+        if required_type not in ['number', 'string']:
+            raise JMESPathTypeError(self.name,
+                                    array[0],
+                                    required_type,
+                                    ['string', 'number'])
+        keyfunc = self._create_key_func(expref, [required_type])
+        return list(sorted(array, key=keyfunc))
+
+    @signature(_Arg(types=['array']), _Arg(types=['expref']))
+    def _func_max_by(self, array, expref):
+        keyfunc = self._create_key_func(expref, ['number'])
+        return max(array, key=keyfunc)
+
+    @signature(_Arg(types=['array']), _Arg(types=['expref']))
+    def _func_min_by(self, array, expref):
+        keyfunc = self._create_key_func(expref, ['number'])
+        return min(array, key=keyfunc)
+
+
+class ExpressionReference(AST):
+    def __init__(self, expression):
+        self.expression = expression
+
+    def search(self, value):
+        return _Expression(self.expression)
+
+
+class _Expression(AST):
+    def __init__(self, expression):
+        self.expression = expression
+
+    def search(self, value):
+        return self.expression.search(value)
 
 
 class _Projection(list):

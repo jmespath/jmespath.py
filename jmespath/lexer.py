@@ -48,6 +48,7 @@ class LexerDefinition(object):
         'NE',
         'LITERAL',
         'CURRENT',
+        'EXPREF',
     ) + tuple(reserved.values())
 
     t_STAR = r'\*'
@@ -69,6 +70,7 @@ class LexerDefinition(object):
     t_EQ = r'=='
     t_NE = r'!='
     t_CURRENT = r'@'
+    t_EXPREF = r'&'
     t_ignore = ' '
 
     def t_NUMBER(self, t):
