@@ -226,8 +226,13 @@ class Grammar(object):
 
     def p_jmespath_function_expression(self, p):
         """function-expression : UNQUOTED_IDENTIFIER LPAREN function-args RPAREN
+                               | UNQUOTED_IDENTIFIER LPAREN RPAREN
         """
-        function_node = ast.FunctionExpression(p[1], p[3])
+        if len(p) == 5:
+            args = p[3]
+        else:
+            args = []
+        function_node = ast.FunctionExpression(p[1], args)
         if function_node.variadic:
             if len(function_node.args) < function_node.arity:
                 raise VariadictArityError(function_node)

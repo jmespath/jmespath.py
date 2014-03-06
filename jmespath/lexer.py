@@ -150,4 +150,6 @@ class LexerDefinition(object):
                 lexer_value=t.value,
                 message=("Bad token '%s': starting quote is missing "
                          "the ending quote" % t.value))
-        raise ValueError("Illegal token value '%s'" % t.value)
+        raise LexerError(lexer_position=t.lexpos,
+                         lexer_value=t.value,
+                         message=("Illegal token value '%s'" % t.value))
