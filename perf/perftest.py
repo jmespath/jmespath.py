@@ -94,13 +94,14 @@ def load_tests(filename):
         _add_cases(data, loaded, filename)
     return loaded
 
+
 def _add_cases(data, loaded, filename):
     for case in data['cases']:
         current = {'description': data.get('description', filename),
                    'given': data['given'],
                    'name': case.get('name', case['expression']),
                    'expression': case['expression'],
-                   'result': case['result']}
+                   'result': case.get('result')}
         loaded.append(current)
     return loaded
 
@@ -108,12 +109,16 @@ def _add_cases(data, loaded, filename):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--directory', default=DIRECTORY)
+    parser.add_argument('-f', '--filename')
     args = parser.parse_args()
     collected_tests = []
-    for filename in os.listdir(args.directory):
-        if filename.endswith('.json'):
-            full_path = os.path.join(args.directory, filename)
-            collected_tests.extend(load_tests(full_path))
+    if args.filename:
+        collected_tests.extend(load_tests(args.filename))
+    else:
+        for filename in os.listdir(args.directory):
+            if filename.endswith('.json'):
+                full_path = os.path.join(args.directory, filename)
+                collected_tests.extend(load_tests(full_path))
     run_tests(collected_tests)
 
 
