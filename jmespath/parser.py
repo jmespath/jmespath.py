@@ -7,6 +7,7 @@ from jmespath import ast
 from jmespath import lexer
 from jmespath.compat import with_str_method
 from jmespath.compat import with_repr_method
+from jmespath.compat import LR_TABLE
 
 
 @with_str_method
@@ -226,8 +227,13 @@ class Grammar(object):
 
     def p_jmespath_function_expression(self, p):
         """function-expression : UNQUOTED_IDENTIFIER LPAREN function-args RPAREN
+                               | UNQUOTED_IDENTIFIER LPAREN RPAREN
         """
-        function_node = ast.FunctionExpression(p[1], p[3])
+        if len(p) == 5:
+            args = p[3]
+        else:
+            args = []
+        function_node = ast.FunctionExpression(p[1], args)
         if function_node.variadic:
             if len(function_node.args) < function_node.arity:
                 raise VariadictArityError(function_node)
@@ -248,8 +254,11 @@ class Grammar(object):
     def p_jmespath_function_arg(self, p):
         """function-arg : expression
                         | CURRENT
+                        | EXPREF expression
         """
-        if p[1] == '@':
+        if len(p) == 3:
+            p[0] = ast.ExpressionReference(p[2])
+        elif p[1] == '@':
             p[0] = ast.CurrentNode()
         else:
             p[0] = p[1]
@@ -266,6 +275,7 @@ class Parser(object):
     # _cache dict.
     _cache = {}
     _max_size = 64
+    _table_module = LR_TABLE
 
     def __init__(self, lexer_definition=None, grammar=None,
                  debug=False):
@@ -288,6 +298,7 @@ class Parser(object):
         grammar = self._grammar()
         grammar.tokens = self._lexer_definition.tokens
         parser = ply.yacc.yacc(module=grammar, debug=self._debug,
+                               tabmodule=self._table_module,
                                write_tables=False)
         parsed = self._parse_expression(parser=parser, expression=expression,
                                         lexer_obj=lexer)

@@ -12,3 +12,4 @@ changes. Proposals are marked as either "draft", "accepted", or "rejected".
    proposals/improved-identifiers
    proposals/filter-expressions
    proposals/functions
+   proposals/exptype
