@@ -1,24 +1,10 @@
 import re
-from json import loads
 
-from jmespath.compat import with_str_method
+from jmespath.compat import json
+from jmespath.exceptions import LexerError
 
-@with_str_method
-class LexerError(ValueError):
-    def __init__(self, lexer_position, lexer_value, message):
-        self.lexer_position = lexer_position
-        self.lexer_value = lexer_value
-        self.message = message
-        super(LexerError, self).__init__(lexer_position,
-                                         lexer_value,
-                                         message)
-        # Whatever catches LexerError can set this.
-        self.expression = None
 
-    def __str__(self):
-        underline = ' ' * self.lexer_position + '^'
-        return 'Bad jmespath expression: %s:\n%s\n%s' % (
-            self.message, self.expression, underline)
+_loads = json.loads
 
 
 class LexerDefinition(object):
@@ -87,7 +73,7 @@ class LexerDefinition(object):
         r'("(?:\\\\|\\"|[^"])*")'
         t.type = self.reserved.get(t.value, 'QUOTED_IDENTIFIER')
         try:
-            t.value = loads(t.value)
+            t.value = _loads(t.value)
         except ValueError as e:
             error_message = str(e).split(':')[0]
             raise LexerError(lexer_position=t.lexpos,
@@ -104,7 +90,7 @@ class LexerDefinition(object):
         # errors.
         if self._looks_like_json(actual_value):
             try:
-                t.value = loads(actual_value)
+                t.value = _loads(actual_value)
             except ValueError:
                 raise LexerError(lexer_position=t.lexpos,
                                 lexer_value=t.value,
@@ -116,7 +102,7 @@ class LexerDefinition(object):
                 # don't have to be quoted.  This is only true if the
                 # string doesn't start with chars that could start a valid
                 # JSON value.
-                t.value = loads(potential_value)
+                t.value = _loads(potential_value)
             except ValueError:
                 raise LexerError(lexer_position=t.lexpos,
                                 lexer_value=t.value,
@@ -136,7 +122,7 @@ class LexerDefinition(object):
                           '6', '7', '8', '9']:
             # Then this is JSON, return True.
             try:
-                loads(value)
+                _loads(value)
                 return True
             except ValueError:
                 return False

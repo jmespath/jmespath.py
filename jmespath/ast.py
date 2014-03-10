@@ -3,9 +3,9 @@ import math
 import json
 
 from jmespath.compat import with_repr_method
-from jmespath.compat import with_str_method
 from jmespath.compat import string_type as STRING_TYPE
 from jmespath.compat import zip_longest
+from jmespath.exceptions import JMESPathTypeError, UnknownFunctionError
 
 
 NUMBER_TYPE = (float, int)
@@ -38,27 +38,6 @@ REVERSE_TYPES_MAP = {
     'number': ('float', 'int'),
     'expref': ('_Expression',),
 }
-
-
-@with_str_method
-class JMESPathTypeError(ValueError):
-    def __init__(self, function_name, current_value, actual_type,
-                 expected_types):
-        self.function_name = function_name
-        self.current_value = current_value
-        self.actual_type = actual_type
-        self.expected_types = expected_types
-
-    def __str__(self):
-        jmespath_actual = TYPES_MAP.get(self.actual_type, 'unknown')
-        return ('In function %s(), invalid type for value: %s, '
-                'expected one of: %s, received: "%s"' % (
-                    self.function_name, self.current_value,
-                    self.expected_types, jmespath_actual))
-
-
-class UnknownFunctionError(ValueError):
-    pass
 
 
 class _Arg(object):
