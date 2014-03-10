@@ -5,71 +5,12 @@ import ply.lex
 
 from jmespath import ast
 from jmespath import lexer
-from jmespath.compat import with_str_method
 from jmespath.compat import with_repr_method
 from jmespath.compat import LR_TABLE
-
-
-@with_str_method
-class ParseError(ValueError):
-    _ERROR_MESSAGE = 'Invalid jmespath expression'
-    def __init__(self, lex_position, token_value, token_type,
-                 msg=_ERROR_MESSAGE):
-        super(ParseError, self).__init__(lex_position, token_value, token_type)
-        self.lex_position = lex_position
-        self.token_value = token_value
-        self.token_type = token_type
-        self.msg = msg
-        # Whatever catches the ParseError can fill in the full expression
-        self.expression = None
-
-    def __str__(self):
-        # self.lex_position +1 to account for the starting double quote char.
-        underline = ' ' * (self.lex_position + 1) + '^'
-        return (
-            '%s: Parse error at column %s near '
-            'token "%s" (%s) for expression:\n"%s"\n%s' % (
-                self.msg, self.lex_position, self.token_value, self.token_type,
-                self.expression, underline))
-
-
-@with_str_method
-class IncompleteExpressionError(ParseError):
-    def set_expression(self, expression):
-        self.expression = expression
-        self.lex_position = len(expression)
-        self.token_type = None
-        self.token_value = None
-
-    def __str__(self):
-        # self.lex_position +1 to account for the starting double quote char.
-        underline = ' ' * (self.lex_position + 1) + '^'
-        return (
-            'Invalid jmespath expression: Incomplete expression:\n'
-            '"%s"\n%s' % (self.expression, underline))
-
-
-@with_str_method
-class ArityError(ParseError):
-    def __init__(self, function_node):
-        self.expected_arity = function_node.arity
-        self.actual_arity = len(function_node.args)
-        self.function_name = function_node.name
-        self.expression = None
-
-    def __str__(self):
-        return ("Expected %s arguments for function %s, "
-                "received %s" % (self.expected_arity,
-                                 self.function_name,
-                                 self.actual_arity))
-
-@with_str_method
-class VariadictArityError(ArityError):
-    def __str__(self):
-        return ("Expected at least %s arguments for function %s, "
-                "received %s" % (self.expected_arity,
-                                 self.function_name,
-                                 self.actual_arity))
+from jmespath.exceptions import VariadictArityError
+from jmespath.exceptions import ArityError
+from jmespath.exceptions import ParseError
+from jmespath.exceptions import IncompleteExpressionError
 
 
 class Grammar(object):
