@@ -129,6 +129,14 @@
       {
         "expression": "*0",
         "error": "syntax"
+      },
+      {
+        "expression": "foo[*]bar",
+        "error": "syntax"
+      },
+      {
+        "expression": "foo[*]*",
+        "error": "syntax"
       }
     ]
   },
@@ -596,6 +604,24 @@
         "expression": "foo.`bar`",
         "error": "syntax"
       }
+    ]
+  },
+  {
+    "comment": "Combined syntax",
+    "given": [],
+    "cases": [
+        {
+          "expression": "*||*|*|*",
+          "result": null
+        },
+        {
+          "expression": "*[]||[*]",
+          "result": []
+        },
+        {
+          "expression": "[*.*]",
+          "result": [null]
+        }
     ]
   }
 ]

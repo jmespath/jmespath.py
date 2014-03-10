@@ -42,11 +42,15 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     bracket-specifier =/ "[?" list-filter-expr "]"
     list-filter-expr  = expression comparator expression
     comparator        = "<" / "<=" / "==" / ">=" / ">" / "!="
-    function-expression = identifier "(" *(function-arg *("," function-arg ) ) ")"
+    function-expression = unquoted-string  (
+                            no-args  /
+                            one-or-more-args )
+    no-args             = "(" ")"
+    one-or-more-args    = "(" ( function-arg *( "," function-arg ) ) ")"
     function-arg        = expression / current-node / expression-type
     current-node        = "@"
     expression-type     = "&" expression
-
+    
     literal           = "`" json-value "`"
     literal           =/ "`" 1*(unescaped-literal / escaped-literal) "`"
     unescaped-literal = %x20-21 /       ; space !
@@ -77,12 +81,12 @@ The grammar is specified using ABNF, as described in `RFC4234`_
                             %x72 /          ; r    carriage return U+000D
                             %x74 /          ; t    tab             U+0009
                             %x75 4HEXDIG )  ; uXXXX                U+XXXX
-
+    
     ; The ``json-value`` is any valid JSON value with the one exception that the
     ; ``%x60`` character must be escaped.  While it's encouraged that implementations
     ; use any existing JSON parser for this grammar rule (after handling the escaped
     ; literal characters), the grammar rule is shown below for completeness::
-
+    
     json-value = false / null / true / json-object / json-array /
                  json-number / json-quoted-string
     false = %x66.61.6c.73.65   ; false
@@ -113,7 +117,6 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     minus = %x2D               ; -
     plus = %x2B                ; +
     zero = %x30                ; 0
-
 
 Identifiers
 ===========
@@ -577,11 +580,15 @@ Functions Expressions
 
 ::
 
-  function-expression = identifier "(" *(function-arg *("," function-arg ) ) ")"
-  function-arg        = expression / current-node / expression-type
-  current-node        = "@"
-  expression-type     = "&" expression
-
+    function-expression = unquoted-string  (
+                            no-args  /
+                            one-or-more-args )
+    no-args             = "(" ")"
+    one-or-more-args    = "(" ( function-arg *( "," function-arg ) ) ")"
+    function-arg        = expression / current-node / expression-type
+    current-node        = "@"
+    expression-type     = "&" expression
+    
 
 Functions allow users to easily transform and filter data in JMESPath
 expressions.

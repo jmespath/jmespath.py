@@ -13,7 +13,7 @@ import json
 import sys
 
 from jmespath.parser import Parser
-from jmespath.lexer import LexerDefinition
+from jmespath.lexer import Lexer
 
 
 DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)))
@@ -36,20 +36,11 @@ def run_tests(tests):
 
 
 def _lex_time(expression):
-    import ply.lex
-    definitions = LexerDefinition
-    create_lexer = ply.lex.lex
     best = float('inf')
+    lex = Lexer()
     for i in range(DEFAULT_NUM_LOOP):
         start = time.time()
-        lexer = create_lexer(module=definitions(),
-                             debug=False,
-                             reflags=definitions.reflags)
-        lexer.input(expression)
-        while True:
-            token = lexer.token()
-            if token is None:
-                break
+        list(lex.tokenize(expression))
         end = time.time()
         total = end - start
         if total < best:
