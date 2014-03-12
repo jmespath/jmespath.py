@@ -602,6 +602,10 @@ class FunctionExpression(AST):
     def _func_sort(self, arg):
         return list(sorted(arg))
 
+    @signature(_Arg(types=['array-number']))
+    def _func_sum(self, arg):
+        return sum(arg)
+
     @signature(_Arg(types=['object']))
     def _func_keys(self, arg):
         # To be consistent with .values()
