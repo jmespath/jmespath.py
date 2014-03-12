@@ -340,6 +340,26 @@
       "result": ""
     },
     {
+      "expression": "sum(numbers)",
+      "result": 11
+    },
+    {
+      "expression": "sum(decimals)",
+      "result": 0.71
+    },
+    {
+      "expression": "sum(array)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "sum(array[].to_number(@))",
+      "result": 111
+    },
+    {
+      "expression": "sum(`[]`)",
+      "result": 0
+    },
+    {
       "expression": "to_string(`foo`)",
       "result": "foo"
     },
