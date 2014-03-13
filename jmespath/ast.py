@@ -576,6 +576,10 @@ class FunctionExpression(AST):
     def _func_ceil(self, arg):
         return math.ceil(arg)
 
+    @signature(_Arg(types=['string']), _Arg(types=['string']))
+    def _func_ends_with(self, search, suffix):
+        return search.endswith(suffix)
+
     @signature(_Arg(types=['number']))
     def _func_floor(self, arg):
         return math.floor(arg)
@@ -601,6 +605,14 @@ class FunctionExpression(AST):
     @signature(_Arg(types=['array-string', 'array-number']))
     def _func_sort(self, arg):
         return list(sorted(arg))
+
+    @signature(_Arg(types=['string']), _Arg(types=['string']))
+    def _func_starts_with(self, search, prefix):
+        return search.startswith(prefix)
+
+    @signature(_Arg(types=['array']))
+    def _func_reverse(self, arg):
+        return list(reversed(arg))
 
     @signature(_Arg(types=['object']))
     def _func_keys(self, arg):

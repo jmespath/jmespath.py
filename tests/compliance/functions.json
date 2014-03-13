@@ -128,6 +128,30 @@
       "result": false
     },
     {
+      "expression": "ends_with(str, `r`)",
+      "result": true
+    },
+    {
+      "expression": "ends_with(str, `tr`)",
+      "result": true
+    },
+    {
+      "expression": "ends_with(str, `Str`)",
+      "result": true
+    },
+    {
+      "expression": "ends_with(str, `SStr`)",
+      "result": false
+    },
+    {
+      "expression": "ends_with(str, `foo`)",
+      "result": false
+    },
+    {
+      "expression": "ends_with(str, `0`)",
+      "error": "invalid-type"
+    },
+    {
       "expression": "floor(`1.2`)",
       "result": 1
     },
@@ -338,6 +362,38 @@
     {
       "expression": "join(`|`, empty_list)",
       "result": ""
+    },
+    {
+      "expression": "reverse(numbers)",
+      "result": [5, 4, 3, -1]
+    },
+    {
+      "expression": "reverse(array)",
+      "result": ["100", "a", 5, 4, 3, -1]
+    },
+    {
+      "expression": "reverse(`[]`)",
+      "result": []
+    },
+    {
+      "expression": "starts_with(str, `S`)",
+      "result": true
+    },
+    {
+      "expression": "starts_with(str, `St`)",
+      "result": true
+    },
+    {
+      "expression": "starts_with(str, `Str`)",
+      "result": true
+    },
+    {
+      "expression": "starts_with(str, `String`)",
+      "result": false
+    },
+    {
+      "expression": "starts_with(str, `0`)",
+      "error": "invalid-type"
     },
     {
       "expression": "to_string(`foo`)",
