@@ -894,6 +894,34 @@ Returns the next highest integer value by rounding up if necessary.
   * - ``ceil(`abc`)``
     - ``null``
 
+ends_with
+---------
+
+::
+
+    boolean floor(string $value)
+
+Returns ``true`` if the ``$subject`` ends with the ``$prefix``, otherwise this
+function returns ``false``.
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``foobarbaz``
+    - ``ends_with(@, ``baz``)``
+    - ``true``
+  * - ``foobarbaz``
+    - ``ends_with(@, ``foo``)``
+    - ``false``
+  * - ``foobarbaz``
+    - ``ends_with(@, ``z``)``
+    - ``true``
+
+
 floor
 -----
 
@@ -1158,6 +1186,33 @@ then a value of ``null`` is returned.
     - ``null``
 
 
+reverse
+-------
+
+::
+
+    array reverse(array $argument)
+
+Reverses the order of the ``$argument``.
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``[0, 1, 2, 3, 4]``
+    - ``reverse(@)``
+    - ``[4, 3, 2, 1, 0]``
+  * - ``[]
+    - ``reverse(@)``
+    - ``[]``
+  * - ``["a", "b", "c", 1, 2, 3]``
+    - ``reverse(@)``
+    - ``[3, 2, 1, "c", "b", "a"]``
+
+
 sort
 ----
 
@@ -1223,6 +1278,33 @@ function.
     - ``{"age": 10, "age_str": "10", "bool": true, "name": 3}``
   * - ``sort_by(people, &to_number(age_str))[0]``
     - ``{"age": 10, "age_str": "10", "bool": true, "name": 3}``
+
+
+starts_with
+-----------
+
+::
+
+    boolean starts_with(string $subject, string $prefix)
+
+Returns ``true`` if the ``$subject`` starts with the ``$prefix``, otherwise
+this function returns ``false``.
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``foobarbaz``
+    - ``starts_with(@, ``foo``)``
+    - ``true``
+  * - ``foobarbaz``
+    - ``starts_with(@, ``baz``)``
+    - ``false``
+  * - ``foobarbaz``
+    - ``starts_with(@, ``f``)``
+    - ``true``
 
 
 to_string
