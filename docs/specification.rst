@@ -26,14 +26,16 @@ The grammar is specified using ABNF, as described in `RFC4234`_
 
 ::
 
-    expression        = sub-expression / index-expression / or-expression / identifier / "*"
-    expression        =/ multi-select-list / multi-select-hash / literal / function-expression
+    expression        = sub-expression / index-expression / or-expression / identifier
+    expression        /= "*" / multi-select-list / multi-select-hash / literal
+    expression        /= function-expression / pipe-expression
     sub-expression    = expression "." ( identifier /
                                          multi-select-list /
                                          multi-select-hash /
                                          function-expression /
                                          "*" )
     or-expression     = expression "||" expression
+    pipe-expression   = expression "|" expression
     index-expression  = expression bracket-specifier / bracket-specifier
     multi-select-list = "[" ( expression *( "," expression ) ) "]"
     multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) ) "}"
@@ -50,7 +52,7 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     function-arg        = expression / current-node / expression-type
     current-node        = "@"
     expression-type     = "&" expression
-    
+
     literal           = "`" json-value "`"
     literal           =/ "`" 1*(unescaped-literal / escaped-literal) "`"
     unescaped-literal = %x20-21 /       ; space !
@@ -81,12 +83,12 @@ The grammar is specified using ABNF, as described in `RFC4234`_
                             %x72 /          ; r    carriage return U+000D
                             %x74 /          ; t    tab             U+0009
                             %x75 4HEXDIG )  ; uXXXX                U+XXXX
-    
+
     ; The ``json-value`` is any valid JSON value with the one exception that the
     ; ``%x60`` character must be escaped.  While it's encouraged that implementations
     ; use any existing JSON parser for this grammar rule (after handling the escaped
     ; literal characters), the grammar rule is shown below for completeness::
-    
+
     json-value = false / null / true / json-object / json-array /
                  json-number / json-quoted-string
     false = %x66.61.6c.73.65   ; false
@@ -187,6 +189,7 @@ SubExpressions
     sub-expression    = expression "." ( identifier /
                                          multi-select-list /
                                          multi-select-hash /
+                                         function-expression /
                                          "*" )
 
 A subexpression is a combination of two expressions separated by the '.' char.
@@ -588,7 +591,7 @@ Functions Expressions
     function-arg        = expression / current-node / expression-type
     current-node        = "@"
     expression-type     = "&" expression
-    
+
 
 Functions allow users to easily transform and filter data in JMESPath
 expressions.
@@ -1352,3 +1355,63 @@ Returns the values of the provided object.
   * - ``false``
     - ``values(@)``
     - ``<error: invalid-type>``
+
+
+Pipe Expressions
+================
+
+::
+
+    pipe-expression  = expression "|" expression
+
+A pipe expression combines two expressions, separated by the ``|`` character.
+It is similar to a ``sub-expression`` with two important distinctions:
+
+1. Any expression can be used on the right hand side.  A ``sub-expression``
+   restricts the type of expression that can be used on the right hand side.
+2. A ``pipe-expression`` **stops projections on the left hand side for
+   propogating to the right hand side**.  If the left expression creates a
+   projection, it does **not** apply to the right hand side.
+
+For example, given the following data::
+
+    {"foo": [{"bar": ["first1", "second1"]}, {"bar": ["first2", "second2"]}]}
+
+The expression ``foo[*].bar`` gives the result of::
+
+    [
+        [
+            "first1",
+            "second1"
+        ],
+        [
+            "first2",
+            "second2"
+        ]
+    ]
+
+The first part of the expression, ``foo[*]``, creates a projection.  At this
+point, the remaining expression, ``bar`` is projected onto each element of the
+list created from ``foo[*]``.  If you project the ``[0]`` expression, you will
+get the first element from each sub list.  The expression ``foo[*].bar[0]``
+will return::
+
+    ["first1", "first2"]
+
+If you instead wanted *only* the first sub list, ``["first1", "second1"]``, you
+can use a ``pipe-expression``::
+
+    foo[*].bar[0] -> ["first1", "first2"]
+    foo[*].bar | [0] -> ["first1", "second1"]
+
+
+Examples
+--------
+
+::
+
+   search(foo | bar, {"foo": {"bar": "baz"}}) -> "baz"
+   search(foo[*].bar | [0], {
+       "foo": [{"bar": ["first1", "second1"]},
+               {"bar": ["first2", "second2"]}]}) -> ["first1", "second1"]
+   search(foo | [0], {"foo": [0, 1, 2]}) -> [0]
