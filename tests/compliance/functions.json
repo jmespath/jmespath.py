@@ -452,6 +452,10 @@
       "result": null
     },
     {
+      "expression": "not_null()",
+      "error": "invalid-arity"
+    },
+    {
       "description": "function projection on single arg function",
       "expression": "numbers[].to_string(@)",
       "result": ["-1", "3", "4", "5"]

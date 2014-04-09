@@ -53,6 +53,7 @@ def _load_cases(full_path):
 
 
 def _test_expression(given, expression, expected, filename):
+    import jmespath.parser
     try:
         parsed = jmespath.compile(expression)
     except ValueError as e:
@@ -62,14 +63,16 @@ def _test_expression(given, expression, expected, filename):
     actual = parsed.search(given)
     expected_repr = json.dumps(expected, indent=4)
     actual_repr = json.dumps(actual, indent=4)
-    error_msg = ("\n\n  (%s) The expression '%s' was suppose to give: %s.\n"
-                 "Instead it matched: %s\nparsed as:\n%s" % (
-                     filename, expression, expected_repr, actual_repr, parsed))
+    error_msg = ("\n\n  (%s) The expression '%s' was suppose to give:\n%s\n"
+                 "Instead it matched:\n%s\nparsed as:\n%s\ngiven:\n%s" % (
+                     filename, expression, expected_repr,
+                     actual_repr, parsed, json.dumps(given, indent=4)))
     error_msg = error_msg.replace(r'\n', '\n')
     assert_equal(actual, expected, error_msg)
 
 
 def _test_error_expression(given, expression, error, filename):
+    import jmespath.parser
     if error not in ('syntax', 'invalid-type',
                      'unknown-function', 'invalid-arity'):
         raise RuntimeError("Unknown error type '%s'" % error)

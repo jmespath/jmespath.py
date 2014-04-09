@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-from tests import unittest
+from tests import unittest, as_s_expression
 
 from jmespath import parser
 from jmespath import ast
 from jmespath import lexer
 from jmespath import compat
+from jmespath import exceptions
 
 
 class TestParser(unittest.TestCase):
@@ -34,8 +35,8 @@ class TestParser(unittest.TestCase):
     def test_quoted_subexpression(self):
         parsed = self.parser.parse('"foo"."bar"')
         self.assertIsInstance(parsed.parsed, ast.SubExpression)
-        self.assertEqual(parsed.parsed.parent.name, 'foo')
-        self.assertEqual(parsed.parsed.child.name, 'bar')
+        self.assertEqual(parsed.parsed.children[0].name, 'foo')
+        self.assertEqual(parsed.parsed.children[1].name, 'bar')
 
     def test_wildcard(self):
         parsed = self.parser.parse('foo[*]')
@@ -102,7 +103,7 @@ class TestErrorMessages(unittest.TestCase):
         self.parser = parser.Parser()
 
     def assert_error_message(self, expression, error_message,
-                             exception=parser.ParseError):
+                             exception=exceptions.ParseError):
         try:
             self.parser.parse(expression)
         except exception as e:
@@ -117,12 +118,12 @@ class TestErrorMessages(unittest.TestCase):
                 "ParseError not raised for bad expression: %s" % expression)
 
     def test_bad_parse(self):
-        with self.assertRaises(parser.ParseError):
+        with self.assertRaises(exceptions.ParseError):
             parsed = self.parser.parse('foo]baz')
 
     def test_bad_parse_error_message(self):
         error_message = (
-            'Invalid jmespath expression: Parse error at column 3 '
+            'Unexpected token: ]: Parse error at column 3 '
             'near token "]" (RBRACKET) for expression:\n'
             '"foo]baz"\n'
             '    ^')
@@ -137,25 +138,25 @@ class TestErrorMessages(unittest.TestCase):
 
     def test_bad_lexer_values(self):
         error_message = (
-            'Bad jmespath expression: Bad token \'"bar\': '
-            'starting quote is missing the ending quote:\n'
+            'Bad jmespath expression: '
+            'Starting quote is missing the ending quote:\n'
             'foo."bar\n'
             '    ^')
         self.assert_error_message('foo."bar', error_message,
-                                  exception=lexer.LexerError)
+                                  exception=exceptions.LexerError)
 
     def test_bad_lexer_literal_value_with_json_object(self):
         error_message = ('Bad jmespath expression: '
                          'Bad token `{{}`:\n`{{}`\n^')
         self.assert_error_message('`{{}`', error_message,
-                                  exception=lexer.LexerError)
+                                  exception=exceptions.LexerError)
 
 
     def test_bad_unicode_string(self):
         error_message = ('Bad jmespath expression: '
                          'Invalid \\uXXXX escape:\n"\\uAZ12"\n^')
         self.assert_error_message(r'"\uAZ12"', error_message,
-                                  exception=lexer.LexerError)
+                                  exception=exceptions.LexerError)
 
 
 class TestParserWildcards(unittest.TestCase):
@@ -286,14 +287,28 @@ class TestParserCaching(unittest.TestCase):
         p = parser.Parser()
         compiled = []
         compiled2 = []
-        for i in range(parser.Parser._max_size + 1):
+        for i in range(parser.Parser._MAX_SIZE + 1):
             compiled.append(p.parse('foo%s' % i))
         # Rerun the test and half of these entries should be from the
         # cache but they should still be equal to compiled.
-        for i in range(parser.Parser._max_size + 1):
+        for i in range(parser.Parser._MAX_SIZE + 1):
             compiled2.append(p.parse('foo%s' % i))
         self.assertEqual(len(compiled), len(compiled2))
-        self.assertEqual(compiled, compiled2)
+        s = as_s_expression
+        self.assertEqual(
+            [s(expr.parsed) for expr in compiled],
+            [s(expr.parsed) for expr in compiled2])
+
+    def test_cache_purge(self):
+        p = parser.Parser()
+        first = p.parse('foo')
+        cached = p.parse('foo')
+        p.purge()
+        second = p.parse('foo')
+        self.assertEqual(as_s_expression(first.parsed),
+                         as_s_expression(second.parsed))
+        self.assertEqual(as_s_expression(first.parsed),
+                         as_s_expression(cached.parsed))
 
 
 class TestParserAddsExpressionAttribute(unittest.TestCase):
