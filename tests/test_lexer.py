@@ -1,4 +1,4 @@
-import unittest
+from tests import unittest
 
 from jmespath import lexer
 from jmespath.exceptions import LexerError

@@ -1,4 +1,5 @@
 import sys
+from jmespath import ast
 
 
 # The unittest module got a significant overhaul
@@ -21,9 +22,6 @@ def as_s_expression(node):
     parts = []
     _as_s_expression(node, parts)
     return ''.join(parts)
-
-
-from jmespath import ast
 
 
 def _as_s_expression(node, parts):
