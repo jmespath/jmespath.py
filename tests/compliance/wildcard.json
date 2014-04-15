@@ -140,6 +140,24 @@
      ]
 },
 {
+    "given":
+        [{"bar": "one"}, {"bar": "two"}, {"bar": "three"}, {"notbar": "four"}],
+     "cases": [
+         {
+            "expression": "[*]",
+            "result": [{"bar": "one"}, {"bar": "two"}, {"bar": "three"}, {"notbar": "four"}]
+         },
+         {
+            "expression": "[*].bar",
+            "result": ["one", "two", "three"]
+         },
+         {
+            "expression": "[*].notbar",
+            "result": ["four"]
+         }
+     ]
+},
+{
     "given": {
         "foo": {
             "bar": [
@@ -416,6 +434,18 @@
          {
             "expression": "nullvalue.*",
             "result": null
+         }
+     ]
+},
+{
+    "given": {
+        "a": [0, 1, 2],
+        "b": [3, 4, 5]
+     },
+     "cases": [
+         {
+            "expression": "*[0]",
+            "result": [0, 3]
          }
      ]
 }

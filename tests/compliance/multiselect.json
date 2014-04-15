@@ -369,5 +369,25 @@
            "result": [["a", "d"], "zero"]
         }
     ]
+},
+{
+    "given": {"type": "object"},
+    "cases": [
+        {
+          "comment": "Nested multiselect",
+          "expression": "[[*],*]",
+          "result": [null, ["object"]]
+        }
+    ]
+},
+{
+    "given": [],
+    "cases": [
+        {
+          "comment": "Nested multiselect",
+          "expression": "[[*]]",
+          "result": [[]]
+        }
+    ]
 }
 ]
