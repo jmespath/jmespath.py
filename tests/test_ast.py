@@ -95,12 +95,6 @@ class TestAST(unittest.TestCase):
             {'foo': ['one', {'bar': ['zero', 'one']}]})
         self.assertEqual(match, 'one')
 
-    def test_index_with_star(self):
-        # jmespath: foo[*]
-        child = ast.SubExpression(ast.Field('foo'), ast.WildcardIndex())
-        match = child.search({'foo': ['one', 'two']})
-        self.assertEqual(match, ['one', 'two'])
-
     def test_associative(self):
         data = {'foo': {'bar': ['one']}}
         # jmespath: foo.bar[0]
@@ -113,78 +107,14 @@ class TestAST(unittest.TestCase):
         self.assertEqual(first.search(data), 'one')
         self.assertEqual(second.search(data), 'one')
 
-    def test_wildcard_branches_on_dict_values(self):
-        data = {'foo': {'bar': {'get': 'one'}, 'baz': {'get': 'two'}}}
-        # ast for "foo.*.get"
-        expression = ast.SubExpression(
-            ast.SubExpression(ast.Field('foo'), ast.WildcardValues()),
-            ast.Field('get'))
-        match = expression.search(data)
-        self.assertEqual(sorted(match), ['one', 'two'])
-        self.assertEqual(expression.search({'foo': [{'bar': 'one'}]}), None)
-
-    def test_wildcard_dot_wildcard(self):
-        _ = OrderedDict
-        data = _([(
-            "top1", _({
-                "sub1": _({"foo": "one"})
-            })),
-            ("top2", _({
-                "sub1": _({"foo": "two"})
-            })),
-            ("top3", _({
-                "sub3": _({"notfoo": "notfoo"})
-            }))
-        ])
-        # ast for "*.*"
-        expression = ast.SubExpression(
-            ast.WildcardValues(), ast.WildcardValues())
-        match = expression.search(data)
-        self.assertEqual(match, [[{'foo': 'one'}], [{'foo': 'two'}],
-                                 [{'notfoo': 'notfoo'}]])
-
-    def test_wildcard_with_field_node(self):
-        data = {
-            "top1": {
-                "sub1": {"foo": "one"}
-            },
-            "top2": {
-                "sub1": {"foo": "two"}
-            },
-            "top3": {
-                "sub3": {"notfoo": "notfoo"}
-            }
-        }
-        # ast for "*.*.foo"
-        expression = ast.SubExpression(
-            ast.WildcardValues(), ast.SubExpression(ast.WildcardValues(),
-                                                    ast.Field('foo')))
-        match = expression.search(data)
-        self.assertEqual(sorted(match), sorted([[],
-                                                ['one'],
-                                                ['two']]))
-
     def test_wildcard_branches_with_index(self):
         # foo[*].bar
-        child = ast.SubExpression(
-            ast.SubExpression(ast.Field('foo'), ast.WildcardIndex()),
-            ast.Field('bar')
-        )
+        child = ast.Projection(
+            ast.Field('foo'), ast.Field('bar'))
         match = child.search(
             {'foo': [{'bar': 'one'}, {'bar': 'two'}]})
         self.assertTrue(isinstance(match, list))
         self.assertEqual(match, ['one', 'two'])
-
-    def test_index_with_multi_match(self):
-        # foo[*].bar[0]
-        child = ast.SubExpression(
-            ast.SubExpression(ast.Field('foo'), ast.WildcardIndex()),
-            ast.SubExpression(
-                ast.Field('bar'),
-                ast.Index(0)))
-        data = {'foo': [{'bar': ['one', 'two']}, {'bar': ['three', 'four']}]}
-        match = child.search(data)
-        self.assertEqual(match, ['one', 'three'])
 
     def test_or_expression(self):
         # foo or bar
@@ -224,38 +154,6 @@ class TestAST(unittest.TestCase):
         self.assertEqual(
             subexpr.search({'foo': {'bar': 1, 'baz': 2, 'qux': 3}}),
             [1, 2])
-
-    def test_multiselect_list_wildcard(self):
-        data = {
-            'foo': {
-                'ignore1': {
-                    'one': 1, 'two': 2, 'three': 3,
-                },
-                'ignore2': {
-                    'one': 1, 'two': 2, 'three': 3,
-                },
-            }
-        }
-        expr = ast.SubExpression(
-            ast.Field("foo"),
-            ast.SubExpression(
-                ast.WildcardValues(),
-                ast.MultiFieldList([ast.Field("one"), ast.Field("two")])))
-        self.assertEqual(expr.search(data), [[1, 2], [1, 2]])
-
-    def test_wildcard_values_index_not_a_list(self):
-        parsed = ast.SubExpression(
-            ast.WildcardValues(),
-            ast.SubExpression(ast.Field("foo"), ast.Index(0)))
-        data = {"a": {"foo": 1}, "b": {"foo": 1}, "c": {"bar": 1}}
-        self.assertEqual(parsed.search(data), [])
-
-    def test_wildcard_values_index_does_exist(self):
-        parsed = ast.SubExpression(
-            ast.WildcardValues(),
-            ast.SubExpression(ast.Field("foo"), ast.Index(0)))
-        data = {"a": {"foo": [1]}, "b": {"foo": 1}, "c": {"bar": 1}}
-        self.assertEqual(parsed.search(data), [1])
 
     def test_flattened_wildcard(self):
         # foo[].bar
