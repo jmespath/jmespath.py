@@ -49,21 +49,12 @@ class _Arg(object):
 
 @with_repr_method
 class AST(object):
-    VALUE_METHODS = []
 
     def __init__(self):
         self.children = []
 
     def search(self, value):
         pass
-
-    def _get_value_method(self, value):
-        # This will find the appropriate getter method
-        # based on the passed in value.
-        for method_name in self.VALUE_METHODS:
-            method = getattr(value, method_name, None)
-            if method is not None:
-                return method
 
     def pretty_print(self, indent=''):
         return super(AST, self).__repr__()
@@ -115,7 +106,6 @@ class IndexExpression(SubExpression):
 
 
 class Field(AST):
-    VALUE_METHODS = ['get']
 
     def __init__(self, name):
         self.name = name
@@ -125,9 +115,11 @@ class Field(AST):
         return "%sField(%s)" % (indent, self.name)
 
     def search(self, value):
-        method = self._get_value_method(value)
-        if method is not None:
-            return method(self.name)
+        if value is not None:
+            try:
+                return value.get(self.name)
+            except AttributeError:
+                return None
 
 
 class BaseMultiField(AST):
@@ -137,11 +129,7 @@ class BaseMultiField(AST):
     def search(self, value):
         if value is None:
             return None
-        method = self._get_value_method(value)
-        if method is not None:
-            return method(self.children)
-        else:
-            return self._multi_get(value)
+        return self._multi_get(value)
 
     def _multi_get(self, value):
         # Subclasses must define this method.
@@ -152,7 +140,6 @@ class BaseMultiField(AST):
 
 
 class MultiFieldDict(BaseMultiField):
-    VALUE_METHODS = ['multi_get']
 
     def _multi_get(self, value):
         collected = {}
@@ -162,7 +149,6 @@ class MultiFieldDict(BaseMultiField):
 
 
 class MultiFieldList(BaseMultiField):
-    VALUE_METHODS = ['multi_get_list']
 
     def _multi_get(self, value):
         collected = []
@@ -185,7 +171,6 @@ class KeyValPair(AST):
 
 
 class Index(AST):
-    VALUE_METHODS = ['get_index', '__getitem__']
 
     def __init__(self, index):
         super(Index, self).__init__()
@@ -199,47 +184,10 @@ class Index(AST):
         # want to support that.
         if not isinstance(value, list):
             return None
-        method = self._get_value_method(value)
-        if method is not None:
-            try:
-                return method(self.index)
-            except IndexError:
-                pass
-
-
-class WildcardIndex(AST):
-    """Represents a wildcard index.
-
-    For example::
-
-        foo[*] -> SubExpression(Field(foo), WildcardIndex())
-
-    """
-    def search(self, value):
-        if not isinstance(value, list):
-            return None
-        return _Projection(value)
-
-    def pretty_print(self, indent=''):
-        return "%sIndex(*)" % indent
-
-
-class WildcardValues(AST):
-    """Represents a wildcard on the values of a JSON object.
-
-    For example::
-
-        foo.* -> SubExpression(Field(foo), WildcardValues())
-
-    """
-    def search(self, value):
         try:
-            return _Projection(value.values())
-        except AttributeError:
+            return value[self.index]
+        except IndexError:
             return None
-
-    def pretty_print(self, indent=''):
-        return "%sWildcardValues()" % indent
 
 
 class ORExpression(AST):
@@ -265,7 +213,6 @@ class ORExpression(AST):
 
 
 class FilterExpression(AST):
-    VALUE_METHODS = ['multi_filter']
 
     def __init__(self, expression):
         self.children = [expression]
@@ -273,33 +220,24 @@ class FilterExpression(AST):
     def search(self, value):
         if not isinstance(value, list):
             return None
-        method = self._get_value_method(value)
-        if method is not None:
-            return method(self.children[0])
-        else:
-            result = []
-            for element in value:
-                if self.children[0].search(element):
-                    result.append(element)
-            return _Projection(result)
+        result = []
+        for element in value:
+            if self.children[0].search(element):
+                result.append(element)
+        return result
 
     def pretty_print(self, indent=''):
         return '%sFilterExpression(%s)' % (indent, self.children[0])
 
 
 class Literal(AST):
-    VALUE_METHODS = ['get_literal']
 
     def __init__(self, literal_value):
         super(Literal, self).__init__()
         self.literal_value = literal_value
 
     def search(self, value):
-        method = self._get_value_method(value)
-        if method is not None:
-            return method(self.literal_value)
-        else:
-            return self.literal_value
+        return self.literal_value
 
     def pretty_print(self, indent=''):
         return '%sLiteral(%s)' % (indent, self.literal_value)
@@ -382,7 +320,6 @@ class CurrentNode(AST):
 
 
 class FunctionExpression(AST):
-    VALUE_METHODS = ['function_call']
 
     def __init__(self, name, args):
         self.name = name
@@ -412,9 +349,6 @@ class FunctionExpression(AST):
             # 1. Resolve the arguments (evaluate the arg expressions
             #    against the passed in input.
             # 2. Type check the arguments
-            method = self._get_value_method(value)
-            if method is not None:
-                return method(_call_with_resolved_args)
             resolved_args = []
             for arg_expression, arg_spec in zip_longest(
                     self.args, function.argspec,
@@ -684,99 +618,6 @@ class Pipe(AST):
             indent, self.__class__.__name__,
             sub_indent, self.children[0].pretty_print(sub_indent),
             sub_indent, self.children[1].pretty_print(sub_indent))
-
-
-class _Projection(list):
-    def __init__(self, elements):
-        self.extend(elements)
-
-    def get(self, value):
-        results = self.__class__([])
-        for element in self:
-            try:
-                result = element.get(value)
-            except AttributeError:
-                continue
-            if result is not None:
-                if isinstance(result, list):
-                    result = self.__class__(result)
-                results.append(result)
-        return results
-
-    def get_index(self, index):
-        matches = []
-        for el in self:
-            if not isinstance(el, list):
-                continue
-            try:
-                matches.append(el[index])
-            except (IndexError, TypeError):
-                pass
-        return self.__class__(matches)
-
-    def multi_get(self, nodes):
-        results = self.__class__([])
-        for element in self:
-            if isinstance(element, self.__class__):
-                result = element.multi_get(nodes)
-            else:
-                result = {}
-                for node in nodes:
-                    result[node.key_name] = node.search(element)
-            results.append(result)
-        return results
-
-    def multi_get_list(self, nodes):
-        results = self.__class__([])
-        for element in self:
-            if isinstance(element, self.__class__):
-                result = element.multi_get_list(nodes)
-            else:
-                result = []
-                for node in nodes:
-                    result.append(node.search(element))
-            results.append(result)
-        return results
-
-    def values(self):
-        results = self.__class__([])
-        for element in self:
-            try:
-                current = self.__class__(element.values())
-                results.append(current)
-            except AttributeError:
-                continue
-        return results
-
-    def get_literal(self, literal_value):
-        # To adhere to projection semantics, a literal value is projected for
-        # each element of the list.
-        results = self.__class__([])
-        for element in self:
-            if isinstance(element, self.__class__):
-                results.append(element.get_literal(literal_value))
-            else:
-                results.append(literal_value)
-        return results
-
-    def multi_filter(self, expression):
-        results = self.__class__([])
-        for element in self:
-            if isinstance(element, self.__class__):
-                sub_results = element.multi_filter(expression)
-                results.append(sub_results)
-            else:
-                if expression.search(element):
-                    results.append(element)
-        return results
-
-    def function_call(self, function):
-        result = self.__class__([])
-        for element in self:
-            current = function(element)
-            if current is not None:
-                result.append(current)
-        return _Projection(result)
 
 
 class Projection(AST):
