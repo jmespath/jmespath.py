@@ -150,9 +150,6 @@ class Parser(object):
             right = self._parse_projection_rhs(self.BINDING_POWER['star'])
         return ast.ValueProjection(left, right)
 
-    def _token_nud_current(self, token):
-        return ast.CurrentNode()
-
     def _token_nud_filter(self, token):
         return self._token_led_filter(ast.Identity())
 
@@ -206,7 +203,11 @@ class Parser(object):
         name = left.name
         args = []
         while not self._current_token() == 'rparen':
-            expression = self._expression()
+            if self._current_token() == 'current':
+                expression = ast.CurrentNode()
+                self._advance()
+            else:
+                expression = self._expression()
             if self._current_token() == 'comma':
                 self._match('comma')
             args.append(expression)
