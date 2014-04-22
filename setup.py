@@ -6,7 +6,7 @@ import sys
 from setuptools import setup, find_packages
 
 
-requires = ['ply==3.4']
+requires = []
 
 
 if sys.version_info[:2] == (2, 6):
@@ -34,7 +34,7 @@ setup(
     packages=find_packages(exclude=['tests']),
     install_requires=requires,
     classifiers=(
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Natural Language :: English',
         'License :: OSI Approved :: MIT License',
