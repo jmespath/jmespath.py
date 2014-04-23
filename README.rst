@@ -1,7 +1,7 @@
 JMESPath
 ========
 
-JMESPath (pronounced "jaymz path") allows you to declaratively specify how to
+JMESPath (pronounced ``\ˈjāmz path\``) allows you to declaratively specify how to
 extract elements from a JSON document.
 
 For example, given this document::
@@ -81,14 +81,3 @@ and reuse them to perform repeated searches::
 
 You can also use the ``jmespath.parser.Parser`` class directly
 if you want more control.
-
-
-Updating the Grammar
-====================
-
-If you are updating the grammar in ``parser.py`` you'll need to run
-``bin/gen-tables`` on both python2 and python3 to update the
-``jmespath/_lrtable.py`` and ``jmespath/_lrtable3.py`` files.
-
-
-.. _RFC4234: http://tools.ietf.org/html/rfc4234

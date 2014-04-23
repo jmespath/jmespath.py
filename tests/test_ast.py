@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-import unittest
-from tests import OrderedDict
+from tests import OrderedDict, unittest
 
 from jmespath import ast
 
@@ -96,12 +95,6 @@ class TestAST(unittest.TestCase):
             {'foo': ['one', {'bar': ['zero', 'one']}]})
         self.assertEqual(match, 'one')
 
-    def test_index_with_star(self):
-        # jmespath: foo[*]
-        child = ast.SubExpression(ast.Field('foo'), ast.WildcardIndex())
-        match = child.search({'foo': ['one', 'two']})
-        self.assertEqual(match, ['one', 'two'])
-
     def test_associative(self):
         data = {'foo': {'bar': ['one']}}
         # jmespath: foo.bar[0]
@@ -114,78 +107,14 @@ class TestAST(unittest.TestCase):
         self.assertEqual(first.search(data), 'one')
         self.assertEqual(second.search(data), 'one')
 
-    def test_wildcard_branches_on_dict_values(self):
-        data = {'foo': {'bar': {'get': 'one'}, 'baz': {'get': 'two'}}}
-        # ast for "foo.*.get"
-        expression = ast.SubExpression(
-            ast.SubExpression(ast.Field('foo'), ast.WildcardValues()),
-            ast.Field('get'))
-        match = expression.search(data)
-        self.assertEqual(sorted(match), ['one', 'two'])
-        self.assertEqual(expression.search({'foo': [{'bar': 'one'}]}), None)
-
-    def test_wildcard_dot_wildcard(self):
-        _ = OrderedDict
-        data = _([(
-            "top1", _({
-                "sub1": _({"foo": "one"})
-            })),
-            ("top2", _({
-                "sub1": _({"foo": "two"})
-            })),
-            ("top3", _({
-                "sub3": _({"notfoo": "notfoo"})
-            }))
-        ])
-        # ast for "*.*"
-        expression = ast.SubExpression(
-            ast.WildcardValues(), ast.WildcardValues())
-        match = expression.search(data)
-        self.assertEqual(match, [[{'foo': 'one'}], [{'foo': 'two'}],
-                                 [{'notfoo': 'notfoo'}]])
-
-    def test_wildcard_with_field_node(self):
-        data = {
-            "top1": {
-                "sub1": {"foo": "one"}
-            },
-            "top2": {
-                "sub1": {"foo": "two"}
-            },
-            "top3": {
-                "sub3": {"notfoo": "notfoo"}
-            }
-        }
-        # ast for "*.*.foo"
-        expression = ast.SubExpression(
-            ast.WildcardValues(), ast.SubExpression(ast.WildcardValues(),
-                                                    ast.Field('foo')))
-        match = expression.search(data)
-        self.assertEqual(sorted(match), sorted([[],
-                                                ['one'],
-                                                ['two']]))
-
     def test_wildcard_branches_with_index(self):
         # foo[*].bar
-        child = ast.SubExpression(
-            ast.SubExpression(ast.Field('foo'), ast.WildcardIndex()),
-            ast.Field('bar')
-        )
+        child = ast.Projection(
+            ast.Field('foo'), ast.Field('bar'))
         match = child.search(
             {'foo': [{'bar': 'one'}, {'bar': 'two'}]})
         self.assertTrue(isinstance(match, list))
         self.assertEqual(match, ['one', 'two'])
-
-    def test_index_with_multi_match(self):
-        # foo[*].bar[0]
-        child = ast.SubExpression(
-            ast.SubExpression(ast.Field('foo'), ast.WildcardIndex()),
-            ast.SubExpression(
-                ast.Field('bar'),
-                ast.Index(0)))
-        data = {'foo': [{'bar': ['one', 'two']}, {'bar': ['three', 'four']}]}
-        match = child.search(data)
-        self.assertEqual(match, ['one', 'three'])
 
     def test_or_expression(self):
         # foo or bar
@@ -226,57 +155,19 @@ class TestAST(unittest.TestCase):
             subexpr.search({'foo': {'bar': 1, 'baz': 2, 'qux': 3}}),
             [1, 2])
 
-    def test_multiselect_list_wildcard(self):
-        data = {
-            'foo': {
-                'ignore1': {
-                    'one': 1, 'two': 2, 'three': 3,
-                },
-                'ignore2': {
-                    'one': 1, 'two': 2, 'three': 3,
-                },
-            }
-        }
-        expr = ast.SubExpression(
-            ast.Field("foo"),
-            ast.SubExpression(
-                ast.WildcardValues(),
-                ast.MultiFieldList([ast.Field("one"), ast.Field("two")])))
-        self.assertEqual(expr.search(data), [[1, 2], [1, 2]])
-
-    def test_wildcard_values_index_not_a_list(self):
-        parsed = ast.SubExpression(
-            ast.WildcardValues(),
-            ast.SubExpression(ast.Field("foo"), ast.Index(0)))
-        data = {"a": {"foo": 1}, "b": {"foo": 1}, "c": {"bar": 1}}
-        self.assertEqual(parsed.search(data), [])
-
-    def test_wildcard_values_index_does_exist(self):
-        parsed = ast.SubExpression(
-            ast.WildcardValues(),
-            ast.SubExpression(ast.Field("foo"), ast.Index(0)))
-        data = {"a": {"foo": [1]}, "b": {"foo": 1}, "c": {"bar": 1}}
-        self.assertEqual(parsed.search(data), [1])
-
     def test_flattened_wildcard(self):
-        parsed = ast.SubExpression(
-            # foo[].bar
-            ast.SubExpression(ast.Field("foo"), ast.ListElements()),
-            ast.Field("bar"))
+        # foo[].bar
+        parsed = ast.Projection(ast.Flatten(ast.Field('foo')),
+                                ast.Field('bar'))
         data = {'foo': [{'bar': 1}, {'bar': 2}, {'bar': 3}]}
         self.assertEqual(parsed.search(data), [1, 2, 3])
 
     def test_multiple_nested_wildcards(self):
         # foo[].bar[].baz
-        parsed = ast.SubExpression(
-                ast.SubExpression(
-                        ast.Field("foo"),
-                        ast.ListElements()),
-                ast.SubExpression(
-                        ast.SubExpression(
-                                ast.Field("bar"),
-                                ast.ListElements()),
-                        ast.Field("baz")))
+        parsed = ast.Projection(
+            ast.Flatten(ast.Projection(ast.Flatten(ast.Field('foo')),
+                                       ast.Field('bar'))),
+            ast.Field('baz'))
         data = {
             "foo": [
                 {"bar": [{"baz": 1}, {"baz": 2}]},
@@ -286,15 +177,11 @@ class TestAST(unittest.TestCase):
         self.assertEqual(parsed.search(data), [1, 2, 3, 4])
 
     def test_multiple_nested_wildcards_with_list_values(self):
-        parsed = ast.SubExpression(
-                ast.SubExpression(
-                        ast.Field("foo"),
-                        ast.ListElements()),
-                ast.SubExpression(
-                        ast.SubExpression(
-                                ast.Field("bar"),
-                                ast.ListElements()),
-                        ast.Field("baz")))
+        # foo[].bar[].baz
+        parsed = ast.Projection(
+            ast.Flatten(ast.Projection(ast.Flatten(ast.Field('foo')),
+                                       ast.Field('bar'))),
+            ast.Field('baz'))
         data = {
             "foo": [
                 {"bar": [{"baz": [1]}, {"baz": [2]}]},
@@ -305,15 +192,27 @@ class TestAST(unittest.TestCase):
 
     def test_flattened_multiselect_list(self):
         # foo[].[bar,baz]
-        field_foo = ast.Field('foo')
-        parent = ast.SubExpression(field_foo, ast.ListElements())
         field_bar = ast.Field('bar')
         field_baz = ast.Field('baz')
         multiselect = ast.MultiFieldList([field_bar, field_baz])
-        subexpr = ast.SubExpression(parent, multiselect)
+        projection = ast.Projection(
+            ast.Flatten(ast.Field('foo')),
+            multiselect)
         self.assertEqual(
-            subexpr.search({'foo': [{'bar': 1, 'baz': 2, 'qux': 3}]}),
+            projection.search({'foo': [{'bar': 1, 'baz': 2, 'qux': 3}]}),
             [[1, 2]])
+
+    def test_flattened_multiselect_with_none(self):
+        # foo[].[bar,baz]
+        field_bar = ast.Field('bar')
+        field_baz = ast.Field('baz')
+        multiselect = ast.MultiFieldList([field_bar, field_baz])
+        projection = ast.Projection(
+            ast.Flatten(ast.Field('foo')),
+            multiselect)
+        self.assertEqual(
+            projection.search({'bar': [{'bar': 1, 'baz': 2, 'qux': 3}]}),
+            None)
 
     def test_operator_eq(self):
         field_foo = ast.Field('foo')
@@ -347,6 +246,161 @@ class TestAST(unittest.TestCase):
                      {'bar': 'yes', 'v': 3},]})
         self.assertEqual(match, [{'bar': 'yes', 'v': 1},
                                  {'bar': 'yes', 'v': 3}])
+
+    def test_projection_simple(self):
+        # foo[*].bar
+        field_foo = ast.Field('foo')
+        field_bar = ast.Field('bar')
+        projection = ast.Projection(field_foo, field_bar)
+        data = {'foo': [{'bar': 1}, {'bar': 2}, {'bar': 3}]}
+        self.assertEqual(projection.search(data), [1, 2, 3])
+
+    def test_projection_no_left(self):
+        # [*].bar
+        field_bar = ast.Field('bar')
+        projection = ast.Projection(ast.Identity(), field_bar)
+        data = [{'bar': 1}, {'bar': 2}, {'bar': 3}]
+        self.assertEqual(projection.search(data), [1, 2, 3])
+
+    def test_projection_no_right(self):
+        # foo[*]
+        field_foo = ast.Field('foo')
+        projection = ast.Projection(field_foo, ast.Identity())
+        data = {'foo': [{'bar': 1}, {'bar': 2}, {'bar': 3}]}
+        self.assertEqual(projection.search(data),
+                         [{'bar': 1}, {'bar': 2}, {'bar': 3}])
+
+    def test_bare_projection(self):
+        # [*]
+        projection = ast.Projection(ast.Identity(), ast.Identity())
+        data = [{'bar': 1}, {'bar': 2}, {'bar': 3}]
+        self.assertEqual(projection.search(data), data)
+
+    def test_base_projection_on_invalid_type(self):
+        # [*]
+        data = {'foo': [{'bar': 1}, {'bar': 2}, {'bar': 3}]}
+        projection = ast.Projection(ast.Identity(), ast.Identity())
+        # search() should return None because the evaluated
+        # type is a dict, not a list.
+        self.assertIsNone(projection.search(data))
+
+    def test_multiple_projections(self):
+        # foo[*].bar[*].baz
+        field_foo = ast.Field('foo')
+        field_bar = ast.Field('bar')
+        field_baz = ast.Field('baz')
+        second_projection = ast.Projection(field_bar, field_baz)
+        first_projection = ast.Projection(field_foo, second_projection)
+        data = {
+            'foo': [
+                {'bar': [{'baz': 1}, {'baz': 2}, {'baz': 3}],
+                 'other': 1},
+                {'bar': [{'baz': 4}, {'baz': 5}, {'baz': 6}],
+                 'other': 2},
+            ]
+        }
+        self.assertEqual(first_projection.search(data),
+                         [[1, 2, 3], [4, 5, 6]])
+
+    def test_values_projection(self):
+        # foo.*.bar
+        field_foo = ast.Field('foo')
+        field_bar = ast.Field('bar')
+        projection = ast.ValueProjection(field_foo, field_bar)
+        data = {
+            'foo': {
+                'a': {'bar': 1},
+                'b': {'bar': 2},
+                'c': {'bar': 3},
+            }
+
+        }
+        result = list(sorted(projection.search(data)))
+        self.assertEqual(result, [1, 2, 3])
+
+    def test_root_value_projection(self):
+        # *
+        projection = ast.ValueProjection(ast.Identity(), ast.Identity())
+        data = {
+            'a': 1,
+            'b': 2,
+            'c': 3,
+        }
+        result = list(sorted(projection.search(data)))
+        self.assertEqual(result, [1, 2, 3])
+
+    def test_no_left_node_value_projection(self):
+        # *.bar
+        field_bar = ast.Field('bar')
+        projection = ast.ValueProjection(ast.Identity(), field_bar)
+        data = {
+            'a': {'bar': 1},
+            'b': {'bar': 2},
+            'c': {'bar': 3},
+        }
+        result = list(sorted(projection.search(data)))
+        self.assertEqual(result, [1, 2, 3])
+
+    def test_no_right_node_value_projection(self):
+        # foo.*
+        field_foo = ast.Field('foo')
+        projection = ast.ValueProjection(field_foo, ast.Identity())
+        data = {
+            'foo': {
+                'a': 1,
+                'b': 2,
+                'c': 3,
+            }
+        }
+        result = list(sorted(projection.search(data)))
+        self.assertEqual(result, [1, 2, 3])
+
+    def test_filter_projection(self):
+        # foo[?bar==`1`].baz
+        field_foo = ast.Field('foo')
+        field_bar = ast.Field('bar')
+        field_baz = ast.Field('baz')
+        literal = ast.Literal(1)
+        comparator = ast.OPEquals(field_bar, literal)
+        filter_projection = ast.FilterProjection(field_foo, field_baz, comparator)
+        data = {
+            'foo': [{'bar': 1}, {'bar': 2}, {'bar': 1, 'baz': 3}]
+        }
+        result = filter_projection.search(data)
+        self.assertEqual(result, [3])
+
+    def test_nested_filter_projection(self):
+        data = {
+            "reservations": [
+                {
+                    "instances": [
+                        {
+                            "foo": 1,
+                            "bar": 2
+                        },
+                        {
+                            "foo": 1,
+                            "bar": 3
+                        },
+                        {
+                            "foo": 1,
+                            "bar": 2
+                        },
+                        {
+                            "foo": 2,
+                            "bar": 1
+                        }
+                    ]
+                }
+            ]
+        }
+        projection = ast.Projection(
+            ast.Flatten(ast.Field('reservations')),
+            ast.FilterProjection(
+                ast.Field('instances'),
+                ast.Identity(),
+                ast.OPEquals(ast.Field('bar'), ast.Literal(1))))
+        self.assertEqual(projection.search(data), [[{'bar': 1, 'foo': 2}]])
 
 
 if __name__ == '__main__':

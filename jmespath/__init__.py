@@ -1,11 +1,11 @@
 from jmespath import parser
 
-__version__ = '0.3.1'
+__version__ = '0.4.0'
 
 
-def compile(expression, debug=False):
-    return parser.Parser(debug=debug).parse(expression)
+def compile(expression):
+    return parser.Parser().parse(expression)
 
 
-def search(expression, data, debug=False):
-    return parser.Parser(debug=debug).parse(expression).search(data)
+def search(expression, data):
+    return parser.Parser().parse(expression).search(data)

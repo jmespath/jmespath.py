@@ -10,6 +10,16 @@
     ]
   },
   {
+    "given": {"foo": [0, 1], "bar": [2, 3]},
+    "cases": [
+      {
+        "comment": "Matching a literal",
+        "expression": "*[?[0] == `0`]",
+        "result": [[], []]
+      }
+    ]
+  },
+  {
     "given": {"foo": [{"first": "foo", "last": "bar"},
       {"first": "foo", "last": "foo"},
       {"first": "foo", "last": "baz"}]},
@@ -18,6 +28,11 @@
         "comment": "Matching an expression",
         "expression": "foo[?first == last]",
         "result": [{"first": "foo", "last": "foo"}]
+      },
+      {
+        "comment": "Verify projection created from filter",
+        "expression": "foo[?first == last].first",
+        "result": ["foo"]
       }
     ]
   },

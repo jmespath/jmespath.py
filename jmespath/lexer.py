@@ -1,114 +1,107 @@
 import re
 from json import loads
 
-from jmespath.compat import with_str_method
-
-@with_str_method
-class LexerError(ValueError):
-    def __init__(self, lexer_position, lexer_value, message):
-        self.lexer_position = lexer_position
-        self.lexer_value = lexer_value
-        self.message = message
-        super(LexerError, self).__init__(lexer_position,
-                                         lexer_value,
-                                         message)
-        # Whatever catches LexerError can set this.
-        self.expression = None
-
-    def __str__(self):
-        underline = ' ' * self.lexer_position + '^'
-        return 'Bad jmespath expression: %s:\n%s\n%s' % (
-            self.message, self.expression, underline)
+from jmespath.exceptions import LexerError
 
 
-class LexerDefinition(object):
-    reflags = re.DOTALL
-    reserved = {}
-    tokens = (
-        'STAR',
-        'DOT',
-        'FILTER',
-        'LPAREN',
-        'RPAREN',
-        'LBRACKET',
-        'RBRACKET',
-        'LBRACE',
-        'RBRACE',
-        'OR',
-        'NUMBER',
-        'UNQUOTED_IDENTIFIER',
-        'QUOTED_IDENTIFIER',
-        'COMMA',
-        'COLON',
-        'LT',
-        'LTE',
-        'GT',
-        'GTE',
-        'EQ',
-        'NE',
-        'LITERAL',
-        'CURRENT',
-        'EXPREF',
-    ) + tuple(reserved.values())
+class Lexer(object):
+    TOKENS = (
+        r'(?P<number>-?\d+)|'
+        r'(?P<unquoted_identifier>([a-zA-Z_][a-zA-Z_0-9]*))|'
+        r'(?P<quoted_identifier>("(?:\\\\|\\"|[^"])*"))|'
+        r'(?P<literal>(`(?:\\\\|\\`|[^`])*`))|'
+        r'(?P<filter>\[\?)|'
+        r'(?P<or>\|\|)|'
+        r'(?P<pipe>\|)|'
+        r'(?P<ne>!=)|'
+        r'(?P<rbrace>\})|'
+        r'(?P<eq>==)|'
+        r'(?P<dot>\.)|'
+        r'(?P<star>\*)|'
+        r'(?P<gte>>=)|'
+        r'(?P<lparen>\()|'
+        r'(?P<lbrace>\{)|'
+        r'(?P<lte><=)|'
+        r'(?P<flatten>\[\])|'
+        r'(?P<rbracket>\])|'
+        r'(?P<lbracket>\[)|'
+        r'(?P<rparen>\))|'
+        r'(?P<comma>,)|'
+        r'(?P<colon>:)|'
+        r'(?P<lt><)|'
+        r'(?P<expref>&)|'
+        r'(?P<gt>>)|'
+        r'(?P<current>@)|'
+        r'(?P<skip>[ \t]+)'
+    )
+    def __init__(self):
+        self.master_regex = re.compile(self.TOKENS)
 
-    t_STAR = r'\*'
-    t_DOT = r'\.'
-    t_FILTER = r'\[\?'
-    t_LPAREN = r'\('
-    t_RPAREN = r'\)'
-    t_LBRACKET = r'\['
-    t_RBRACKET = r'\]'
-    t_LBRACE = r'\{'
-    t_RBRACE = r'\}'
-    t_OR = r'\|\|'
-    t_COMMA = r','
-    t_COLON = r':'
-    t_LT = r'<'
-    t_LTE = r'<='
-    t_GT = r'>'
-    t_GTE = r'>='
-    t_EQ = r'=='
-    t_NE = r'!='
-    t_CURRENT = r'@'
-    t_EXPREF = r'&'
-    t_ignore = ' '
+    def tokenize(self, expression):
+        previous_column = 0
+        for match in self.master_regex.finditer(expression):
+            value = match.group()
+            start = match.start()
+            end = match.end()
+            if match.lastgroup == 'skip':
+                # Ignore whitespace.
+                previous_column = end
+                continue
+            if start != previous_column:
+                bad_value = expression[previous_column:start]
+                # Try to give a good error message.
+                if bad_value == '"':
+                    raise LexerError(
+                        lexer_position=previous_column,
+                        lexer_value=value,
+                        message='Starting quote is missing the ending quote',
+                        expression=expression)
+                raise LexerError(lexer_position=previous_column,
+                                 lexer_value=value,
+                                 message='Unknown character',
+                                 expression=expression)
+            previous_column = end
+            token_type = match.lastgroup
+            handler = getattr(self, '_token_%s' % token_type.lower(), None)
+            if handler is not None:
+                value = handler(value, start, end)
+            yield {'type': token_type, 'value': value, 'start': start, 'end': end}
+        # At the end of the loop make sure we've consumed all the input.
+        # If we haven't then we have unidentified characters.
+        if end != len(expression):
+            msg = "Unknown characters at the end of the expression"
+            raise LexerError(lexer_position=end,
+                             lexer_value='',
+                             message=msg, expression=expression)
+        else:
+            yield {'type': 'eof', 'value': '',
+                   'start': len(expression), 'end': len(expression)}
 
-    def t_NUMBER(self, t):
-        r'-?\d+'
-        t.value = int(t.value)
-        return t
+    def _token_number(self, value, start, end):
+        return int(value)
 
-    def t_UNQUOTED_IDENTIFIER(self, t):
-        r'([a-zA-Z_][a-zA-Z_0-9]*)'
-        t.type = self.reserved.get(t.value, 'UNQUOTED_IDENTIFIER')
-        return t
-
-    def t_QUOTED_IDENFITIER(self, t):
-        r'("(?:\\\\|\\"|[^"])*")'
-        t.type = self.reserved.get(t.value, 'QUOTED_IDENTIFIER')
+    def _token_quoted_identifier(self, value, start, end):
         try:
-            t.value = loads(t.value)
+            return loads(value)
         except ValueError as e:
             error_message = str(e).split(':')[0]
-            raise LexerError(lexer_position=t.lexpos,
-                                lexer_value=t.value,
-                                message=error_message)
-        return t
+            raise LexerError(lexer_position=start,
+                             lexer_value=value,
+                             message=error_message)
 
-    def t_LITERAL(self, t):
-        r'(`(?:\\\\|\\`|[^`])*`)'
-        actual_value = t.value[1:-1]
+    def _token_literal(self, value, start, end):
+        actual_value = value[1:-1]
         actual_value = actual_value.replace('\\`', '`').lstrip()
         # First, if it looks like JSON then we parse it as
         # JSON and any json parsing errors propogate as lexing
         # errors.
         if self._looks_like_json(actual_value):
             try:
-                t.value = loads(actual_value)
+                return loads(actual_value)
             except ValueError:
-                raise LexerError(lexer_position=t.lexpos,
-                                lexer_value=t.value,
-                                message=("Bad token %s" % t.value))
+                raise LexerError(lexer_position=start,
+                                lexer_value=value,
+                                message="Bad token %s" % value)
         else:
             potential_value = '"%s"' % actual_value
             try:
@@ -116,12 +109,11 @@ class LexerDefinition(object):
                 # don't have to be quoted.  This is only true if the
                 # string doesn't start with chars that could start a valid
                 # JSON value.
-                t.value = loads(potential_value)
+                return loads(potential_value)
             except ValueError:
-                raise LexerError(lexer_position=t.lexpos,
-                                lexer_value=t.value,
-                                message=("Bad token %s" % t.value))
-        return t
+                raise LexerError(lexer_position=start,
+                                lexer_value=value,
+                                message="Bad token %s" % value)
 
     def _looks_like_json(self, value):
         # Figure out if the string "value" starts with something
@@ -142,16 +134,3 @@ class LexerDefinition(object):
                 return False
         else:
             return False
-
-    def t_error(self, t):
-        # Try to be helpful in the case where they have a missing
-        # quote char.
-        if t.value.startswith('"'):
-            raise LexerError(
-                lexer_position=t.lexpos,
-                lexer_value=t.value,
-                message=("Bad token '%s': starting quote is missing "
-                         "the ending quote" % t.value))
-        raise LexerError(lexer_position=t.lexpos,
-                         lexer_value=t.value,
-                         message=("Illegal token value '%s'" % t.value))

@@ -5,9 +5,7 @@ import json
 import argparse
 
 import jmespath
-from jmespath.parser import ParseError, ArityError
-from jmespath.lexer import LexerError
-from jmespath.ast import JMESPathTypeError, UnknownFunctionError
+from jmespath import exceptions
 from jmespath.compat import OrderedDict
 
 
@@ -21,8 +19,16 @@ def main():
                         help=('The filename containing the input data.  '
                               'If a filename is not given then data is '
                               'read from stdin.'))
+    parser.add_argument('--ast', action='store_true',
+                        help=('Pretty print the AST, do not search the data.'))
     args = parser.parse_args()
     expression = args.expression
+    if args.ast:
+        # Only print the AST
+        expression = jmespath.compile(args.expression)
+        sys.stdout.write(str(expression))
+        sys.stdout.write('\n')
+        return 0
     if args.filename:
         with open(args.filename, 'r') as f:
             data = json.load(f)
@@ -36,19 +42,19 @@ def main():
         sys.stdout.write(json.dumps(
             jmespath.search(expression, data), indent=4))
         sys.stdout.write('\n')
-    except ArityError as e:
+    except exceptions.ArityError as e:
         sys.stderr.write("invalid-arity: %s\n" % e)
         return 1
-    except JMESPathTypeError as e:
+    except exceptions.JMESPathTypeError as e:
         sys.stderr.write("invalid-type: %s\n" % e)
         return 1
-    except UnknownFunctionError as e:
+    except exceptions.UnknownFunctionError as e:
         sys.stderr.write("unknown-function: %s\n" % e)
         return 1
-    except ParseError as e:
+    except exceptions.LexerError as e:
         sys.stderr.write("syntax-error: %s\n" % e)
         return 1
-    except LexerError as e:
+    except exceptions.ParseError as e:
         sys.stderr.write("syntax-error: %s\n" % e)
         return 1
 

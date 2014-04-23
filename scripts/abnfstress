@@ -10,28 +10,41 @@ import argparse
 import tempfile
 import subprocess
 import jmespath
+from jmespath import exceptions
 
 # Add any additional args you want to control
 # abnfgen.
+#ARGS = ['-y', '10']
 ARGS = []
 
 
 GRAMMAR = r"""
 expression        = sub-expression / index-expression / or-expression / identifier / "*"
-expression        =/ multi-select-list / multi-select-hash / literal
+expression        =/ multi-select-list / multi-select-hash / literal / function-expression / pipe-expression
 sub-expression    = expression "." ( identifier /
                                      multi-select-list /
                                      multi-select-hash /
+                                     function-expression /
                                      "*" )
 or-expression     = expression "||" expression
 index-expression  = expression bracket-specifier / bracket-specifier
 multi-select-list = "[" ( expression *( "," expression ) ) "]"
 multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) ) "}"
+pipe-expression   = expression "|" expression
 keyval-expr       = identifier ":" expression
 bracket-specifier = "[" (number / "*") "]" / "[]"
 bracket-specifier =/ "[?" list-filter-expr "]"
 list-filter-expr  = expression comparator expression
 comparator        = "<" / "<=" / "==" / ">=" / ">" / "!="
+function-expression = unquoted-string  (
+                        no-args  /
+                        one-or-more-args )
+no-args             = "(" ")"
+one-or-more-args    = "(" ( function-arg *( "," function-arg ) ) ")"
+function-arg        = expression / current-node / expression-type
+current-node        = "@"
+expression-type     = "&" expression
+
 literal           = "`" json-value "`"
 literal           =/ "`" 1*(unescaped-literal / escaped-literal) "`"
 unescaped-literal = %x20-21 /       ; space !
@@ -102,16 +115,27 @@ zero = %x30                ; 0
 
 
 def stress(args):
-    while True:
-        with tempfile.NamedTemporaryFile('w') as f:
-            f.write(GRAMMAR)
-            f.flush()
+    with tempfile.NamedTemporaryFile('w') as f:
+        f.write(GRAMMAR)
+        f.flush()
+        i = 0
+        while True:
             output = subprocess.check_output(['abnfgen'] + ARGS + [f.name])
+            output = output.decode('utf-8')
             try:
                 parsed = jmespath.compile(output)
-            except ValueError as e:
+            # abnfgen can generate expressions that contain
+            # unknown functions.  This is ok, because the
+            # grammar doesn't enforce the known functions.
+            except exceptions.UnknownFunctionError:
+                pass
+            except Exception as e:
+                print(e)
                 print(output)
                 import pdb; pdb.set_trace()
+            i += 1
+            if i % 1000 == 0:
+                print("num_expressions: %s" % i)
 
 
 def main():
