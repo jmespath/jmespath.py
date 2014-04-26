@@ -58,7 +58,7 @@ class Parser(object):
         'dot': 40,
         'lbrace': 50,
         'filter': 50,
-        'lbracket': 50,
+        'lbracket': 55,
         'lparen': 60,
     }
     # The _MAX_SIZE most recent expressions are cached in

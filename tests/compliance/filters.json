@@ -280,5 +280,19 @@
         "result": [{"foo": 2, "bar": 1}]
       }
     ]
+  },
+  {
+    "given": {
+      "baz": "other",
+      "foo": [
+        {"bar": 1}, {"bar": 2}, {"bar": 3}, {"bar": 4}, {"bar": 1, "baz": 2}
+      ]
+    },
+    "cases": [
+      {
+        "expression": "foo[?bar==`1`].bar[0]",
+        "result": []
+      }
+    ]
   }
 ]
