@@ -3,6 +3,11 @@ import os
 import argparse
 from subprocess import check_call
 
+try:
+    input = raw_input
+except NameError:
+    pass
+
 
 def open_file(filename, mode='r'):
     # relative open a file from the root project dir.
