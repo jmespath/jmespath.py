@@ -1401,7 +1401,7 @@ It is similar to a ``sub-expression`` with two important distinctions:
 1. Any expression can be used on the right hand side.  A ``sub-expression``
    restricts the type of expression that can be used on the right hand side.
 2. A ``pipe-expression`` **stops projections on the left hand side for
-   propogating to the right hand side**.  If the left expression creates a
+   propagating to the right hand side**.  If the left expression creates a
    projection, it does **not** apply to the right hand side.
 
 For example, given the following data::
