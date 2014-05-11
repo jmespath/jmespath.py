@@ -364,12 +364,12 @@
       "result": "foo"
     },
     {
-      "expression": "to_string(`1.0`)",
-      "result": "1.0"
+      "expression": "to_string(`1.2`)",
+      "result": "1.2"
     },
     {
       "expression": "to_string(`[0, 1]`)",
-      "result": "[0, 1]"
+      "result": "[0,1]"
     },
     {
       "expression": "to_number(`\"1.0\"`)",
