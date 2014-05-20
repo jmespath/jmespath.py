@@ -584,4 +584,28 @@
       "error": "invalid-type"
     }
   ]
+}, {
+  "given":
+  {
+    "people": [
+         {"age": 20, "name": "first"},
+         {"age": 10, "name": "second"},
+         {"age": 10, "name": "third"},
+         {"age": 20, "name": "fourth"},
+         {"age": 30, "name": "fifth"}
+    ]
+  },
+  "cases": [
+    {
+      "description": "stable sort order",
+      "expression": "sort_by(people, &age)",
+      "result": [
+         {"age": 10, "name": "second"},
+         {"age": 10, "name": "third"},
+         {"age": 20, "name": "first"},
+         {"age": 20, "name": "fourth"},
+         {"age": 30, "name": "fifth"}
+      ]
+    }
+  ]
 }]

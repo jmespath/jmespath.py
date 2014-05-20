@@ -456,7 +456,7 @@ class FunctionExpression(AST):
         if isinstance(arg, STRING_TYPE):
             return arg
         else:
-            return json.dumps(arg)
+            return json.dumps(arg, separators=(',', ':'))
 
     @signature(_Arg())
     def _func_to_number(self, arg):
