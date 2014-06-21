@@ -1,4 +1,5 @@
 import sys
+import inspect
 
 PY2 = sys.version_info[0] == 2
 
@@ -6,7 +7,6 @@ if PY2:
     text_type = unicode
     string_type = basestring
     from itertools import izip_longest as zip_longest
-    LR_TABLE = 'jmespath._lrtable'
 
     def with_str_method(cls):
         """Class decorator that handles __str__ compat between py2 and py3."""
@@ -17,6 +17,7 @@ if PY2:
             return self.__unicode__().encode('utf-8')
         cls.__str__ = __str__
         return cls
+
     def with_repr_method(cls):
         """Class decorator that handle __repr__ with py2 and py3."""
         # This is almost the same thing as with_str_method *except*
@@ -31,16 +32,28 @@ if PY2:
             return original_repr
         cls.__repr__ = __repr__
         return cls
+
+    def get_methods(cls):
+        for name, method in inspect.getmembers(cls,
+                                               predicate=inspect.ismethod):
+            yield name, method
+
 else:
-    LR_TABLE = 'jmespath._lrtable3'
     text_type = str
     string_type = str
     from itertools import zip_longest
+
     def with_str_method(cls):
         # In python3, we don't need to do anything, we return a str type.
         return cls
+
     def with_repr_method(cls):
         return cls
+
+    def get_methods(cls):
+        for name, method in inspect.getmembers(cls,
+                                               predicate=inspect.isfunction):
+            yield name, method
 
 
 if sys.version_info[:2] == (2, 6):

@@ -13,13 +13,16 @@ class TestParser(unittest.TestCase):
     def setUp(self):
         self.parser = parser.Parser()
 
+    def assert_parsed_ast(self, expression, expected_ast):
+        parsed = self.parser.parse(expression)
+        self.assertEqual(parsed.parsed, expected_ast)
+
     def test_field(self):
-        parsed = self.parser.parse('foo')
-        self.assertEqual(parsed.search({'foo': 'bar'}), 'bar')
+        self.assert_parsed_ast('foo', ast.field('foo'))
 
     def test_dot_syntax(self):
-        parsed = self.parser.parse('foo.bar')
-        self.assertEqual(parsed.search({'foo': {'bar': 'baz'}}), 'baz')
+        self.assert_parsed_ast('foo.bar', ast.sub_expression(ast.field('foo'),
+                                                             ast.field('bar')))
 
     def test_multiple_dots(self):
         parsed = self.parser.parse('foo.bar.baz')
@@ -33,10 +36,8 @@ class TestParser(unittest.TestCase):
             'one')
 
     def test_quoted_subexpression(self):
-        parsed = self.parser.parse('"foo"."bar"')
-        self.assertIsInstance(parsed.parsed, ast.SubExpression)
-        self.assertEqual(parsed.parsed.children[0].name, 'foo')
-        self.assertEqual(parsed.parsed.children[1].name, 'bar')
+        self.assert_parsed_ast('"foo"."bar"', ast.sub_expression(
+            ast.field('foo'), ast.field('bar')))
 
     def test_wildcard(self):
         parsed = self.parser.parse('foo[*]')
@@ -64,19 +65,11 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parsed.search({'foo': {'baz': 'baz'}}), None)
 
     def test_or_repr(self):
-        parsed = self.parser.parse('foo || bar')
-        self.assertEqual(repr(parsed), 'ORExpression(Field(foo), Field(bar))')
+        self.assert_parsed_ast('foo || bar', ast.or_expression(ast.field('foo'),
+                                                               ast.field('bar')))
 
     def test_unicode_literals_escaped(self):
-        parsed = self.parser.parse(r'`"\u2713"`')
-        if compat.PY2:
-            self.assertEqual(repr(parsed), r'Literal(\u2713)')
-        else:
-            self.assertEqual(repr(parsed), u'Literal(\u2713)')
-
-    def test_unicode_pretty_print(self):
-        parsed = self.parser.parse(r'`"\u2713"`')
-        self.assertEqual(parsed.pretty_print(), u'Literal(\u2713)')
+        self.assert_parsed_ast(r'`"\u2713"`', ast.literal(u'\u2713'))
 
     def test_multiselect(self):
         parsed = self.parser.parse('foo.{bar: bar,baz: baz}')
@@ -294,10 +287,9 @@ class TestParserCaching(unittest.TestCase):
         for i in range(parser.Parser._MAX_SIZE + 1):
             compiled2.append(p.parse('foo%s' % i))
         self.assertEqual(len(compiled), len(compiled2))
-        s = as_s_expression
         self.assertEqual(
-            [s(expr.parsed) for expr in compiled],
-            [s(expr.parsed) for expr in compiled2])
+            [expr.parsed for expr in compiled],
+            [expr.parsed for expr in compiled2])
 
     def test_cache_purge(self):
         p = parser.Parser()
@@ -305,10 +297,10 @@ class TestParserCaching(unittest.TestCase):
         cached = p.parse('foo')
         p.purge()
         second = p.parse('foo')
-        self.assertEqual(as_s_expression(first.parsed),
-                         as_s_expression(second.parsed))
-        self.assertEqual(as_s_expression(first.parsed),
-                         as_s_expression(cached.parsed))
+        self.assertEqual(first.parsed,
+                         second.parsed)
+        self.assertEqual(first.parsed,
+                         cached.parsed)
 
 
 class TestParserAddsExpressionAttribute(unittest.TestCase):
