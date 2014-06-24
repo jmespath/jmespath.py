@@ -588,11 +588,17 @@
   "given":
   {
     "people": [
-         {"age": 20, "name": "first"},
-         {"age": 10, "name": "second"},
-         {"age": 10, "name": "third"},
-         {"age": 20, "name": "fourth"},
-         {"age": 30, "name": "fifth"}
+         {"age": 10, "order": "1"},
+         {"age": 10, "order": "2"},
+         {"age": 10, "order": "3"},
+         {"age": 10, "order": "4"},
+         {"age": 10, "order": "5"},
+         {"age": 10, "order": "6"},
+         {"age": 10, "order": "7"},
+         {"age": 10, "order": "8"},
+         {"age": 10, "order": "9"},
+         {"age": 10, "order": "10"},
+         {"age": 10, "order": "11"}
     ]
   },
   "cases": [
@@ -600,11 +606,17 @@
       "description": "stable sort order",
       "expression": "sort_by(people, &age)",
       "result": [
-         {"age": 10, "name": "second"},
-         {"age": 10, "name": "third"},
-         {"age": 20, "name": "first"},
-         {"age": 20, "name": "fourth"},
-         {"age": 30, "name": "fifth"}
+         {"age": 10, "order": "1"},
+         {"age": 10, "order": "2"},
+         {"age": 10, "order": "3"},
+         {"age": 10, "order": "4"},
+         {"age": 10, "order": "5"},
+         {"age": 10, "order": "6"},
+         {"age": 10, "order": "7"},
+         {"age": 10, "order": "8"},
+         {"age": 10, "order": "9"},
+         {"age": 10, "order": "10"},
+         {"age": 10, "order": "11"}
       ]
     }
   ]
