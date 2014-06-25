@@ -39,9 +39,16 @@ class _Expression(object):
 
 
 class Visitor(object):
+    def __init__(self):
+        self._method_cache = {}
+
     def visit(self, node, *args, **kwargs):
-        method = getattr(
-            self, 'visit_%s' % node['type'], self.default_visit)
+        node_type = node['type']
+        method = self._method_cache.get(node_type)
+        if method is None:
+            method = getattr(
+                self, 'visit_%s' % node['type'], self.default_visit)
+            self._method_cache[node_type] = method
         return method(node, *args, **kwargs)
 
     def default_visit(self, node, *args, **kwargs):
@@ -61,6 +68,7 @@ class TreeInterpreter(Visitor):
     MAP_TYPE = dict
 
     def __init__(self):
+        super(TreeInterpreter, self).__init__()
         self._functions = functions.RuntimeFunctions()
         # Note that .interpreter is a property that uses
         # a weakref so that the cyclic reference can be
