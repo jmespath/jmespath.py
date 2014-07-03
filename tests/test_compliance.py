@@ -71,7 +71,7 @@ def _test_expression(given, expression, expected, filename):
     error_msg = ("\n\n  (%s) The expression '%s' was suppose to give:\n%s\n"
                  "Instead it matched:\n%s\nparsed as:\n%s\ngiven:\n%s" % (
                      filename, expression, expected_repr,
-                     actual_repr, parsed,
+                     actual_repr, pformat(parsed.parsed),
                      json.dumps(given, indent=4)))
     error_msg = error_msg.replace(r'\n', '\n')
     assert_equal(actual, expected, error_msg)
@@ -91,6 +91,6 @@ def _test_error_expression(given, expression, error, filename):
     else:
         error_msg = ("\n\n  (%s) The expression '%s' was suppose to be a "
                      "syntax error, but it successfully parsed as:\n\n%s" % (
-                         filename, expression, parsed))
+                         filename, expression, pformat(parsed.parsed)))
         error_msg = error_msg.replace(r'\n', '\n')
         raise AssertionError(error_msg)
