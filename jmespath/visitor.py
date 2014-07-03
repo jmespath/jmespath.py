@@ -75,6 +75,9 @@ class TreeInterpreter(Visitor):
         # properly freed.
         self._functions.interpreter = self
 
+    def default_visit(self, node, *args, **kwargs):
+        raise NotImplementedError(node['type'])
+
     def visit_subexpression(self, node, value):
         result = value
         for node in node['children']:
@@ -114,7 +117,7 @@ class TreeInterpreter(Visitor):
         comparator_node = node['children'][2]
         collected = []
         for element in base:
-            if self.visit(comparator_node, element):
+            if self._is_true(self.visit(comparator_node, element)):
                 current = self.visit(node['children'][1], element)
                 if current is not None:
                     collected.append(current)
@@ -186,6 +189,20 @@ class TreeInterpreter(Visitor):
             matched = self.visit(node['children'][1], value)
         return matched
 
+    def visit_and_expression(self, node, value):
+        matched = self.visit(node['children'][0], value)
+        if self._is_false(matched):
+            return matched
+        return self.visit(node['children'][1], value)
+
+    def visit_not_expression(self, node, value):
+        original_result = self.visit(node['children'][0], value)
+        if original_result is 0:
+            # Special case for 0, !0 should be false, not true.
+            # 0 is not a special cased integer in jmespath.
+            return False
+        return not original_result
+
     def visit_pipe(self, node, value):
         result = value
         for node in node['children']:
@@ -222,6 +239,9 @@ class TreeInterpreter(Visitor):
         # python and jmespath.
         return (value == '' or value == [] or value == {} or value is None or
                 value is False)
+
+    def _is_true(self, value):
+        return not self._is_false(value)
 
 
 class GraphvizVisitor(Visitor):

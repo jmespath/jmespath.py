@@ -48,21 +48,27 @@ class Parser(object):
         'expref': 0,
         'colon': 0,
         'pipe': 1,
-        'eq': 2,
-        'gt': 2,
-        'lt': 2,
-        'gte': 2,
-        'lte': 2,
-        'ne': 2,
-        'or': 5,
-        'flatten': 6,
+        'or': 2,
+        'and': 3,
+        'eq': 5,
+        'gt': 5,
+        'lt': 5,
+        'gte': 5,
+        'lte': 5,
+        'ne': 5,
+        'flatten': 9,
+        # Everything above stops a projection.
         'star': 20,
         'filter': 21,
         'dot': 40,
+        'not': 45,
         'lbrace': 50,
         'lbracket': 55,
         'lparen': 60,
     }
+    # The maximum binding power for a token that can stop
+    # a projection.
+    _PROJECTION_STOP = 10
     # The _MAX_SIZE most recent expressions are cached in
     # _CACHE dict.
     _CACHE = {}
@@ -161,11 +167,20 @@ class Parser(object):
     def _token_nud_lbrace(self, token):
         return self._parse_multi_select_hash()
 
+    def _token_nud_lparen(self, token):
+        expression = self._expression()
+        self._match('rparen')
+        return expression
+
     def _token_nud_flatten(self, token):
         left = ast.flatten(ast.identity())
         right = self._parse_projection_rhs(
             self.BINDING_POWER['flatten'])
         return ast.projection(left, right)
+
+    def _token_nud_not(self, token):
+        expr = self._expression(self.BINDING_POWER['not'])
+        return ast.not_expression(expr)
 
     def _token_nud_lbracket(self, token):
         if self._current_token() in ['number', 'colon']:
@@ -253,6 +268,10 @@ class Parser(object):
     def _token_led_or(self, left):
         right = self._expression(self.BINDING_POWER['or'])
         return ast.or_expression(left, right)
+
+    def _token_led_and(self, left):
+        right = self._expression(self.BINDING_POWER['and'])
+        return ast.and_expression(left, right)
 
     def _token_led_lparen(self, left):
         name = left['value']
@@ -370,7 +389,7 @@ class Parser(object):
 
     def _parse_projection_rhs(self, binding_power):
         # Parse the right hand side of the projection.
-        if self.BINDING_POWER[self._current_token()] < 10:
+        if self.BINDING_POWER[self._current_token()] < self._PROJECTION_STOP:
             # BP of 10 are all the tokens that stop a projection.
             right = ast.identity()
         elif self._current_token() == 'lbracket':
