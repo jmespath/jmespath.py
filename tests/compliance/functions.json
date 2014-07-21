@@ -584,4 +584,40 @@
       "error": "invalid-type"
     }
   ]
+}, {
+  "given":
+  {
+    "people": [
+         {"age": 10, "order": "1"},
+         {"age": 10, "order": "2"},
+         {"age": 10, "order": "3"},
+         {"age": 10, "order": "4"},
+         {"age": 10, "order": "5"},
+         {"age": 10, "order": "6"},
+         {"age": 10, "order": "7"},
+         {"age": 10, "order": "8"},
+         {"age": 10, "order": "9"},
+         {"age": 10, "order": "10"},
+         {"age": 10, "order": "11"}
+    ]
+  },
+  "cases": [
+    {
+      "description": "stable sort order",
+      "expression": "sort_by(people, &age)",
+      "result": [
+         {"age": 10, "order": "1"},
+         {"age": 10, "order": "2"},
+         {"age": 10, "order": "3"},
+         {"age": 10, "order": "4"},
+         {"age": 10, "order": "5"},
+         {"age": 10, "order": "6"},
+         {"age": 10, "order": "7"},
+         {"age": 10, "order": "8"},
+         {"age": 10, "order": "9"},
+         {"age": 10, "order": "10"},
+         {"age": 10, "order": "11"}
+      ]
+    }
+  ]
 }]

@@ -9,12 +9,12 @@ general idea behind a Pratt parser:
 
 * http://effbot.org/zone/simple-top-down-parsing.htm
 * http://javascript.crockford.com/tdop/tdop.html
-* http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
 
 A few notes on the implementation.
 
 * All the nud/led tokens are on the Parser class itself, and are dispatched
-  using getattr().  This keeps all the parsing logic contained to a single class.
+  using getattr().  This keeps all the parsing logic contained to a single
+  class.
 * We use two passes through the data.  One to create a list of token,
   then one pass through the tokens to create the AST.  While the lexer actually
   yields tokens, we convert it to a list so we can easily implement two tokens
@@ -31,6 +31,7 @@ from jmespath import lexer
 from jmespath.compat import with_repr_method
 from jmespath import ast
 from jmespath import exceptions
+from jmespath import visitor
 
 
 class Parser(object):
@@ -126,13 +127,13 @@ class Parser(object):
         return left
 
     def _token_nud_literal(self, token):
-        return ast.Literal(token['value'])
+        return ast.literal(token['value'])
 
     def _token_nud_unquoted_identifier(self, token):
-        return ast.Field(token['value'])
+        return ast.field(token['value'])
 
     def _token_nud_quoted_identifier(self, token):
-        field = ast.Field(token['value'])
+        field = ast.field(token['value'])
         # You can't have a quoted identifier as a function
         # name.
         if self._current_token() == 'lparen':
@@ -143,68 +144,69 @@ class Parser(object):
         return field
 
     def _token_nud_star(self, token):
-        left = ast.Identity()
+        left = ast.identity()
         if self._current_token() == 'rbracket':
-            right = ast.Identity()
+            right = ast.identity()
         else:
             right = self._parse_projection_rhs(self.BINDING_POWER['star'])
-        return ast.ValueProjection(left, right)
+        return ast.value_projection(left, right)
 
     def _token_nud_filter(self, token):
-        return self._token_led_filter(ast.Identity())
+        return self._token_led_filter(ast.identity())
 
     def _token_nud_lbrace(self, token):
         return self._parse_multi_select_hash()
 
     def _token_nud_flatten(self, token):
-        left = ast.Flatten(ast.Identity())
+        left = ast.flatten(ast.identity())
         right = self._parse_projection_rhs(
             self.BINDING_POWER['flatten'])
-        return ast.Projection(left, right)
+        return ast.projection(left, right)
 
     def _token_nud_lbracket(self, token):
         if self._current_token() == 'number':
-            node = ast.Index(self._lookahead_token(0)['value'])
+            node = ast.index(self._lookahead_token(0)['value'])
             self._advance()
             self._match('rbracket')
             return node
-        elif self._current_token() == 'star' and self._lookahead(1) == 'rbracket':
+        elif self._current_token() == 'star' and \
+                self._lookahead(1) == 'rbracket':
             self._advance()
             self._advance()
             right = self._parse_projection_rhs(self.BINDING_POWER['star'])
-            return ast.Projection(ast.Identity(), right)
+            return ast.projection(ast.identity(), right)
         else:
             return self._parse_multi_select_list()
 
     def _token_nud_expref(self, token):
         expression = self._expression(self.BINDING_POWER['expref'])
-        return ast.ExpressionReference(expression)
+        return ast.expref(expression)
 
     def _token_led_dot(self, left):
         if not self._current_token() == 'star':
             right = self._parse_dot_rhs(self.BINDING_POWER['dot'])
-            return ast.SubExpression(left, right)
+            return ast.sub_expression(left, right)
         else:
             # We're creating a projection.
             self._advance()
             right = self._parse_projection_rhs(
                 self.BINDING_POWER['dot'])
-            return ast.ValueProjection(left, right)
+            return ast.value_projection(left, right)
 
     def _token_led_pipe(self, left):
         right = self._expression(self.BINDING_POWER['pipe'])
-        return ast.Pipe(left, right)
+        return ast.pipe(left, right)
 
     def _token_led_or(self, left):
         right = self._expression(self.BINDING_POWER['or'])
-        return ast.ORExpression(left, right)
+        return ast.or_expression(left, right)
 
     def _token_led_lparen(self, left):
-        name = left.name
+        name = left['value']
         args = []
         while not self._current_token() == 'rparen':
             if self._current_token() == 'current':
-                expression = ast.CurrentNode()
+                expression = ast.current_node()
                 self._advance()
             else:
                 expression = self._expression()
@@ -212,12 +214,7 @@ class Parser(object):
                 self._match('comma')
             args.append(expression)
         self._match('rparen')
-        function_node = ast.FunctionExpression(name, args)
-        if function_node.variadic:
-            if len(function_node.args) < function_node.arity:
-                raise exceptions.VariadictArityError(function_node)
-        elif function_node.arity != len(function_node.args):
-            raise exceptions.ArityError(function_node)
+        function_node = ast.function_expression(name, args)
         return function_node
 
     def _token_led_filter(self, left):
@@ -225,10 +222,10 @@ class Parser(object):
         condition = self._expression(0)
         self._match('rbracket')
         if self._current_token() == 'flatten':
-            right = ast.Identity()
+            right = ast.identity()
         else:
             right = self._parse_projection_rhs(self.BINDING_POWER['filter'])
-        return ast.FilterProjection(left, right, condition)
+        return ast.filter_projection(left, right, condition)
 
     def _token_led_eq(self, left):
         return self._parse_comparator(left, 'eq')
@@ -249,36 +246,28 @@ class Parser(object):
         return self._parse_comparator(left, 'lte')
 
     def _token_led_flatten(self, left):
-        left = ast.Flatten(left)
+        left = ast.flatten(left)
         right = self._parse_projection_rhs(
             self.BINDING_POWER['flatten'])
-        return ast.Projection(left, right)
+        return ast.projection(left, right)
 
     def _token_led_lbracket(self, left):
         token = self._lookahead_token(0)
         if token['type'] == 'number':
             self._match('number')
-            right = ast.Index(token['value'])
+            right = ast.index(token['value'])
             self._match('rbracket')
-            return ast.IndexExpression(left, right)
+            return ast.index_expression(left, right)
         else:
             # We have a projection
             self._match('star')
             self._match('rbracket')
             right = self._parse_projection_rhs(self.BINDING_POWER['star'])
-            return ast.Projection(left, right)
+            return ast.projection(left, right)
 
     def _parse_comparator(self, left, comparator):
-        op_map = {
-            'lt': ast.OPLessThan,
-            'lte': ast.OPLessThanEquals,
-            'eq': ast.OPEquals,
-            'gt': ast.OPGreaterThan,
-            'gte': ast.OPGreaterThanEquals,
-            'ne': ast.OPNotEquals,
-        }
         right = self._expression(self.BINDING_POWER[comparator])
-        return op_map[comparator](left, right)
+        return ast.comparator(comparator, left, right)
 
     def _parse_multi_select_list(self):
         expressions = []
@@ -289,7 +278,7 @@ class Parser(object):
                 self._match('comma')
                 self._assert_not_token('rbracket')
         self._match('rbracket')
-        return ast.MultiFieldList(expressions)
+        return ast.multi_select_list(expressions)
 
     def _parse_multi_select_hash(self):
         pairs = []
@@ -302,20 +291,20 @@ class Parser(object):
             key_name = key_token['value']
             self._match('colon')
             value = self._expression(0)
-            node = ast.KeyValPair(key_name=key_name, node=value)
+            node = ast.key_val_pair(key_name=key_name, node=value)
             pairs.append(node)
             if self._current_token() == 'comma':
                 self._match('comma')
             elif self._current_token() == 'rbrace':
                 self._match('rbrace')
                 break
-        return ast.MultiFieldDict(nodes=pairs)
+        return ast.multi_select_dict(nodes=pairs)
 
     def _parse_projection_rhs(self, binding_power):
         # Parse the right hand side of the projection.
         if self.BINDING_POWER[self._current_token()] < 10:
             # BP of 10 are all the tokens that stop a projection.
-            right = ast.Identity()
+            right = ast.identity()
         elif self._current_token() == 'lbracket':
             right = self._expression(binding_power)
         elif self._current_token() == 'filter':
@@ -443,7 +432,9 @@ class ParsedResult(object):
         self.parsed = parsed
 
     def search(self, value):
-        return self.parsed.search(value)
+        interpreter = visitor.TreeInterpreter()
+        result = interpreter.visit(self.parsed, value)
+        return result
 
     def pretty_print(self, indent=''):
         return self.parsed.pretty_print(indent=indent)
