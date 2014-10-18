@@ -1,7 +1,7 @@
 import re
 from json import loads
 
-from jmespath.exceptions import LexerError
+from jmespath.exceptions import LexerError, EmptyExpressionError
 
 
 class Lexer(object):
@@ -39,6 +39,8 @@ class Lexer(object):
         self.master_regex = re.compile(self.TOKENS)
 
     def tokenize(self, expression):
+        if not expression:
+            raise EmptyExpressionError()
         previous_column = 0
         for match in self.master_regex.finditer(expression):
             value = match.group()

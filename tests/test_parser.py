@@ -17,6 +17,10 @@ class TestParser(unittest.TestCase):
         parsed = self.parser.parse(expression)
         self.assertEqual(parsed.parsed, expected_ast)
 
+    def test_parse_empty_string_raises_exception(self):
+        with self.assertRaises(exceptions.EmptyExpressionError):
+            self.parser.parse('')
+
     def test_field(self):
         self.assert_parsed_ast('foo', ast.field('foo'))
 
