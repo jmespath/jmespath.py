@@ -1,0 +1,8 @@
+[run]
+branch = True
+include =
+    jmespath/*
+
+[report]
+exclude_lines =
+    raise NotImplementedError.*
