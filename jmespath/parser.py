@@ -436,8 +436,5 @@ class ParsedResult(object):
         result = interpreter.visit(self.parsed, value)
         return result
 
-    def pretty_print(self, indent=''):
-        return self.parsed.pretty_print(indent=indent)
-
     def __repr__(self):
         return repr(self.parsed)

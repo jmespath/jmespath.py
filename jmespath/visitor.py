@@ -52,7 +52,7 @@ class Visitor(object):
         return method(node, *args, **kwargs)
 
     def default_visit(self, node, *args, **kwargs):
-        pass
+        raise NotImplementedError("default_visit")
 
 
 class TreeInterpreter(Visitor):

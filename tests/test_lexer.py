@@ -96,6 +96,14 @@ class TestRegexLexer(unittest.TestCase):
             {'type': 'literal', 'value': 2},
         ])
 
+    def test_literal_with_invalid_json(self):
+        with self.assertRaises(LexerError):
+            list(self.lexer.tokenize('`foo"bar`'))
+
+    def test_literal_with_empty_string(self):
+        tokens = list(self.lexer.tokenize('``'))
+        self.assert_tokens(tokens, [{'type': 'literal', 'value': ''}])
+
     def test_position_information(self):
         tokens = list(self.lexer.tokenize('foo'))
         self.assertEqual(

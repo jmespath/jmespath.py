@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
-from tests import unittest, as_s_expression
+from tests import unittest
 
 from jmespath import parser
 from jmespath import ast
-from jmespath import lexer
-from jmespath import compat
 from jmespath import exceptions
 
 
@@ -79,7 +77,6 @@ class TestParser(unittest.TestCase):
 
     def test_multiselect_subexpressions(self):
         parsed = self.parser.parse('foo.{"bar.baz": bar.baz, qux: qux}')
-        foo = parsed.search({'foo': {'bar': {'baz': 'CORRECT'}, 'qux': 'qux'}})
         self.assertEqual(
             parsed.search({'foo': {'bar': {'baz': 'CORRECT'}, 'qux': 'qux'}}),
             {'bar.baz': 'CORRECT', 'qux': 'qux'})
@@ -112,7 +109,7 @@ class TestErrorMessages(unittest.TestCase):
 
     def test_bad_parse(self):
         with self.assertRaises(exceptions.ParseError):
-            parsed = self.parser.parse('foo]baz')
+            self.parser.parse('foo]baz')
 
     def test_bad_parse_error_message(self):
         error_message = (
@@ -222,7 +219,7 @@ class TestParserWildcards(unittest.TestCase):
 
     def test_escape_sequence_at_end_of_string_not_allowed(self):
         with self.assertRaises(ValueError):
-            parsed = self.parser.parse('foobar\\')
+            self.parser.parse('foobar\\')
 
     def test_wildcard_with_multiselect(self):
         parsed = self.parser.parse('foo.*.{a: a, b: b}')
@@ -244,6 +241,7 @@ class TestParserWildcards(unittest.TestCase):
         self.assertIn('b', match[0])
         self.assertIn('a', match[1])
         self.assertIn('b', match[1])
+
 
 class TestMergedLists(unittest.TestCase):
     def setUp(self):
