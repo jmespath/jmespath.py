@@ -164,11 +164,8 @@ class Parser(object):
         return ast.projection(left, right)
 
     def _token_nud_lbracket(self, token):
-        if self._current_token() == 'number':
-            node = ast.index(self._lookahead_token(0)['value'])
-            self._advance()
-            self._match('rbracket')
-            return node
+        if self._current_token() in ['number', 'colon']:
+            return self._parse_index_expression()
         elif self._current_token() == 'star' and \
                 self._lookahead(1) == 'rbracket':
             self._advance()
@@ -177,6 +174,46 @@ class Parser(object):
             return ast.projection(ast.identity(), right)
         else:
             return self._parse_multi_select_list()
+
+    def _parse_index_expression(self):
+        # We're here:
+        # [<current>
+        #  ^
+        #  | current token
+        if (self._lookahead(0) == 'colon' or
+                self._lookahead(1) == 'colon'):
+            return self._parse_slice_expression()
+        else:
+            # Parse the syntax [number]
+            node = ast.index(self._lookahead_token(0)['value'])
+            self._advance()
+            self._match('rbracket')
+            return node
+
+    def _parse_slice_expression(self):
+        # [start:end:step]
+        # Where start, end, and step are optional.
+        # The last colon is optional as well.
+        parts = [None, None, None]
+        index = 0
+        current_token = self._current_token()
+        while not current_token == 'rbracket' and index < 3:
+            if current_token == 'colon':
+                index += 1
+                self._advance()
+            elif current_token == 'number':
+                parts[index] = self._lookahead_token(0)['value']
+                self._advance()
+            else:
+                t = self._lookahead_token(0)
+                lex_position = t['start']
+                actual_value = t['value']
+                actual_type = t['type']
+                raise exceptions.ParseError(lex_position, actual_value,
+                                            actual_type, 'syntax error')
+            current_token = self._current_token()
+        self._match('rbracket')
+        return ast.slice(*parts)
 
     def _token_nud_expref(self, token):
         expression = self._expression(self.BINDING_POWER['expref'])
@@ -253,10 +290,8 @@ class Parser(object):
 
     def _token_led_lbracket(self, left):
         token = self._lookahead_token(0)
-        if token['type'] == 'number':
-            self._match('number')
-            right = ast.index(token['value'])
-            self._match('rbracket')
+        if token['type'] in ['number', 'colon']:
+            right = self._parse_index_expression()
             return ast.index_expression(left, right)
         else:
             # We have a projection
