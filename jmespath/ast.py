@@ -78,5 +78,9 @@ def sub_expression(left, right):
     return {"type": "sub_expression", 'children': [left, right]}
 
 
+def slice(start, end, step):
+    return {"type": "slice", "children": [start, end, step]}
+
+
 def value_projection(left, right):
     return {'type': 'value_projection', 'children': [left, right]}
