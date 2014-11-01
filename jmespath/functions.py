@@ -244,14 +244,14 @@ class RuntimeFunctions(object):
     def _func_join(self, separator, array):
         return separator.join(array)
 
-    @builtin_function({"types": ['array-number']})
+    @builtin_function({"types": ['array-number', 'array-string']})
     def _func_max(self, arg):
         if arg:
             return max(arg)
         else:
             return None
 
-    @builtin_function({"types": ['array-number']})
+    @builtin_function({"types": ['array-number', 'array-string']})
     def _func_min(self, arg):
         if arg:
             return min(arg)
@@ -313,13 +313,15 @@ class RuntimeFunctions(object):
 
     @builtin_function({'types': ['array']}, {'types': ['expref']})
     def _func_min_by(self, array, expref):
-        keyfunc = self._create_key_func(expref.expression, ['number'],
+        keyfunc = self._create_key_func(expref.expression,
+                                        ['number', 'string'],
                                         'min_by')
         return min(array, key=keyfunc)
 
     @builtin_function({'types': ['array']}, {'types': ['expref']})
     def _func_max_by(self, array, expref):
-        keyfunc = self._create_key_func(expref.expression, ['number'],
+        keyfunc = self._create_key_func(expref.expression,
+                                        ['number', 'string'],
                                         'min_by')
         return max(array, key=keyfunc)
 

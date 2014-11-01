@@ -220,6 +220,10 @@
       "result": 1.2
     },
     {
+      "expression": "max(strings)",
+      "result": "c"
+    },
+    {
       "expression": "max(abc)",
       "error": "invalid-type"
     },
@@ -258,6 +262,10 @@
     {
       "expression": "min(decimals)",
       "result": -1.5
+    },
+    {
+      "expression": "min(strings)",
+      "result": "a"
     },
     {
       "expression": "type(`abc`)",
@@ -612,6 +620,10 @@
       "result": {"age": 50, "age_str": "50", "bool": false, "name": "d"}
     },
     {
+      "expression": "max_by(people, &age_str)",
+      "result": {"age": 50, "age_str": "50", "bool": false, "name": "d"}
+    },
+    {
       "expression": "max_by(people, &bool)",
       "error": "invalid-type"
     },
@@ -624,11 +636,11 @@
       "result": {"age": 50, "age_str": "50", "bool": false, "name": "d"}
     },
     {
-      "expression": "max_by(people, &age_str)",
-      "error": "invalid-type"
+      "expression": "min_by(people, &age)",
+      "result": {"age": 10, "age_str": "10", "bool": true, "name": 3}
     },
     {
-      "expression": "min_by(people, &age)",
+      "expression": "min_by(people, &age_str)",
       "result": {"age": 10, "age_str": "10", "bool": true, "name": 3}
     },
     {
@@ -642,10 +654,6 @@
     {
       "expression": "min_by(people, &to_number(age_str))",
       "result": {"age": 10, "age_str": "10", "bool": true, "name": 3}
-    },
-    {
-      "expression": "min_by(people, &age_str)",
-      "error": "invalid-type"
     }
   ]
 }, {
