@@ -1,7 +1,7 @@
 from tests import unittest
 
 from jmespath import lexer
-from jmespath.exceptions import LexerError
+from jmespath.exceptions import LexerError, EmptyExpressionError
 
 
 class TestRegexLexer(unittest.TestCase):
@@ -25,6 +25,10 @@ class TestRegexLexer(unittest.TestCase):
         self.assertEqual(stripped[-1]['type'], 'eof')
         stripped.pop()
         self.assertEqual(stripped, expected)
+
+    def test_empty_string(self):
+        with self.assertRaises(EmptyExpressionError):
+            list(self.lexer.tokenize(''))
 
     def test_field(self):
         tokens = list(self.lexer.tokenize('foo'))

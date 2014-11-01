@@ -102,5 +102,11 @@ class JMESPathTypeError(JMESPathError):
                     self.expected_types, self.actual_type))
 
 
+class EmptyExpressionError(JMESPathError):
+    def __init__(self):
+        super(EmptyExpressionError, self).__init__(
+            "Invalid JMESPath expression: cannot be empty.")
+
+
 class UnknownFunctionError(JMESPathError):
     pass
