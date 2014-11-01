@@ -217,6 +217,21 @@ class RuntimeFunctions(object):
     def _func_length(self, arg):
         return len(arg)
 
+    @builtin_function({'types': ['string']}, {'types': ['string']})
+    def _func_ends_with(self, search, suffix):
+        return search.endswith(suffix)
+
+    @builtin_function({'types': ['string']}, {'types': ['string']})
+    def _func_starts_with(self, search, suffix):
+        return search.startswith(suffix)
+
+    @builtin_function({'types': ['array', 'string']})
+    def _func_reverse(self, arg):
+        if isinstance(arg, STRING_TYPE):
+            return arg[::-1]
+        else:
+            return list(reversed(arg))
+
     @builtin_function({"types": ['number']})
     def _func_ceil(self, arg):
         return math.ceil(arg)
