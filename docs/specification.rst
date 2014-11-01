@@ -1033,7 +1033,7 @@ max
 
 ::
 
-    number max(array[number] $collection)
+    number max(array[number]|array[string] $collection)
 
 Returns the highest found number in the provided array argument.
 
@@ -1048,6 +1048,12 @@ An empty array will produce a return value of null.
   * - ``[10, 15]``
     - ``max(@)``
     - 15
+  * - ``["a", "b"]``
+    - ``max(@)``
+    - "b"
+  * - ``["a", 2, "b"]``
+    - ``max(@)``
+    - ``<error: invalid-type>``
   * - ``[10, false, 20]``
     - ``max(@)``
     - ``<error: invalid-type>``
@@ -1058,7 +1064,7 @@ max_by
 
 ::
 
-    max_by(array elements, expression->number expr)
+    max_by(array elements, expression->number|expression->string expr)
 
 Return the maximum element in an array using the expression ``expr`` as the
 comparison key.  The entire maximum element is returned.
@@ -1088,7 +1094,7 @@ min
 
 ::
 
-    number min(array[number] $collection)
+    number min(array[number]|array[string] $collection)
 
 Returns the lowest found number in the provided ``$collection`` argument.
 
@@ -1102,6 +1108,12 @@ Returns the lowest found number in the provided ``$collection`` argument.
   * - ``[10, 15]``
     - ``min(@)``
     - 10
+  * - ``["a", "b"]``
+    - ``min(@)``
+    - "a"
+  * - ``["a", 2, "b"]``
+    - ``min(@)``
+    - ``<error: invalid-type>``
   * - ``[10, false, 20]``
     - ``min(@)``
     - ``<error: invalid-type>``
@@ -1112,7 +1124,7 @@ min_by
 
 ::
 
-    min_by(array elements, expression->number expr)
+    min_by(array elements, expression->number|expression->string expr)
 
 Return the minimum element in an array using the expression ``expr`` as the
 comparison key.  The entire maximum element is returned.
