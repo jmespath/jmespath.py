@@ -22,10 +22,6 @@ def field(name):
     return {"type": "field", "children": [], "value": name}
 
 
-def filter_expression(expression):
-    return {"type": "filter_expression", "children": [expression]}
-
-
 def filter_projection(left, right, comparator):
     return {'type': 'filter_projection', 'children': [left, right, comparator]}
 
