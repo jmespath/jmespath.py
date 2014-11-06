@@ -40,9 +40,10 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     multi-select-list = "[" ( expression *( "," expression ) ) "]"
     multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) ) "}"
     keyval-expr       = identifier ":" expression
-    bracket-specifier = "[" (number / "*") "]" / "[]"
+    bracket-specifier = "[" (number / "*" / slice-expression) "]" / "[]"
     bracket-specifier =/ "[?" list-filter-expr "]"
     list-filter-expr  = expression comparator expression
+    slice-expression  = [number] ":" [number] [ ":" [number] ]
     comparator        = "<" / "<=" / "==" / ">=" / ">" / "!="
     function-expression = unquoted-string  (
                             no-args  /
