@@ -1,0 +1,3 @@
+[submodule "jmespath.test"]
+	path = jmespath.test
+	url = https://github.com/jmespath/jmespath.test.git

@@ -1,7 +1,7 @@
 import re
 from json import loads
 
-from jmespath.exceptions import LexerError
+from jmespath.exceptions import LexerError, EmptyExpressionError
 
 
 class Lexer(object):
@@ -34,10 +34,13 @@ class Lexer(object):
         r'(?P<current>@)|'
         r'(?P<skip>[ \t]+)'
     )
+
     def __init__(self):
         self.master_regex = re.compile(self.TOKENS)
 
     def tokenize(self, expression):
+        if not expression:
+            raise EmptyExpressionError()
         previous_column = 0
         for match in self.master_regex.finditer(expression):
             value = match.group()
@@ -65,7 +68,8 @@ class Lexer(object):
             handler = getattr(self, '_token_%s' % token_type.lower(), None)
             if handler is not None:
                 value = handler(value, start, end)
-            yield {'type': token_type, 'value': value, 'start': start, 'end': end}
+            yield {'type': token_type, 'value': value,
+                   'start': start, 'end': end}
         # At the end of the loop make sure we've consumed all the input.
         # If we haven't then we have unidentified characters.
         if end != len(expression):
@@ -100,8 +104,8 @@ class Lexer(object):
                 return loads(actual_value)
             except ValueError:
                 raise LexerError(lexer_position=start,
-                                lexer_value=value,
-                                message="Bad token %s" % value)
+                                 lexer_value=value,
+                                 message="Bad token %s" % value)
         else:
             potential_value = '"%s"' % actual_value
             try:
@@ -112,8 +116,8 @@ class Lexer(object):
                 return loads(potential_value)
             except ValueError:
                 raise LexerError(lexer_position=start,
-                                lexer_value=value,
-                                message="Bad token %s" % value)
+                                 lexer_value=value,
+                                 message="Bad token %s" % value)
 
     def _looks_like_json(self, value):
         # Figure out if the string "value" starts with something

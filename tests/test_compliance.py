@@ -6,12 +6,14 @@ from tests import json
 from nose.tools import assert_equal
 
 import jmespath
+from jmespath.visitor import TreeInterpreter
 
 
 TEST_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     'compliance')
 NOT_SPECIFIED = object()
+TreeInterpreter.MAP_TYPE = OrderedDict
 
 
 def test_compliance():
@@ -66,7 +68,8 @@ def _test_expression(given, expression, expected, filename):
     error_msg = ("\n\n  (%s) The expression '%s' was suppose to give:\n%s\n"
                  "Instead it matched:\n%s\nparsed as:\n%s\ngiven:\n%s" % (
                      filename, expression, expected_repr,
-                     actual_repr, parsed, json.dumps(given, indent=4)))
+                     actual_repr, parsed,
+                     json.dumps(given, indent=4)))
     error_msg = error_msg.replace(r'\n', '\n')
     assert_equal(actual, expected, error_msg)
 

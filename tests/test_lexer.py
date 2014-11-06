@@ -1,7 +1,7 @@
 from tests import unittest
 
 from jmespath import lexer
-from jmespath.exceptions import LexerError
+from jmespath.exceptions import LexerError, EmptyExpressionError
 
 
 class TestRegexLexer(unittest.TestCase):
@@ -25,6 +25,10 @@ class TestRegexLexer(unittest.TestCase):
         self.assertEqual(stripped[-1]['type'], 'eof')
         stripped.pop()
         self.assertEqual(stripped, expected)
+
+    def test_empty_string(self):
+        with self.assertRaises(EmptyExpressionError):
+            list(self.lexer.tokenize(''))
 
     def test_field(self):
         tokens = list(self.lexer.tokenize('foo'))
@@ -95,6 +99,14 @@ class TestRegexLexer(unittest.TestCase):
         self.assert_tokens(tokens, [
             {'type': 'literal', 'value': 2},
         ])
+
+    def test_literal_with_invalid_json(self):
+        with self.assertRaises(LexerError):
+            list(self.lexer.tokenize('`foo"bar`'))
+
+    def test_literal_with_empty_string(self):
+        tokens = list(self.lexer.tokenize('``'))
+        self.assert_tokens(tokens, [{'type': 'literal', 'value': ''}])
 
     def test_position_information(self):
         tokens = list(self.lexer.tokenize('foo'))

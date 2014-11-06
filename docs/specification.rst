@@ -904,6 +904,35 @@ Returns the next highest integer value by rounding up if necessary.
   * - ``ceil(`abc`)``
     - ``null``
 
+
+ends_with
+---------
+
+::
+
+    boolean ends_with(string $subject, string $prefix)
+
+Returns ``true`` if the ``$subject`` ends with the ``$prefix``, otherwise this
+function returns ``false``.
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``foobarbaz``
+    - ``ends_with(@, ``baz``)``
+    - ``true``
+  * - ``foobarbaz``
+    - ``ends_with(@, ``foo``)``
+    - ``false``
+  * - ``foobarbaz``
+    - ``ends_with(@, ``z``)``
+    - ``true``
+
+
 floor
 -----
 
@@ -1033,7 +1062,7 @@ max
 
 ::
 
-    number max(array[number] $collection)
+    number max(array[number]|array[string] $collection)
 
 Returns the highest found number in the provided array argument.
 
@@ -1048,6 +1077,12 @@ An empty array will produce a return value of null.
   * - ``[10, 15]``
     - ``max(@)``
     - 15
+  * - ``["a", "b"]``
+    - ``max(@)``
+    - "b"
+  * - ``["a", 2, "b"]``
+    - ``max(@)``
+    - ``<error: invalid-type>``
   * - ``[10, false, 20]``
     - ``max(@)``
     - ``<error: invalid-type>``
@@ -1058,7 +1093,7 @@ max_by
 
 ::
 
-    max_by(array elements, expression->number expr)
+    max_by(array elements, expression->number|expression->string expr)
 
 Return the maximum element in an array using the expression ``expr`` as the
 comparison key.  The entire maximum element is returned.
@@ -1088,7 +1123,7 @@ min
 
 ::
 
-    number min(array[number] $collection)
+    number min(array[number]|array[string] $collection)
 
 Returns the lowest found number in the provided ``$collection`` argument.
 
@@ -1102,6 +1137,12 @@ Returns the lowest found number in the provided ``$collection`` argument.
   * - ``[10, 15]``
     - ``min(@)``
     - 10
+  * - ``["a", "b"]``
+    - ``min(@)``
+    - "a"
+  * - ``["a", 2, "b"]``
+    - ``min(@)``
+    - ``<error: invalid-type>``
   * - ``[10, false, 20]``
     - ``min(@)``
     - ``<error: invalid-type>``
@@ -1112,7 +1153,7 @@ min_by
 
 ::
 
-    min_by(array elements, expression->number expr)
+    min_by(array elements, expression->number|expression->string expr)
 
 Return the minimum element in an array using the expression ``expr`` as the
 comparison key.  The entire maximum element is returned.
@@ -1166,6 +1207,36 @@ then a value of ``null`` is returned.
   * - ``{"a": null, "b": null, "c": [], "d": "foo"}``
     - ``not_null(a, b)``
     - ``null``
+
+
+reverse
+-------
+
+::
+
+    array reverse(string|array $argument)
+
+Reverses the order of the ``$argument``.
+
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``[0, 1, 2, 3, 4]``
+    - ``reverse(@)``
+    - ``[4, 3, 2, 1, 0]``
+  * - ``[]
+    - ``reverse(@)``
+    - ``[]``
+  * - ``["a", "b", "c", 1, 2, 3]``
+    - ``reverse(@)``
+    - ``[3, 2, 1, "c", "b", "a"]``
+  * - ``"abcd``
+    - ``reverse(@)``
+    - ``dcba``
 
 
 sort
@@ -1233,6 +1304,33 @@ function.
     - ``{"age": 10, "age_str": "10", "bool": true, "name": 3}``
   * - ``sort_by(people, &to_number(age_str))[0]``
     - ``{"age": 10, "age_str": "10", "bool": true, "name": 3}``
+
+
+starts_with
+-----------
+
+::
+
+    boolean starts_with(string $subject, string $prefix)
+
+Returns ``true`` if the ``$subject`` starts with the ``$prefix``, otherwise
+this function returns ``false``.
+
+.. list-table:: Examples
+  :header-rows: 1
+
+  * - Given
+    - Expression
+    - Result
+  * - ``foobarbaz``
+    - ``starts_with(@, ``foo``)``
+    - ``true``
+  * - ``foobarbaz``
+    - ``starts_with(@, ``baz``)``
+    - ``false``
+  * - ``foobarbaz``
+    - ``starts_with(@, ``f``)``
+    - ``true``
 
 
 sum
@@ -1401,7 +1499,7 @@ It is similar to a ``sub-expression`` with two important distinctions:
 1. Any expression can be used on the right hand side.  A ``sub-expression``
    restricts the type of expression that can be used on the right hand side.
 2. A ``pipe-expression`` **stops projections on the left hand side for
-   propogating to the right hand side**.  If the left expression creates a
+   propagating to the right hand side**.  If the left expression creates a
    projection, it does **not** apply to the right hand side.
 
 For example, given the following data::

@@ -1,0 +1,12 @@
+#!/usr/bin/env python
+"""Syncs tests in jmespath.test submodule to tests/compliance/."""
+from subprocess import check_call
+
+
+def main():
+    check_call('git submodule update', shell=True)
+    check_call('cp -r jmespath.test/tests/* tests/compliance/', shell=True)
+
+
+if __name__ == '__main__':
+    main()

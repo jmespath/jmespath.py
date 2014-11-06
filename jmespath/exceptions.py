@@ -64,14 +64,14 @@ class LexerError(ParseError):
 
 @with_str_method
 class ArityError(ParseError):
-    def __init__(self, function_node):
-        self.expected_arity = function_node.arity
-        self.actual_arity = len(function_node.args)
-        self.function_name = function_node.name
+    def __init__(self, expected, actual, name):
+        self.expected_arity = expected
+        self.actual_arity = actual
+        self.function_name = name
         self.expression = None
 
     def __str__(self):
-        return ("Expected %s arguments for function %s, "
+        return ("Expected %s arguments for function %s(), "
                 "received %s" % (self.expected_arity,
                                  self.function_name,
                                  self.actual_arity))
@@ -100,6 +100,12 @@ class JMESPathTypeError(JMESPathError):
                 'expected one of: %s, received: "%s"' % (
                     self.function_name, self.current_value,
                     self.expected_types, self.actual_type))
+
+
+class EmptyExpressionError(JMESPathError):
+    def __init__(self):
+        super(EmptyExpressionError, self).__init__(
+            "Invalid JMESPath expression: cannot be empty.")
 
 
 class UnknownFunctionError(JMESPathError):

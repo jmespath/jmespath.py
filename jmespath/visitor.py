@@ -1,0 +1,218 @@
+import operator
+
+from jmespath import functions
+
+
+def _equals(x, y):
+    if _is_special_integer_case(x, y):
+        return False
+    else:
+        return x == y
+
+
+def _is_special_integer_case(x, y):
+    # We need to special case comparing 0 or 1 to
+    # True/False.  While normally comparing any
+    # integer other than 0/1 to True/False will always
+    # return False.  However 0/1 have this:
+    # >>> 0 == True
+    # False
+    # >>> 0 == False
+    # True
+    # >>> 1 == True
+    # True
+    # >>> 1 == False
+    # False
+    #
+    # Also need to consider that:
+    # >>> 0 in [True, False]
+    # True
+    if x is 0 or x is 1:
+        return y is True or y is False
+    elif y is 0 or y is 1:
+        return x is True or x is False
+
+
+class _Expression(object):
+    def __init__(self, expression):
+        self.expression = expression
+
+
+class Visitor(object):
+    def __init__(self):
+        self._method_cache = {}
+
+    def visit(self, node, *args, **kwargs):
+        node_type = node['type']
+        method = self._method_cache.get(node_type)
+        if method is None:
+            method = getattr(
+                self, 'visit_%s' % node['type'], self.default_visit)
+            self._method_cache[node_type] = method
+        return method(node, *args, **kwargs)
+
+    def default_visit(self, node, *args, **kwargs):
+        raise NotImplementedError("default_visit")
+
+
+class TreeInterpreter(Visitor):
+    COMPARATOR_FUNC = {
+        'le': operator.le,
+        'ne': lambda x, y: not _equals(x, y),
+        'lt': operator.lt,
+        'lte': operator.le,
+        'eq': _equals,
+        'gt': operator.gt,
+        'gte': operator.ge
+    }
+    MAP_TYPE = dict
+
+    def __init__(self):
+        super(TreeInterpreter, self).__init__()
+        self._functions = functions.RuntimeFunctions()
+        # Note that .interpreter is a property that uses
+        # a weakref so that the cyclic reference can be
+        # properly freed.
+        self._functions.interpreter = self
+
+    def visit_sub_expression(self, node, value):
+        result = value
+        for node in node['children']:
+            result = self.visit(node, result)
+        return result
+
+    def visit_field(self, node, value):
+        try:
+            return value.get(node['value'])
+        except AttributeError:
+            return None
+
+    def visit_comparator(self, node, value):
+        comparator_func = self.COMPARATOR_FUNC[node['value']]
+        return comparator_func(
+            self.visit(node['children'][0], value),
+            self.visit(node['children'][1], value)
+        )
+
+    def visit_current(self, node, value):
+        return value
+
+    def visit_expref(self, node, value):
+        return _Expression(node['children'][0])
+
+    def visit_function_expression(self, node, value):
+        resolved_args = []
+        for child in node['children']:
+            current = self.visit(child, value)
+            resolved_args.append(current)
+        return self._functions.call_function(node['value'], resolved_args)
+
+    def visit_filter_projection(self, node, value):
+        base = self.visit(node['children'][0], value)
+        if not isinstance(base, list):
+            return None
+        comparator_node = node['children'][2]
+        collected = []
+        for element in base:
+            if self.visit(comparator_node, element):
+                current = self.visit(node['children'][1], element)
+                if current is not None:
+                    collected.append(current)
+        return collected
+
+    def visit_flatten(self, node, value):
+        base = self.visit(node['children'][0], value)
+        if not isinstance(base, list):
+            # Can't flatten the object if it's not a list.
+            return None
+        merged_list = []
+        for element in base:
+            if isinstance(element, list):
+                merged_list.extend(element)
+            else:
+                merged_list.append(element)
+        return merged_list
+
+    def visit_identity(self, node, value):
+        return value
+
+    def visit_index(self, node, value):
+        # Even though we can index strings, we don't
+        # want to support that.
+        if not isinstance(value, list):
+            return None
+        try:
+            return value[node['value']]
+        except IndexError:
+            return None
+
+    def visit_index_expression(self, node, value):
+        result = value
+        for node in node['children']:
+            result = self.visit(node, result)
+        return result
+
+    def visit_key_val_pair(self, node, value):
+        return self.visit(node['children'][0], value)
+
+    def visit_literal(self, node, value):
+        return node['value']
+
+    def visit_multi_select_dict(self, node, value):
+        if value is None:
+            return None
+        collected = self.MAP_TYPE()
+        for child in node['children']:
+            collected[child['value']] = self.visit(child, value)
+        return collected
+
+    def visit_multi_select_list(self, node, value):
+        if value is None:
+            return None
+        collected = []
+        for child in node['children']:
+            collected.append(self.visit(child, value))
+        return collected
+
+    def visit_or_expression(self, node, value):
+        matched = self.visit(node['children'][0], value)
+        if self._is_false(matched):
+            matched = self.visit(node['children'][1], value)
+        return matched
+
+    def visit_pipe(self, node, value):
+        result = value
+        for node in node['children']:
+            result = self.visit(node, result)
+        return result
+
+    def visit_projection(self, node, value):
+        base = self.visit(node['children'][0], value)
+        if not isinstance(base, list):
+            return None
+        collected = []
+        for element in base:
+            current = self.visit(node['children'][1], element)
+            if current is not None:
+                collected.append(current)
+        return collected
+
+    def visit_value_projection(self, node, value):
+        base = self.visit(node['children'][0], value)
+        try:
+            base = base.values()
+        except AttributeError:
+            return None
+        collected = []
+        for element in base:
+            current = self.visit(node['children'][1], element)
+            if current is not None:
+                collected.append(current)
+        return collected
+
+    def _is_false(self, value):
+        # This looks weird, but we're explicitly using equality checks
+        # because the truth/false values are different between
+        # python and jmespath.
+        return (value == '' or value == [] or value == {} or value is None or
+                value is False)
