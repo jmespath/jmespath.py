@@ -235,7 +235,8 @@ Index Expressions
 ::
 
   index-expression  = expression bracket-specifier / bracket-specifier
-  bracket-specifier = "[" (number / "*") "]" / "[]"
+  bracket-specifier = "[" (number / "*" / slice-expression) "]" / "[]"
+  slice-expression  = [number] ":" [number] [ ":" [number] ]
 
 An index expression is used to access elements in a list.  Indexing is 0 based,
 the index of 0 refers to the first element of the list.  A negative number is a
@@ -255,6 +256,29 @@ input to the ``bracket-specifier``.
 
 Using a "*" character within a ``bracket-specifier`` is discussed below in the
 ``wildcard expressions`` section.
+
+Slices
+------
+
+A slice expression allows you to select a subset of an array.  A slice
+has the general form ``[start:stop:step]``, but each component is optional.
+
+Slice expressions adhere to the following rules:
+
+* If a negative start position is given, it is calculated as the total length
+  of the array plus the given start position.
+* If no start position is given, it is assumed to be 0 if the given step is
+  greater than 0 or the end of the array if the given step is less than 0.
+* If a negative stop position is given, it is calculated as the total length
+  of the array plus the given stop position.
+* If no stop position is given, it is assumed to be the length of the array if
+  the given step is greater than 0 or 0 if the given step is less than 0.
+* If the given step is omitted, it it assumed to be 1.
+* If the given step is 0, an error MUST be raised.
+* If the element being sliced is not an array, the result is ``null``.
+* If the element being sliced is an array and yields no results, the result
+  MUST be an empty array.
+
 
 Flatten Operator
 ----------------
