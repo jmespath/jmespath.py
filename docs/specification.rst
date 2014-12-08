@@ -27,8 +27,8 @@ The grammar is specified using ABNF, as described in `RFC4234`_
 ::
 
     expression        = sub-expression / index-expression / or-expression / identifier
-    expression        /= "*" / multi-select-list / multi-select-hash / literal
-    expression        /= function-expression / pipe-expression
+    expression        =/ "*" / multi-select-list / multi-select-hash / literal
+    expression        =/ function-expression / pipe-expression
     sub-expression    = expression "." ( identifier /
                                          multi-select-list /
                                          multi-select-hash /
@@ -120,6 +120,7 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     minus = %x2D               ; -
     plus = %x2B                ; +
     zero = %x30                ; 0
+
 
 Identifiers
 ===========
