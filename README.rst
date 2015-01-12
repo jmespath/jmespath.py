@@ -46,7 +46,7 @@ You can find the most up to date grammar for JMESPath
 `here <http://jmespath.readthedocs.org/en/latest/specification.html#grammar>`__.
 
 You can read the full JMESPath specification
-`here http://jmespath.readthedocs.org/en/latest/specification.html`__.
+`here <http://jmespath.readthedocs.org/en/latest/specification.html>`__.
 
 
 Testing
