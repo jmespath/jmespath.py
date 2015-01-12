@@ -260,8 +260,24 @@ Using a "*" character within a ``bracket-specifier`` is discussed below in the
 Slices
 ------
 
-A slice expression allows you to select a subset of an array.  A slice
-has the general form ``[start:stop:step]``, but each component is optional.
+A slice expression allows you to select a subset of an array.  A slice has a
+``start``, ``stop``, and ``step`` value.  The general form of a slice is
+``[start:stop:step]``, but each component is optional.
+
+.. note::
+
+  Slices in JMESPath have the same semantics as python slices
+
+Given a ``start``, ``stop``, and ``step`` value, the sub elements in an array
+are extracted as follows:
+
+* The first element in the extracted array is the index denoted by ``start``.
+* The last element in the extracted array is the index denoted by ``end - 1``.
+* While elements are being extracted, a current index is incremented.  The
+  ``step`` value indicates the amount in which the current index is
+  incremented.
+
+
 
 Slice expressions adhere to the following rules:
 
