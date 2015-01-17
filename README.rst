@@ -33,21 +33,20 @@ The ``*`` can also be used for hash types::
 
 The expression: ``foo.*.name`` will return ["one", "two"].
 
-**NOTE: jmespath is being actively developed.  There are a number
-of features it does not currently support that may be added in the
-future.**
-
 
 Specification
 =============
 
 The grammar is specified using ABNF, as described in
 `RFC4234 <http://www.ietf.org/rfc/rfc4234.txt>`_.
-You can find the most up to date grammar for JMESPath
-`here <http://jmespath.readthedocs.org/en/latest/specification.html#grammar>`__.
+You can find the most up to date
+`grammar for JMESPath here <http://jmespath.org/specification.html#grammar>`__.
 
-You can read the full JMESPath specification
-`here <http://jmespath.readthedocs.org/en/latest/specification.html>`__.
+You can read the full
+`JMESPath specification here <http://jmespath.org/specification.html>`__.
+
+If you'd like to learn more about the JMESPath language, you can check out
+the `JMESPath tutorial <http://jmespath.org/tutorial.html>`__.
 
 
 Testing
