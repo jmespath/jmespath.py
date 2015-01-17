@@ -436,5 +436,15 @@ class ParsedResult(object):
         result = interpreter.visit(self.parsed, value)
         return result
 
+    def pretty_print(self, indent=''):
+        return self.parsed.pretty_print(indent=indent)
+
+    def render_dot_file(self, filename):
+        renderer = visitor.GraphvizVisitor()
+        contents = renderer.visit(self.parsed)
+        with open(filename, 'w') as f:
+            f.write(contents)
+            f.write('\n')
+
     def __repr__(self):
         return repr(self.parsed)

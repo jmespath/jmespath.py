@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+import os
+import time
+import tempfile
+import argparse
+from subprocess import check_call, call
+
+import jmespath
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('expression', help='JMESPath expression.')
+    args = parser.parse_args()
+    parsed = jmespath.compile(args.expression)
+    with tempfile.NamedTemporaryFile('w') as f:
+        parsed.render_dot_file(f.name)
+        svg_name = os.path.splitext(f.name)[0] + '.svg'
+        check_call('dot -Tsvg %s -o %s' % (f.name, svg_name), shell=True)
+        call('open %s' % svg_name, shell=True)
+    # Rather than prompt the user to hit enter,
+    # just sleep for as long as we think is reasonable for
+    # an application to open and display the svg.
+    time.sleep(3)
+    os.remove(svg_name)
+    print
+
+
+if __name__ == '__main__':
+    main()
