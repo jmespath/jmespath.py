@@ -28,10 +28,13 @@ def run_tests(tests):
         lex_time = _lex_time(expression)
         parse_time = _parse_time(expression)
         search_time = _search_time(expression, given)
+        combined_time = _combined_time(expression, given)
         sys.stdout.write(
-            "lex_time: %.8f, parse_time: %.8fms, search_time: %.8fms" % (
-                1000 * lex_time, 1000 * parse_time, 1000 * search_time))
-        sys.stdout.write(" description: %s " % test['description'])
+            "lex_time: %.8f, parse_time: %.8fms, search_time: %.8fms "
+            "combined_time: %.8fms " % (1000 * lex_time,
+                                        1000 * parse_time,
+                                        1000 * search_time,
+                                        1000 * combined_time))
         sys.stdout.write("name: %s\n" % test['name'])
 
 
@@ -61,6 +64,7 @@ def _search_time(expression, given):
             best = total
     return best
 
+
 def _parse_time(expression):
     best = float('inf')
     p = Parser()
@@ -73,6 +77,21 @@ def _parse_time(expression):
         if total < best:
             best = total
     return best
+
+
+def _combined_time(expression, given):
+    best = float('inf')
+    p = Parser()
+    for i in range(DEFAULT_NUM_LOOP):
+        p.purge()
+        start = time.time()
+        p.parse(expression).search(given)
+        end = time.time()
+        total = end - start
+        if total < best:
+            best = total
+    return best
+
 
 def load_tests(filename):
     loaded = []
