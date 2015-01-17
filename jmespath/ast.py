@@ -70,8 +70,8 @@ def projection(left, right):
     return {'type': 'projection', 'children': [left, right]}
 
 
-def sub_expression(left, right):
-    return {"type": "sub_expression", 'children': [left, right]}
+def sub_expression(children):
+    return {"type": "sub_expression", 'children': children}
 
 
 def value_projection(left, right):

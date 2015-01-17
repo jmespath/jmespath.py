@@ -185,7 +185,11 @@ class Parser(object):
     def _token_led_dot(self, left):
         if not self._current_token() == 'star':
             right = self._parse_dot_rhs(self.BINDING_POWER['dot'])
-            return ast.sub_expression(left, right)
+            if left['type'] == 'sub_expression':
+                left['children'].append(right)
+                return left
+            else:
+                return ast.sub_expression([left, right])
         else:
             # We're creating a projection.
             self._advance()

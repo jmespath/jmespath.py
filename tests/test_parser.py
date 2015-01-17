@@ -23,8 +23,9 @@ class TestParser(unittest.TestCase):
         self.assert_parsed_ast('foo', ast.field('foo'))
 
     def test_dot_syntax(self):
-        self.assert_parsed_ast('foo.bar', ast.sub_expression(ast.field('foo'),
-                                                             ast.field('bar')))
+        self.assert_parsed_ast('foo.bar',
+                               ast.sub_expression([ast.field('foo'),
+                                                   ast.field('bar')]))
 
     def test_multiple_dots(self):
         parsed = self.parser.parse('foo.bar.baz')
@@ -38,8 +39,10 @@ class TestParser(unittest.TestCase):
             'one')
 
     def test_quoted_subexpression(self):
-        self.assert_parsed_ast('"foo"."bar"', ast.sub_expression(
-            ast.field('foo'), ast.field('bar')))
+        self.assert_parsed_ast('"foo"."bar"',
+                               ast.sub_expression([
+                                   ast.field('foo'),
+                                   ast.field('bar')]))
 
     def test_wildcard(self):
         parsed = self.parser.parse('foo[*]')
