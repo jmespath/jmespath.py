@@ -38,8 +38,8 @@ def index(index):
     return {"type": "index", "value": index, "children": []}
 
 
-def index_expression(left, right):
-    return {"type": "index_expression", 'children': [left, right]}
+def index_expression(children):
+    return {"type": "index_expression", 'children': children}
 
 
 def key_val_pair(key_name, node):

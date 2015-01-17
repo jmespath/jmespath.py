@@ -261,7 +261,11 @@ class Parser(object):
             self._match('number')
             right = ast.index(token['value'])
             self._match('rbracket')
-            return ast.index_expression(left, right)
+            if left['type'] == 'index_expression':
+                left['children'].append(right)
+                return left
+            else:
+                return ast.index_expression([left, right])
         else:
             # We have a projection
             self._match('star')
