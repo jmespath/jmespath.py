@@ -17,7 +17,7 @@ from jmespath.lexer import Lexer
 
 
 DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_NUM_LOOP = 100
+DEFAULT_NUM_LOOP = 1000
 
 
 def run_tests(tests):
