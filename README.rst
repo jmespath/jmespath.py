@@ -41,7 +41,8 @@ future.**
 Specification
 =============
 
-The grammar is specified using ABNF, as described in `RFC4234`_.
+The grammar is specified using ABNF, as described in
+`RFC4234 <http://www.ietf.org/rfc/rfc4234.txt>`_.
 You can find the most up to date grammar for JMESPath
 `here <http://jmespath.readthedocs.org/en/latest/specification.html#grammar>`__.
 
