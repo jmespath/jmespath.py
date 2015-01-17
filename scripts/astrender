@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+import os
+import sys
+import time
+import tempfile
+import argparse
+import shutil
+import webbrowser
+from subprocess import check_call, call, PIPE
+
+import jmespath
+import jmespath.exceptions
+
+
+def verify_preconditions():
+    # Must have a 'dot' executable on the path.
+   rc = call(['type', 'dot'], stdout=PIPE)
+   if rc != 0:
+        sys.stderr.write("Could not find the 'dot' executable.  Ensure "
+                         "that graphviz is installed.")
+        raise RuntimeError("Could not find 'dot'.")
+
+
+def main():
+    verify_preconditions()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('expression', help='JMESPath expression.')
+    parser.add_argument('-s', '--save-file',
+                        help='The filename to save the rendered AST.  If no '
+                        'value is specified, a temporary file will be used '
+                        'and immediately deleted after displaying the AST.')
+    args = parser.parse_args()
+    try:
+        parsed = jmespath.compile(args.expression)
+    except jmespath.exceptions.JMESPathError as e:
+        sys.stderr.write("Invalid expressions: %s\n" % e)
+        return 1
+    with tempfile.NamedTemporaryFile('w') as f:
+        contents = parsed._render_dot_file()
+        f.write(contents)
+        f.flush()
+        svg_name = os.path.splitext(f.name)[0] + '.png'
+        check_call('dot -Tpng %s -o %s' % (f.name, svg_name), shell=True)
+        webbrowser.open('file://%s' % svg_name)
+    # Rather than prompt the user to hit enterr
+    # just sleep for as long as we think is reasonable for
+    # an application to open and display the png.
+    time.sleep(2)
+    if args.save_file:
+        shutil.copy(svg_name, args.save_file)
+    os.remove(svg_name)
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
