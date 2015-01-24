@@ -152,6 +152,12 @@ class TreeInterpreter(Visitor):
             result = self.visit(node, result)
         return result
 
+    def visit_slice(self, node, value):
+        if not isinstance(value, list):
+            return None
+        s = slice(*node['children'])
+        return value[s]
+
     def visit_key_val_pair(self, node, value):
         return self.visit(node['children'][0], value)
 

@@ -27,8 +27,8 @@ The grammar is specified using ABNF, as described in `RFC4234`_
 ::
 
     expression        = sub-expression / index-expression / or-expression / identifier
-    expression        /= "*" / multi-select-list / multi-select-hash / literal
-    expression        /= function-expression / pipe-expression
+    expression        =/ "*" / multi-select-list / multi-select-hash / literal
+    expression        =/ function-expression / pipe-expression
     sub-expression    = expression "." ( identifier /
                                          multi-select-list /
                                          multi-select-hash /
@@ -40,9 +40,10 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     multi-select-list = "[" ( expression *( "," expression ) ) "]"
     multi-select-hash = "{" ( keyval-expr *( "," keyval-expr ) ) "}"
     keyval-expr       = identifier ":" expression
-    bracket-specifier = "[" (number / "*") "]" / "[]"
+    bracket-specifier = "[" (number / "*" / slice-expression) "]" / "[]"
     bracket-specifier =/ "[?" list-filter-expr "]"
     list-filter-expr  = expression comparator expression
+    slice-expression  = [number] ":" [number] [ ":" [number] ]
     comparator        = "<" / "<=" / "==" / ">=" / ">" / "!="
     function-expression = unquoted-string  (
                             no-args  /
@@ -119,6 +120,7 @@ The grammar is specified using ABNF, as described in `RFC4234`_
     minus = %x2D               ; -
     plus = %x2B                ; +
     zero = %x30                ; 0
+
 
 Identifiers
 ===========
@@ -233,7 +235,8 @@ Index Expressions
 ::
 
   index-expression  = expression bracket-specifier / bracket-specifier
-  bracket-specifier = "[" (number / "*") "]" / "[]"
+  bracket-specifier = "[" (number / "*" / slice-expression) "]" / "[]"
+  slice-expression  = [number] ":" [number] [ ":" [number] ]
 
 An index expression is used to access elements in a list.  Indexing is 0 based,
 the index of 0 refers to the first element of the list.  A negative number is a
@@ -253,6 +256,65 @@ input to the ``bracket-specifier``.
 
 Using a "*" character within a ``bracket-specifier`` is discussed below in the
 ``wildcard expressions`` section.
+
+Slices
+------
+
+::
+
+  slice-expression  = [number] ":" [number] [ ":" [number] ]
+
+A slice expression allows you to select a contiguous subset of an array.  A
+slice has a ``start``, ``stop``, and ``step`` value.  The general form of a
+slice is ``[start:stop:step]``, but each component is optional and can
+be omitted.
+
+.. note::
+
+  Slices in JMESPath have the same semantics as python slices.
+
+Given a ``start``, ``stop``, and ``step`` value, the sub elements in an array
+are extracted as follows:
+
+* The first element in the extracted array is the index denoted by ``start``.
+* The last element in the extracted array is the index denoted by ``end - 1``.
+* The ``step`` value determines how many indices to skip after each element
+  is selected from the array.  An array of 1 (the default step) will not skip
+  any indices.  A step value of 2 will skip every other index while extracting
+  elements from an array.  A step value of -1 will extract values in reverse
+  order from the array.
+
+
+Slice expressions adhere to the following rules:
+
+* If a negative start position is given, it is calculated as the total length
+  of the array plus the given start position.
+* If no start position is given, it is assumed to be 0 if the given step is
+  greater than 0 or the end of the array if the given step is less than 0.
+* If a negative stop position is given, it is calculated as the total length
+  of the array plus the given stop position.
+* If no stop position is given, it is assumed to be the length of the array if
+  the given step is greater than 0 or 0 if the given step is less than 0.
+* If the given step is omitted, it it assumed to be 1.
+* If the given step is 0, an error MUST be raised.
+* If the element being sliced is not an array, the result is ``null``.
+* If the element being sliced is an array and yields no results, the result
+  MUST be an empty array.
+
+
+Examples
+--------
+
+::
+
+  search([0:4:1], [0, 1, 2, 3]) -> [0, 1, 2, 3]
+  search([0:4], [0, 1, 2, 3]) -> [0, 1, 2, 3]
+  search([0:3], [0, 1, 2, 3]) -> [0, 1, 2]
+  search([:2], [0, 1, 2, 3]) -> [0, 1]
+  search([::2], [0, 1, 2, 3]) -> [0, 2]
+  search([::-1], [0, 1, 2, 3]) -> [3, 2, 1, 0]
+  search([-2:], [0, 1, 2, 3]) -> [2, 3]
+
 
 Flatten Operator
 ----------------

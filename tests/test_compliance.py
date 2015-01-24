@@ -77,7 +77,7 @@ def _test_expression(given, expression, expected, filename):
 def _test_error_expression(given, expression, error, filename):
     import jmespath.parser
     if error not in ('syntax', 'invalid-type',
-                     'unknown-function', 'invalid-arity'):
+                     'unknown-function', 'invalid-arity', 'invalid-value'):
         raise RuntimeError("Unknown error type '%s'" % error)
     try:
         parsed = jmespath.compile(expression)
