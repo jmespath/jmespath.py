@@ -312,5 +312,27 @@ class TestParserAddsExpressionAttribute(unittest.TestCase):
         self.assertEqual(parsed.expression, 'foo.bar')
 
 
+class TestRenderGraphvizFile(unittest.TestCase):
+    def test_dot_file_rendered(self):
+        p = parser.Parser()
+        result = p.parse('foo')
+        dot_contents = result._render_dot_file()
+        self.assertEqual(dot_contents,
+                         'digraph AST {\nfield1 [label="field(foo)"]\n}')
+
+    def test_dot_file_sub_expr(self):
+        p = parser.Parser()
+        result = p.parse('foo.bar')
+        dot_contents = result._render_dot_file()
+        self.assertEqual(
+            dot_contents,
+            'digraph AST {\n'
+            'sub_expression1 [label="sub_expression()"]\n'
+            '  sub_expression1 -> field2\n'
+            'field2 [label="field(foo)"]\n'
+            '  sub_expression1 -> field3\n'
+            'field3 [label="field(bar)"]\n}')
+
+
 if __name__ == '__main__':
     unittest.main()
