@@ -1,6 +1,10 @@
 JMESPath
 ========
 
+.. image:: https://secure.travis-ci.org/boto/jmespath.png?branch=develop
+   :target: http://travis-ci.org/boto/jmespath
+
+
 JMESPath (pronounced ``\ˈjāmz path\``) allows you to declaratively specify how to
 extract elements from a JSON document.
 
