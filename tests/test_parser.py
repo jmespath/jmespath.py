@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import re
 from tests import unittest
 
 from jmespath import parser
@@ -145,12 +146,15 @@ class TestErrorMessages(unittest.TestCase):
         self.assert_error_message('`{{}`', error_message,
                                   exception=exceptions.LexerError)
 
-
     def test_bad_unicode_string(self):
-        error_message = ('Bad jmespath expression: '
-                         'Invalid \\uXXXX escape:\n"\\uAZ12"\n^')
-        self.assert_error_message(r'"\uAZ12"', error_message,
-                                  exception=exceptions.LexerError)
+        # This error message is straight from the JSON parser
+        # and pypy has a slightly different error message,
+        # so we're not using assert_error_message.
+        error_message = re.compile(
+            r'Bad jmespath expression: '
+            r'Invalid \\uXXXX escape.*\\uAZ12', re.DOTALL)
+        with self.assertRaisesRegexp(exceptions.LexerError, error_message):
+            self.parser.parse(r'"\uAZ12"')
 
 
 class TestParserWildcards(unittest.TestCase):
