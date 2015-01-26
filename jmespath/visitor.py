@@ -75,7 +75,7 @@ class TreeInterpreter(Visitor):
         # properly freed.
         self._functions.interpreter = self
 
-    def visit_sub_expression(self, node, value):
+    def visit_subexpression(self, node, value):
         result = value
         for node in node['children']:
             result = self.visit(node, result)

@@ -25,8 +25,8 @@ class TestParser(unittest.TestCase):
 
     def test_dot_syntax(self):
         self.assert_parsed_ast('foo.bar',
-                               ast.sub_expression([ast.field('foo'),
-                                                   ast.field('bar')]))
+                               ast.subexpression([ast.field('foo'),
+                                                  ast.field('bar')]))
 
     def test_multiple_dots(self):
         parsed = self.parser.parse('foo.bar.baz')
@@ -41,7 +41,7 @@ class TestParser(unittest.TestCase):
 
     def test_quoted_subexpression(self):
         self.assert_parsed_ast('"foo"."bar"',
-                               ast.sub_expression([
+                               ast.subexpression([
                                    ast.field('foo'),
                                    ast.field('bar')]))
 
@@ -327,17 +327,17 @@ class TestRenderGraphvizFile(unittest.TestCase):
         self.assertEqual(dot_contents,
                          'digraph AST {\nfield1 [label="field(foo)"]\n}')
 
-    def test_dot_file_sub_expr(self):
+    def test_dot_file_subexpr(self):
         p = parser.Parser()
         result = p.parse('foo.bar')
         dot_contents = result._render_dot_file()
         self.assertEqual(
             dot_contents,
             'digraph AST {\n'
-            'sub_expression1 [label="sub_expression()"]\n'
-            '  sub_expression1 -> field2\n'
+            'subexpression1 [label="subexpression()"]\n'
+            '  subexpression1 -> field2\n'
             'field2 [label="field(foo)"]\n'
-            '  sub_expression1 -> field3\n'
+            '  subexpression1 -> field3\n'
             'field3 [label="field(bar)"]\n}')
 
 

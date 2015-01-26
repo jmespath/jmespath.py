@@ -70,8 +70,8 @@ def projection(left, right):
     return {'type': 'projection', 'children': [left, right]}
 
 
-def sub_expression(children):
-    return {"type": "sub_expression", 'children': children}
+def subexpression(children):
+    return {"type": "subexpression", 'children': children}
 
 
 def slice(start, end, step):
