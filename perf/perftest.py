@@ -12,12 +12,19 @@ import os
 import json
 import sys
 
+try:
+    _clock = time.process_time
+except AttributeError:
+    # Python 2.x does not have time.process_time
+    _clock = time.clock
+
+
 from jmespath.parser import Parser
 from jmespath.lexer import Lexer
 
 
 DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_NUM_LOOP = 100
+DEFAULT_NUM_LOOP = 1000
 
 
 def run_tests(tests):
@@ -28,51 +35,70 @@ def run_tests(tests):
         lex_time = _lex_time(expression)
         parse_time = _parse_time(expression)
         search_time = _search_time(expression, given)
+        combined_time = _combined_time(expression, given)
         sys.stdout.write(
-            "lex_time: %.8f, parse_time: %.8fms, search_time: %.8fms" % (
-                1000 * lex_time, 1000 * parse_time, 1000 * search_time))
-        sys.stdout.write(" description: %s " % test['description'])
+            "lex_time: %.5fms, parse_time: %.5fms, search_time: %.5fms "
+            "combined_time: %.5fms " % (1000 * lex_time,
+                                        1000 * parse_time,
+                                        1000 * search_time,
+                                        1000 * combined_time))
         sys.stdout.write("name: %s\n" % test['name'])
 
 
-def _lex_time(expression):
+def _lex_time(expression, clock=_clock):
     best = float('inf')
     lex = Lexer()
     for i in range(DEFAULT_NUM_LOOP):
-        start = time.time()
+        start = clock()
         list(lex.tokenize(expression))
-        end = time.time()
+        end = clock()
         total = end - start
         if total < best:
             best = total
     return best
 
 
-def _search_time(expression, given):
+def _search_time(expression, given, clock=_clock):
     p = Parser()
     parsed = p.parse(expression)
     best = float('inf')
     for i in range(DEFAULT_NUM_LOOP):
-        start = time.time()
+        start = clock()
         parsed.search(given)
-        end = time.time()
+        end = clock()
         total = end - start
         if total < best:
             best = total
     return best
 
-def _parse_time(expression):
+
+def _parse_time(expression, clock=_clock):
     best = float('inf')
     p = Parser()
     for i in range(DEFAULT_NUM_LOOP):
         p.purge()
-        start = time.time()
+        start = clock()
         p.parse(expression)
-        end = time.time()
+        end = clock()
         total = end - start
         if total < best:
             best = total
     return best
+
+
+def _combined_time(expression, given, clock=_clock):
+    best = float('inf')
+    p = Parser()
+    for i in range(DEFAULT_NUM_LOOP):
+        p.purge()
+        start = clock()
+        p.parse(expression).search(given)
+        end = clock()
+        total = end - start
+        if total < best:
+            best = total
+    return best
+
 
 def load_tests(filename):
     loaded = []

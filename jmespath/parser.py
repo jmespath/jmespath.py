@@ -222,7 +222,11 @@ class Parser(object):
     def _token_led_dot(self, left):
         if not self._current_token() == 'star':
             right = self._parse_dot_rhs(self.BINDING_POWER['dot'])
-            return ast.sub_expression(left, right)
+            if left['type'] == 'sub_expression':
+                left['children'].append(right)
+                return left
+            else:
+                return ast.sub_expression([left, right])
         else:
             # We're creating a projection.
             self._advance()
@@ -292,7 +296,11 @@ class Parser(object):
         token = self._lookahead_token(0)
         if token['type'] in ['number', 'colon']:
             right = self._parse_index_expression()
-            return ast.index_expression(left, right)
+            if left['type'] == 'index_expression':
+                left['children'].append(right)
+                return left
+            else:
+                return ast.index_expression([left, right])
         else:
             # We have a projection
             self._match('star')
@@ -406,7 +414,9 @@ class Parser(object):
                                     token['type'], 'Invalid token')
 
     def _match(self, token_type=None):
+        # inline'd self._current_token()
         if self._current_token() == token_type:
+            # inline'd self._advance()
             self._advance()
         else:
             t = self._lookahead_token(0)
