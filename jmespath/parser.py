@@ -380,9 +380,9 @@ class Parser(object):
 
     def _match(self, token_type=None):
         # inline'd self._current_token()
-        if self._tokens[self._index]['type'] == token_type:
+        if self._current_token() == token_type:
             # inline'd self._advance()
-            self._index += 1
+            self._advance()
         else:
             t = self._lookahead_token(0)
             lex_position = t['start']
