@@ -215,6 +215,9 @@ class Parser(object):
         self._match('rbracket')
         return ast.slice(*parts)
 
+    def _token_nud_current(self, token):
+        return ast.current_node()
+
     def _token_nud_expref(self, token):
         expression = self._expression(self.BINDING_POWER['expref'])
         return ast.expref(expression)
