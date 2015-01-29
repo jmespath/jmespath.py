@@ -2,6 +2,13 @@
 JMESPath Specification
 ======================
 
+.. warning::
+
+  This page is deprecated and will be removed in the near future.
+  Go to http://jmespath.org/specification.html for the latest
+  JMESPath specification.
+
+
 This document describes the specification for jmespath.
 In the specification, examples are shown through the use
 of a ``search`` function.  The syntax for this function is::
