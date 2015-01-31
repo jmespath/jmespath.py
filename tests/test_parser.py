@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import re
 from tests import unittest
 
 from jmespath import parser
@@ -23,8 +24,9 @@ class TestParser(unittest.TestCase):
         self.assert_parsed_ast('foo', ast.field('foo'))
 
     def test_dot_syntax(self):
-        self.assert_parsed_ast('foo.bar', ast.sub_expression(ast.field('foo'),
-                                                             ast.field('bar')))
+        self.assert_parsed_ast('foo.bar',
+                               ast.subexpression([ast.field('foo'),
+                                                  ast.field('bar')]))
 
     def test_multiple_dots(self):
         parsed = self.parser.parse('foo.bar.baz')
@@ -38,8 +40,10 @@ class TestParser(unittest.TestCase):
             'one')
 
     def test_quoted_subexpression(self):
-        self.assert_parsed_ast('"foo"."bar"', ast.sub_expression(
-            ast.field('foo'), ast.field('bar')))
+        self.assert_parsed_ast('"foo"."bar"',
+                               ast.subexpression([
+                                   ast.field('foo'),
+                                   ast.field('bar')]))
 
     def test_wildcard(self):
         parsed = self.parser.parse('foo[*]')
@@ -145,12 +149,15 @@ class TestErrorMessages(unittest.TestCase):
         self.assert_error_message('`{{}`', error_message,
                                   exception=exceptions.LexerError)
 
-
     def test_bad_unicode_string(self):
-        error_message = ('Bad jmespath expression: '
-                         'Invalid \\uXXXX escape:\n"\\uAZ12"\n^')
-        self.assert_error_message(r'"\uAZ12"', error_message,
-                                  exception=exceptions.LexerError)
+        # This error message is straight from the JSON parser
+        # and pypy has a slightly different error message,
+        # so we're not using assert_error_message.
+        error_message = re.compile(
+            r'Bad jmespath expression: '
+            r'Invalid \\uXXXX escape.*\\uAZ12', re.DOTALL)
+        with self.assertRaisesRegexp(exceptions.LexerError, error_message):
+            self.parser.parse(r'"\uAZ12"')
 
 
 class TestParserWildcards(unittest.TestCase):
@@ -310,6 +317,28 @@ class TestParserAddsExpressionAttribute(unittest.TestCase):
         p = parser.Parser()
         parsed = p.parse('foo.bar')
         self.assertEqual(parsed.expression, 'foo.bar')
+
+
+class TestRenderGraphvizFile(unittest.TestCase):
+    def test_dot_file_rendered(self):
+        p = parser.Parser()
+        result = p.parse('foo')
+        dot_contents = result._render_dot_file()
+        self.assertEqual(dot_contents,
+                         'digraph AST {\nfield1 [label="field(foo)"]\n}')
+
+    def test_dot_file_subexpr(self):
+        p = parser.Parser()
+        result = p.parse('foo.bar')
+        dot_contents = result._render_dot_file()
+        self.assertEqual(
+            dot_contents,
+            'digraph AST {\n'
+            'subexpression1 [label="subexpression()"]\n'
+            '  subexpression1 -> field2\n'
+            'field2 [label="field(foo)"]\n'
+            '  subexpression1 -> field3\n'
+            'field3 [label="field(bar)"]\n}')
 
 
 if __name__ == '__main__':

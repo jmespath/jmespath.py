@@ -190,7 +190,8 @@ class RuntimeFunctions(object):
         if isinstance(arg, STRING_TYPE):
             return arg
         else:
-            return json.dumps(arg, separators=(',', ':'))
+            return json.dumps(arg, separators=(',', ':'),
+                              default=str)
 
     @builtin_function({'types': []})
     def _func_to_number(self, arg):

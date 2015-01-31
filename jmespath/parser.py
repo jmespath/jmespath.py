@@ -164,11 +164,8 @@ class Parser(object):
         return ast.projection(left, right)
 
     def _token_nud_lbracket(self, token):
-        if self._current_token() == 'number':
-            node = ast.index(self._lookahead_token(0)['value'])
-            self._advance()
-            self._match('rbracket')
-            return node
+        if self._current_token() in ['number', 'colon']:
+            return self._parse_index_expression()
         elif self._current_token() == 'star' and \
                 self._lookahead(1) == 'rbracket':
             self._advance()
@@ -178,6 +175,46 @@ class Parser(object):
         else:
             return self._parse_multi_select_list()
 
+    def _parse_index_expression(self):
+        # We're here:
+        # [<current>
+        #  ^
+        #  | current token
+        if (self._lookahead(0) == 'colon' or
+                self._lookahead(1) == 'colon'):
+            return self._parse_slice_expression()
+        else:
+            # Parse the syntax [number]
+            node = ast.index(self._lookahead_token(0)['value'])
+            self._advance()
+            self._match('rbracket')
+            return node
+
+    def _parse_slice_expression(self):
+        # [start:end:step]
+        # Where start, end, and step are optional.
+        # The last colon is optional as well.
+        parts = [None, None, None]
+        index = 0
+        current_token = self._current_token()
+        while not current_token == 'rbracket' and index < 3:
+            if current_token == 'colon':
+                index += 1
+                self._advance()
+            elif current_token == 'number':
+                parts[index] = self._lookahead_token(0)['value']
+                self._advance()
+            else:
+                t = self._lookahead_token(0)
+                lex_position = t['start']
+                actual_value = t['value']
+                actual_type = t['type']
+                raise exceptions.ParseError(lex_position, actual_value,
+                                            actual_type, 'syntax error')
+            current_token = self._current_token()
+        self._match('rbracket')
+        return ast.slice(*parts)
+
     def _token_nud_expref(self, token):
         expression = self._expression(self.BINDING_POWER['expref'])
         return ast.expref(expression)
@@ -185,7 +222,11 @@ class Parser(object):
     def _token_led_dot(self, left):
         if not self._current_token() == 'star':
             right = self._parse_dot_rhs(self.BINDING_POWER['dot'])
-            return ast.sub_expression(left, right)
+            if left['type'] == 'subexpression':
+                left['children'].append(right)
+                return left
+            else:
+                return ast.subexpression([left, right])
         else:
             # We're creating a projection.
             self._advance()
@@ -253,11 +294,13 @@ class Parser(object):
 
     def _token_led_lbracket(self, left):
         token = self._lookahead_token(0)
-        if token['type'] == 'number':
-            self._match('number')
-            right = ast.index(token['value'])
-            self._match('rbracket')
-            return ast.index_expression(left, right)
+        if token['type'] in ['number', 'colon']:
+            right = self._parse_index_expression()
+            if left['type'] == 'index_expression':
+                left['children'].append(right)
+                return left
+            else:
+                return ast.index_expression([left, right])
         else:
             # We have a projection
             self._match('star')
@@ -371,7 +414,9 @@ class Parser(object):
                                     token['type'], 'Invalid token')
 
     def _match(self, token_type=None):
+        # inline'd self._current_token()
         if self._current_token() == token_type:
+            # inline'd self._advance()
             self._advance()
         else:
             t = self._lookahead_token(0)
@@ -435,6 +480,20 @@ class ParsedResult(object):
         interpreter = visitor.TreeInterpreter()
         result = interpreter.visit(self.parsed, value)
         return result
+
+    def _render_dot_file(self):
+        """Render the parsed AST as a dot file.
+
+        Note that this is marked as an internal method because
+        the AST is an implementation detail and is subject
+        to change.  This method can be used to help troubleshoot
+        or for development purposes, but is not considered part
+        of the public supported API.  Use at your own risk.
+
+        """
+        renderer = visitor.GraphvizVisitor()
+        contents = renderer.visit(self.parsed)
+        return contents
 
     def __repr__(self):
         return repr(self.parsed)
