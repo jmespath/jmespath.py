@@ -1,8 +1,8 @@
 JMESPath
 ========
 
-.. image:: https://secure.travis-ci.org/boto/jmespath.png?branch=develop
-   :target: http://travis-ci.org/boto/jmespath
+.. image:: https://secure.travis-ci.org/jmespath/jmespath.py.png?branch=develop
+   :target: http://travis-ci.org/jmespath/jmespath.py
 
 
 JMESPath (pronounced ``\ˈjāmz path\``) allows you to declaratively specify how to
