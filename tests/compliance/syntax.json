@@ -95,14 +95,6 @@
       {
         "expression": "a][",
         "error": "syntax"
-      },
-      {
-        "expression": "@",
-        "error": "syntax"
-      },
-      {
-        "expression": "@.foo",
-        "error": "syntax"
       }
     ]
   },
