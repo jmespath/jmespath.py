@@ -1,6 +1,11 @@
 JMESPath
 ========
 
+
+.. image:: https://badges.gitter.im/Join Chat.svg
+   :target: https://gitter.im/jmespath/chat
+
+
 .. image:: https://secure.travis-ci.org/jmespath/jmespath.py.png?branch=develop
    :target: http://travis-ci.org/jmespath/jmespath.py
 
@@ -36,6 +41,9 @@ The ``*`` can also be used for hash types::
    {"foo": {"bar": {"name": "one"}, "baz": {"name": "two"}}}
 
 The expression: ``foo.*.name`` will return ["one", "two"].
+
+Join us on our `Gitter channel <https://gitter.im/jmespath/chat>`__
+if you want to chat or if you have any questions.
 
 
 Specification
