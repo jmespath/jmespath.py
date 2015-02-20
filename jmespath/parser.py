@@ -46,6 +46,7 @@ class Parser(object):
         'number': 0,
         'current': 0,
         'expref': 0,
+        'colon': 0,
         'pipe': 1,
         'eq': 2,
         'gt': 2,
@@ -165,7 +166,12 @@ class Parser(object):
 
     def _token_nud_lbracket(self, token):
         if self._current_token() in ['number', 'colon']:
-            return self._parse_index_expression()
+            right = self._parse_index_expression()
+            # We could optimize this and remove the identity() node.
+            # We don't really need an index_expression node, we can
+            # just use emit an index node here if we're not dealing
+            # with a slice.
+            return self._project_if_slice(ast.identity(), right)
         elif self._current_token() == 'star' and \
                 self._lookahead(1) == 'rbracket':
             self._advance()
@@ -300,16 +306,28 @@ class Parser(object):
         if token['type'] in ['number', 'colon']:
             right = self._parse_index_expression()
             if left['type'] == 'index_expression':
+                # Optimization: if the left node is an index expr,
+                # we can avoid creating another node and instead just add
+                # the right node as a child of the left.
                 left['children'].append(right)
                 return left
             else:
-                return ast.index_expression([left, right])
+                return self._project_if_slice(left, right)
         else:
             # We have a projection
             self._match('star')
             self._match('rbracket')
             right = self._parse_projection_rhs(self.BINDING_POWER['star'])
             return ast.projection(left, right)
+
+    def _project_if_slice(self, left, right):
+        index_expr = ast.index_expression([left, right])
+        if right['type'] == 'slice':
+            return ast.projection(
+                index_expr,
+                self._parse_projection_rhs(self.BINDING_POWER['star']))
+        else:
+            return index_expr
 
     def _parse_comparator(self, left, comparator):
         right = self._expression(self.BINDING_POWER[comparator])
