@@ -259,6 +259,13 @@ class RuntimeFunctions(object):
         else:
             return None
 
+    @builtin_function({"types": ["object"], "variadic": True})
+    def _func_merge(self, *arguments):
+        merged = {}
+        for arg in arguments:
+            merged.update(arg)
+        return merged
+
     @builtin_function({"types": ['array-number', 'array-string']})
     def _func_min(self, arg):
         if arg:
