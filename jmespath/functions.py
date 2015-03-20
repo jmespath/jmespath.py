@@ -186,6 +186,13 @@ class RuntimeFunctions(object):
                 return argument
 
     @builtin_function({'types': []})
+    def _func_to_array(self, arg):
+        if isinstance(arg, list):
+            return arg
+        else:
+            return [arg]
+
+    @builtin_function({'types': []})
     def _func_to_string(self, arg):
         if isinstance(arg, STRING_TYPE):
             return arg

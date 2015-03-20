@@ -432,6 +432,26 @@
       "result": 0
     },
     {
+      "expression": "to_array(`foo`)",
+      "result": ["foo"]
+    },
+    {
+      "expression": "to_array(`0`)",
+      "result": [0]
+    },
+    {
+      "expression": "to_array(objects)",
+      "result": [{"foo": "bar", "bar": "baz"}]
+    },
+    {
+      "expression": "to_array(`[1, 2, 3]`)",
+      "result": [1, 2, 3]
+    },
+    {
+      "expression": "to_array(false)",
+      "result": [false]
+    },
+    {
       "expression": "to_string(`foo`)",
       "result": "foo"
     },
