@@ -240,6 +240,26 @@
       "result": null
     },
     {
+      "expression": "merge(`{}`)",
+      "result": {}
+    },
+    {
+      "expression": "merge(`{}`, `{}`)",
+      "result": {}
+    },
+    {
+      "expression": "merge(`{\"a\": 1}`, `{\"b\": 2}`)",
+      "result": {"a": 1, "b": 2}
+    },
+    {
+      "expression": "merge(`{\"a\": 1}`, `{\"a\": 2}`)",
+      "result": {"a": 2}
+    },
+    {
+      "expression": "merge(`{\"a\": 1, \"b\": 2}`, `{\"a\": 2, \"c\": 3}`, `{\"d\": 4}`)",
+      "result": {"a": 2, "b": 2, "c": 3, "d": 4}
+    },
+    {
       "expression": "min(numbers)",
       "result": -1
     },
@@ -430,6 +450,26 @@
     {
       "expression": "sum(`[]`)",
       "result": 0
+    },
+    {
+      "expression": "to_array(`foo`)",
+      "result": ["foo"]
+    },
+    {
+      "expression": "to_array(`0`)",
+      "result": [0]
+    },
+    {
+      "expression": "to_array(objects)",
+      "result": [{"foo": "bar", "bar": "baz"}]
+    },
+    {
+      "expression": "to_array(`[1, 2, 3]`)",
+      "result": [1, 2, 3]
+    },
+    {
+      "expression": "to_array(false)",
+      "result": [false]
     },
     {
       "expression": "to_string(`foo`)",

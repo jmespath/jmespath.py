@@ -186,6 +186,13 @@ class RuntimeFunctions(object):
                 return argument
 
     @builtin_function({'types': []})
+    def _func_to_array(self, arg):
+        if isinstance(arg, list):
+            return arg
+        else:
+            return [arg]
+
+    @builtin_function({'types': []})
     def _func_to_string(self, arg):
         if isinstance(arg, STRING_TYPE):
             return arg
@@ -251,6 +258,13 @@ class RuntimeFunctions(object):
             return max(arg)
         else:
             return None
+
+    @builtin_function({"types": ["object"], "variadic": True})
+    def _func_merge(self, *arguments):
+        merged = {}
+        for arg in arguments:
+            merged.update(arg)
+        return merged
 
     @builtin_function({"types": ['array-number', 'array-string']})
     def _func_min(self, arg):
