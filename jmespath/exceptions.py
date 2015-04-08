@@ -71,19 +71,29 @@ class ArityError(ParseError):
         self.expression = None
 
     def __str__(self):
-        return ("Expected %s arguments for function %s(), "
-                "received %s" % (self.expected_arity,
-                                 self.function_name,
-                                 self.actual_arity))
+        return ("Expected %s %s for function %s(), "
+                "received %s" % (
+                    self.expected_arity,
+                    self._pluralize('argument', self.expected_arity),
+                    self.function_name,
+                    self.actual_arity))
+
+    def _pluralize(self, word, count):
+        if count == 1:
+            return word
+        else:
+            return word + 's'
 
 
 @with_str_method
 class VariadictArityError(ArityError):
     def __str__(self):
-        return ("Expected at least %s arguments for function %s, "
-                "received %s" % (self.expected_arity,
-                                 self.function_name,
-                                 self.actual_arity))
+        return ("Expected at least %s %s for function %s(), "
+                "received %s" % (
+                    self.expected_arity,
+                    self._pluralize('argument', self.expected_arity),
+                    self.function_name,
+                    self.actual_arity))
 
 
 @with_str_method

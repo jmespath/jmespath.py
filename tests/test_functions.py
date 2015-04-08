@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import json
 
 import jmespath
-from jmespath.exceptions import JMESPathTypeError
+from jmespath import exceptions
 
 
 class TestFunctions(unittest.TestCase):
@@ -19,7 +19,7 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual(json.loads(result), str(data[-1]))
 
     def test_type_error_messages(self):
-        with self.assertRaises(JMESPathTypeError) as e:
+        with self.assertRaises(exceptions.JMESPathTypeError) as e:
             jmespath.search('length(@)', 2)
         exception = e.exception
         # 1. Function name should be in error message
@@ -31,3 +31,27 @@ class TestFunctions(unittest.TestCase):
                       str(exception))
         # 4. Mention the actual type.
         self.assertIn('received: "number"', str(exception))
+
+    def test_singular_in_error_message(self):
+        with self.assertRaises(exceptions.ArityError) as e:
+            jmespath.search('length(@, @)', [0, 1])
+        exception = e.exception
+        self.assertEqual(
+            str(exception),
+            'Expected 1 argument for function length(), received 2')
+
+    def test_error_message_is_pluralized(self):
+        with self.assertRaises(exceptions.ArityError) as e:
+            jmespath.search('sort_by(@)', [0, 1])
+        exception = e.exception
+        self.assertEqual(
+            str(exception),
+            'Expected 2 arguments for function sort_by(), received 1')
+
+    def test_variadic_is_pluralized(self):
+        with self.assertRaises(exceptions.VariadictArityError) as e:
+            jmespath.search('not_null()', 'foo')
+        exception = e.exception
+        self.assertEqual(
+            str(exception),
+            'Expected at least 1 argument for function not_null(), received 0')
