@@ -427,6 +427,9 @@ class Parser(object):
                 "Token %s not allowed to be: %s" % (actual_type, token_types))
 
     def _error_nud_token(self, token):
+        if token['type'] == 'eof':
+            raise exceptions.IncompleteExpressionError(
+                token['start'], token['value'], token['type'])
         raise exceptions.ParseError(token['start'], token['value'],
                                     token['type'], 'Invalid token.')
 

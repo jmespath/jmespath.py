@@ -22,8 +22,8 @@ class ParseError(JMESPathError):
         # self.lex_position +1 to account for the starting double quote char.
         underline = ' ' * (self.lex_position + 1) + '^'
         return (
-            '%s: Parse error at column %s near '
-            'token "%s" (%s) for expression:\n"%s"\n%s' % (
+            '%s: Parse error at column %s, '
+            'token "%s" (%s), for expression:\n"%s"\n%s' % (
                 self.msg, self.lex_position, self.token_value, self.token_type,
                 self.expression, underline))
 
