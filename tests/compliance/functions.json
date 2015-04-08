@@ -609,7 +609,7 @@
   },
   "cases": [
     {
-      "description": "function projection on variadic function",
+      "description": "sort by field expression",
       "expression": "sort_by(people, &age)",
       "result": [
          {"age": 10, "age_str": "10", "bool": true, "name": 3},
@@ -620,7 +620,7 @@
       ]
     },
     {
-      "description": "function projection on variadic function",
+      "description": "sort by function expression",
       "expression": "sort_by(people, &to_number(age_str))",
       "result": [
          {"age": 10, "age_str": "10", "bool": true, "name": 3},
@@ -631,7 +631,7 @@
       ]
     },
     {
-      "description": "function projection on variadic function",
+      "description": "function projection on sort_by function",
       "expression": "sort_by(people, &age)[].name",
       "result": [3, "a", "c", "b", "d"]
     },
@@ -654,6 +654,10 @@
     {
       "expression": "sort_by(people, &age)[].extra",
       "result": ["foo", "bar"]
+    },
+    {
+      "expression": "sort_by(`[]`, &age)",
+      "result": []
     },
     {
       "expression": "max_by(people, &age)",
