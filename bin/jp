@@ -51,9 +51,6 @@ def main():
     except exceptions.UnknownFunctionError as e:
         sys.stderr.write("unknown-function: %s\n" % e)
         return 1
-    except exceptions.LexerError as e:
-        sys.stderr.write("syntax-error: %s\n" % e)
-        return 1
     except exceptions.ParseError as e:
         sys.stderr.write("syntax-error: %s\n" % e)
         return 1
