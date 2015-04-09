@@ -22,8 +22,8 @@ class ParseError(JMESPathError):
         # self.lex_position +1 to account for the starting double quote char.
         underline = ' ' * (self.lex_position + 1) + '^'
         return (
-            '%s: Parse error at column %s near '
-            'token "%s" (%s) for expression:\n"%s"\n%s' % (
+            '%s: Parse error at column %s, '
+            'token "%s" (%s), for expression:\n"%s"\n%s' % (
                 self.msg, self.lex_position, self.token_value, self.token_type,
                 self.expression, underline))
 
@@ -71,19 +71,29 @@ class ArityError(ParseError):
         self.expression = None
 
     def __str__(self):
-        return ("Expected %s arguments for function %s(), "
-                "received %s" % (self.expected_arity,
-                                 self.function_name,
-                                 self.actual_arity))
+        return ("Expected %s %s for function %s(), "
+                "received %s" % (
+                    self.expected_arity,
+                    self._pluralize('argument', self.expected_arity),
+                    self.function_name,
+                    self.actual_arity))
+
+    def _pluralize(self, word, count):
+        if count == 1:
+            return word
+        else:
+            return word + 's'
 
 
 @with_str_method
 class VariadictArityError(ArityError):
     def __str__(self):
-        return ("Expected at least %s arguments for function %s, "
-                "received %s" % (self.expected_arity,
-                                 self.function_name,
-                                 self.actual_arity))
+        return ("Expected at least %s %s for function %s(), "
+                "received %s" % (
+                    self.expected_arity,
+                    self._pluralize('argument', self.expected_arity),
+                    self.function_name,
+                    self.actual_arity))
 
 
 @with_str_method
