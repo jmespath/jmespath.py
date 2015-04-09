@@ -121,8 +121,8 @@ class TestErrorMessages(unittest.TestCase):
 
     def test_bad_parse_error_message(self):
         error_message = (
-            'Unexpected token: ]: Parse error at column 3 '
-            'near token "]" (RBRACKET) for expression:\n'
+            'Unexpected token: ]: Parse error at column 3, '
+            'token "]" (RBRACKET), for expression:\n'
             '"foo]baz"\n'
             '    ^')
         self.assert_error_message('foo]baz', error_message)
@@ -133,6 +133,13 @@ class TestErrorMessages(unittest.TestCase):
             '"foo.{bar: baz,bar: bar"\n'
             '                       ^')
         self.assert_error_message('foo.{bar: baz,bar: bar', error_message)
+
+    def test_incomplete_expression_with_missing_paren(self):
+        error_message = (
+            'Invalid jmespath expression: Incomplete expression:\n'
+            '"length(@,"\n'
+            '          ^')
+        self.assert_error_message('length(@,', error_message)
 
     def test_bad_lexer_values(self):
         error_message = (

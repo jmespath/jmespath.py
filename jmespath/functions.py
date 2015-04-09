@@ -186,6 +186,13 @@ class RuntimeFunctions(object):
                 return argument
 
     @builtin_function({'types': []})
+    def _func_to_array(self, arg):
+        if isinstance(arg, list):
+            return arg
+        else:
+            return [arg]
+
+    @builtin_function({'types': []})
     def _func_to_string(self, arg):
         if isinstance(arg, STRING_TYPE):
             return arg
@@ -252,6 +259,13 @@ class RuntimeFunctions(object):
         else:
             return None
 
+    @builtin_function({"types": ["object"], "variadic": True})
+    def _func_merge(self, *arguments):
+        merged = {}
+        for arg in arguments:
+            merged.update(arg)
+        return merged
+
     @builtin_function({"types": ['array-number', 'array-string']})
     def _func_min(self, arg):
         if arg:
@@ -303,7 +317,7 @@ class RuntimeFunctions(object):
         # that validates that type, which requires that remaining array
         # elements resolve to the same type as the first element.
         required_type = self._convert_to_jmespath_type(
-            self.interpreter.visit(expref.expression, array[0]))
+            type(self.interpreter.visit(expref.expression, array[0])).__name__)
         if required_type not in ['number', 'string']:
             raise exceptions.JMESPathTypeError(
                 'sort_by', array[0], required_type, ['string', 'number'])
@@ -331,7 +345,9 @@ class RuntimeFunctions(object):
 
         def keyfunc(x):
             result = interpreter.visit(expr_node, x)
-            jmespath_type = self._convert_to_jmespath_type(result)
+            actual_typename = type(result).__name__
+            jmespath_type = self._convert_to_jmespath_type(actual_typename)
+            # allowed_types is in term of jmespath types, not python types.
             if jmespath_type not in allowed_types:
                 raise exceptions.JMESPathTypeError(
                     function_name, result, jmespath_type, allowed_types)
@@ -339,4 +355,4 @@ class RuntimeFunctions(object):
         return keyfunc
 
     def _convert_to_jmespath_type(self, pyobject):
-        return TYPES_MAP.get(type(pyobject).__name__, 'unknown')
+        return TYPES_MAP.get(pyobject, 'unknown')

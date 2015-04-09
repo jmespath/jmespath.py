@@ -127,4 +127,57 @@
       "error": "syntax"
     }
   ]
+}, {
+  "given": {
+    "foo": [{"a": 1}, {"a": 2}, {"a": 3}],
+    "bar": [{"a": {"b": 1}}, {"a": {"b": 2}},
+	    {"a": {"b": 3}}],
+    "baz": 50
+  },
+  "cases": [
+    {
+      "expression": "foo[:2].a",
+      "result": [1, 2]
+    },
+    {
+      "expression": "foo[:2].b",
+      "result": []
+    },
+    {
+      "expression": "foo[:2].a.b",
+      "result": []
+    },
+    {
+      "expression": "bar[::-1].a.b",
+      "result": [3, 2, 1]
+    },
+    {
+      "expression": "bar[:2].a.b",
+      "result": [1, 2]
+    },
+    {
+      "expression": "baz[:2].a",
+      "result": null
+    }
+  ]
+}, {
+  "given": [{"a": 1}, {"a": 2}, {"a": 3}],
+  "cases": [
+    {
+      "expression": "[:]",
+      "result": [{"a": 1}, {"a": 2}, {"a": 3}]
+    },
+    {
+      "expression": "[:2].a",
+      "result": [1, 2]
+    },
+    {
+      "expression": "[::-1].a",
+      "result": [3, 2, 1]
+    },
+    {
+      "expression": "[:2].b",
+      "result": []
+    }
+  ]
 }]
