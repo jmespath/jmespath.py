@@ -113,7 +113,8 @@ class Lexer(object):
                 # don't have to be quoted.  This is only true if the
                 # string doesn't start with chars that could start a valid
                 # JSON value.
-                return loads(potential_value)
+                value = loads(potential_value)
+                return value
             except ValueError:
                 raise LexerError(lexer_position=start,
                                  lexer_value=value,

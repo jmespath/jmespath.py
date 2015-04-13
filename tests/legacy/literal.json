@@ -1,0 +1,56 @@
+[
+    {
+        "given": {
+            "foo": [{"name": "a"}, {"name": "b"}],
+            "bar": {"baz": "qux"}
+        },
+        "cases": [
+            {
+                "expression": "`foo`",
+                "result": "foo"
+            },
+            {
+                "comment": "Double quotes must be escaped.",
+                "expression": "`foo\\\"quote`",
+                "result": "foo\"quote"
+            },
+            {
+                "expression": "`✓`",
+                "result": "✓"
+            },
+            {
+                "comment": "Double quote in literal",
+                "expression": "`foo\\\"bar`",
+                "result": "foo\"bar"
+            },
+            {
+                "expression": "`1\\``",
+                "result": "1`"
+            },
+            {
+                "comment": "Multiple literal expressions with escapes",
+                "expression": "`\\\\`.{a:`b`}",
+                "result": {"a": "b"}
+            }
+        ]
+    },
+  {
+    "comment": "Literals",
+    "given": {"type": "object"},
+    "cases": [
+      {
+        "expression": "`foo`",
+        "result": "foo"
+      },
+      {
+        "expression": "`      foo`",
+        "result": "foo"
+      },
+      {
+        "comment": "Literal on RHS of subexpr not allowed",
+        "expression": "foo.`bar`",
+        "error": "syntax"
+      }
+    ]
+  }
+]
