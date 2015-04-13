@@ -9,6 +9,7 @@ class Lexer(object):
         r'(?P<number>-?\d+)|'
         r'(?P<unquoted_identifier>([a-zA-Z_][a-zA-Z_0-9]*))|'
         r'(?P<quoted_identifier>("(?:\\\\|\\"|[^"])*"))|'
+        r'(?P<string_literal>(\'(?:\\\\|\\\'|[^\'])*\'))|'
         r'(?P<literal>(`(?:\\\\|\\`|[^`])*`))|'
         r'(?P<filter>\[\?)|'
         r'(?P<or>\|\|)|'
@@ -92,6 +93,9 @@ class Lexer(object):
             raise LexerError(lexer_position=start,
                              lexer_value=value,
                              message=error_message)
+
+    def _token_string_literal(self, value, start, end):
+        return value[1:-1]
 
     def _token_literal(self, value, start, end):
         actual_value = value[1:-1]
