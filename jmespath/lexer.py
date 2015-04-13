@@ -1,4 +1,5 @@
 import re
+import warnings
 from json import loads
 
 from jmespath.exceptions import LexerError, EmptyExpressionError
@@ -118,6 +119,8 @@ class Lexer(object):
                 # string doesn't start with chars that could start a valid
                 # JSON value.
                 value = loads(potential_value)
+                warnings.warn("deprecated string literal syntax",
+                              PendingDeprecationWarning)
                 return value
             except ValueError:
                 raise LexerError(lexer_position=start,
