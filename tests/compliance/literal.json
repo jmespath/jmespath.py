@@ -10,6 +10,11 @@
                 "result": "foo"
             },
             {
+                "comment": "Interpret escaped unicode.",
+                "expression": "`\"\\u03a6\"`",
+                "result": "Φ"
+            },
+            {
                 "expression": "`\"✓\"`",
                 "result": "✓"
             },
@@ -127,6 +132,53 @@
           "comment": "Literal on RHS of subexpr not allowed",
           "expression": "foo.`\"bar\"`",
           "error": "syntax"
+        }
+      ]
+    },
+    {
+      "comment": "Raw String Literals",
+      "given": {},
+      "cases": [
+        {
+          "expression": "'foo'",
+          "result": "foo"
+        },
+        {
+          "expression": "'  foo  '",
+          "result": "  foo  "
+        },
+        {
+          "expression": "'0'",
+          "result": "0"
+        },
+        {
+          "expression": "'newline\n'",
+          "result": "newline\n"
+        },
+        {
+          "expression": "'\n'",
+          "result": "\n"
+        },
+        {
+          "expression": "'✓'",
+	  "result": "✓"
+        },
+        {
+          "expression": "'𝄞'",
+	  "result": "𝄞"
+        },
+        {
+          "expression": "'  [foo]  '",
+          "result": "  [foo]  "
+        },
+        {
+          "expression": "'[foo]'",
+          "result": "[foo]"
+        },
+        {
+          "comment": "Do not interpret escaped unicode.",
+          "expression": "'\\u03a6'",
+          "result": "\\u03a6"
         }
       ]
     }
