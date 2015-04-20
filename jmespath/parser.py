@@ -127,6 +127,9 @@ class Parser(object):
                 current_token = self._current_token()
         return left
 
+    def _token_nud_string_literal(self, token):
+        return ast.literal(token['value'])
+
     def _token_nud_literal(self, token):
         return ast.literal(token['value'])
 

@@ -9,9 +9,9 @@ import jmespath
 from jmespath.visitor import TreeInterpreter
 
 
-TEST_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    'compliance')
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+COMPLIANCE_DIR = os.path.join(TEST_DIR, 'compliance')
+LEGACY_DIR = os.path.join(TEST_DIR, 'legacy')
 NOT_SPECIFIED = object()
 TreeInterpreter.MAP_TYPE = OrderedDict
 
@@ -40,6 +40,9 @@ def _walk_files():
         yield os.path.abspath(single_file)
     else:
         for root, dirnames, filenames in os.walk(TEST_DIR):
+            for filename in filenames:
+                yield os.path.join(root, filename)
+        for root, dirnames, filenames in os.walk(LEGACY_DIR):
             for filename in filenames:
                 yield os.path.join(root, filename)
 

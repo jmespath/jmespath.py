@@ -1,4 +1,5 @@
 import re
+import warnings
 from json import loads
 
 from jmespath.exceptions import LexerError, EmptyExpressionError
@@ -9,6 +10,7 @@ class Lexer(object):
         r'(?P<number>-?\d+)|'
         r'(?P<unquoted_identifier>([a-zA-Z_][a-zA-Z_0-9]*))|'
         r'(?P<quoted_identifier>("(?:\\\\|\\"|[^"])*"))|'
+        r'(?P<string_literal>(\'(?:\\\\|\\\'|[^\'])*\'))|'
         r'(?P<literal>(`(?:\\\\|\\`|[^`])*`))|'
         r'(?P<filter>\[\?)|'
         r'(?P<or>\|\|)|'
@@ -93,6 +95,9 @@ class Lexer(object):
                              lexer_value=value,
                              message=error_message)
 
+    def _token_string_literal(self, value, start, end):
+        return value[1:-1]
+
     def _token_literal(self, value, start, end):
         actual_value = value[1:-1]
         actual_value = actual_value.replace('\\`', '`').lstrip()
@@ -113,7 +118,10 @@ class Lexer(object):
                 # don't have to be quoted.  This is only true if the
                 # string doesn't start with chars that could start a valid
                 # JSON value.
-                return loads(potential_value)
+                value = loads(potential_value)
+                warnings.warn("deprecated string literal syntax",
+                              PendingDeprecationWarning)
+                return value
             except ValueError:
                 raise LexerError(lexer_position=start,
                                  lexer_value=value,

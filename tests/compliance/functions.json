@@ -68,7 +68,7 @@
       "error": "invalid-type"
     },
     {
-      "expression": "avg(`abc`)",
+      "expression": "avg('abc')",
       "error": "invalid-type"
     },
     {
@@ -100,23 +100,23 @@
       "result": -1
     },
     {
-      "expression": "ceil(`string`)",
+      "expression": "ceil('string')",
       "error": "invalid-type"
     },
     {
-      "expression": "contains(`abc`, `a`)",
+      "expression": "contains('abc', 'a')",
       "result": true
     },
     {
-      "expression": "contains(`abc`, `d`)",
+      "expression": "contains('abc', 'd')",
       "result": false
     },
     {
-      "expression": "contains(`false`, `d`)",
+      "expression": "contains(`false`, 'd')",
       "error": "invalid-type"
     },
     {
-      "expression": "contains(strings, `a`)",
+      "expression": "contains(strings, 'a')",
       "result": true
     },
     {
@@ -128,23 +128,23 @@
       "result": false
     },
     {
-      "expression": "ends_with(str, `r`)",
+      "expression": "ends_with(str, 'r')",
       "result": true
     },
     {
-      "expression": "ends_with(str, `tr`)",
+      "expression": "ends_with(str, 'tr')",
       "result": true
     },
     {
-      "expression": "ends_with(str, `Str`)",
+      "expression": "ends_with(str, 'Str')",
       "result": true
     },
     {
-      "expression": "ends_with(str, `SStr`)",
+      "expression": "ends_with(str, 'SStr')",
       "result": false
     },
     {
-      "expression": "ends_with(str, `foo`)",
+      "expression": "ends_with(str, 'foo')",
       "result": false
     },
     {
@@ -156,7 +156,7 @@
       "result": 1
     },
     {
-      "expression": "floor(`string`)",
+      "expression": "floor('string')",
       "error": "invalid-type"
     },
     {
@@ -172,11 +172,11 @@
       "error": "invalid-type"
     },
     {
-      "expression": "length(`abc`)",
+      "expression": "length('abc')",
       "result": 3
     },
     {
-      "expression": "length(`\"\"`)",
+      "expression": "length('')",
       "result": 0
     },
     {
@@ -288,7 +288,7 @@
       "result": "a"
     },
     {
-      "expression": "type(`abc`)",
+      "expression": "type('abc')",
       "result": "string"
     },
     {
@@ -352,27 +352,27 @@
       "error": "invalid-type"
     },
     {
-      "expression": "join(`\", \"`, strings)",
+      "expression": "join(', ', strings)",
       "result": "a, b, c"
     },
     {
-      "expression": "join(`, `, strings)",
+      "expression": "join(', ', strings)",
       "result": "a, b, c"
     },
     {
-      "expression": "join(`,`, `[\"a\", \"b\"]`)",
+      "expression": "join(',', `[\"a\", \"b\"]`)",
       "result": "a,b"
     },
     {
-      "expression": "join(`,`, `[\"a\", 0]`)",
+      "expression": "join(',', `[\"a\", 0]`)",
       "error": "invalid-type"
     },
     {
-      "expression": "join(`, `, str)",
+      "expression": "join(', ', str)",
       "error": "invalid-type"
     },
     {
-      "expression": "join(`|`, strings)",
+      "expression": "join('|', strings)",
       "result": "a|b|c"
     },
     {
@@ -380,15 +380,15 @@
       "error": "invalid-type"
     },
     {
-      "expression": "join(`|`, decimals)",
+      "expression": "join('|', decimals)",
       "error": "invalid-type"
     },
     {
-      "expression": "join(`|`, decimals[].to_string(@))",
+      "expression": "join('|', decimals[].to_string(@))",
       "result": "1.01|1.2|-1.5"
     },
     {
-      "expression": "join(`|`, empty_list)",
+      "expression": "join('|', empty_list)",
       "result": ""
     },
     {
@@ -404,27 +404,27 @@
       "result": []
     },
     {
-      "expression": "reverse(``)",
+      "expression": "reverse('')",
       "result": ""
     },
     {
-      "expression": "reverse(`hello world`)",
+      "expression": "reverse('hello world')",
       "result": "dlrow olleh"
     },
     {
-      "expression": "starts_with(str, `S`)",
+      "expression": "starts_with(str, 'S')",
       "result": true
     },
     {
-      "expression": "starts_with(str, `St`)",
+      "expression": "starts_with(str, 'St')",
       "result": true
     },
     {
-      "expression": "starts_with(str, `Str`)",
+      "expression": "starts_with(str, 'Str')",
       "result": true
     },
     {
-      "expression": "starts_with(str, `String`)",
+      "expression": "starts_with(str, 'String')",
       "result": false
     },
     {
@@ -452,7 +452,7 @@
       "result": 0
     },
     {
-      "expression": "to_array(`foo`)",
+      "expression": "to_array('foo')",
       "result": ["foo"]
     },
     {
@@ -472,7 +472,7 @@
       "result": [false]
     },
     {
-      "expression": "to_string(`foo`)",
+      "expression": "to_string('foo')",
       "result": "foo"
     },
     {
@@ -484,19 +484,19 @@
       "result": "[0,1]"
     },
     {
-      "expression": "to_number(`\"1.0\"`)",
+      "expression": "to_number('1.0')",
       "result": 1.0
     },
     {
-      "expression": "to_number(`\"1.1\"`)",
+      "expression": "to_number('1.1')",
       "result": 1.1
     },
     {
-      "expression": "to_number(`\"4\"`)",
+      "expression": "to_number('4')",
       "result": 4
     },
     {
-      "expression": "to_number(`\"notanumber\"`)",
+      "expression": "to_number('notanumber')",
       "result": null
     },
     {
