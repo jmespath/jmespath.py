@@ -430,15 +430,15 @@
     "given": {"type": "object"},
     "cases": [
       {
-        "expression": "foo[?bar==`baz`]",
+        "expression": "foo[?bar==`\"baz\"`]",
         "result": null
       },
       {
-        "expression": "foo[? bar == `baz` ]",
+        "expression": "foo[? bar == `\"baz\"` ]",
         "result": null
       },
       {
-        "expression": "foo[ ?bar==`baz`]",
+        "expression": "foo[ ?bar==`\"baz\"`]",
         "error": "syntax"
       },
       {
@@ -510,55 +510,51 @@
     "given": {"type": "object"},
     "cases": [
       {
-        "expression": "bar.`anything`",
-        "error": "syntax"
-      },
-      {
         "expression": "bar.`\"anything\"`",
         "error": "syntax"
       },
       {
-        "expression": "bar.baz.noexists.`literal`",
+        "expression": "bar.baz.noexists.`\"literal\"`",
         "error": "syntax"
       },
       {
         "comment": "Literal wildcard projection",
-        "expression": "foo[*].`literal`",
+        "expression": "foo[*].`\"literal\"`",
         "error": "syntax"
       },
       {
-        "expression": "foo[*].name.`literal`",
+        "expression": "foo[*].name.`\"literal\"`",
         "error": "syntax"
       },
       {
-        "expression": "foo[].name.`literal`",
+        "expression": "foo[].name.`\"literal\"`",
         "error": "syntax"
       },
       {
-        "expression": "foo[].name.`literal`.`subliteral`",
+        "expression": "foo[].name.`\"literal\"`.`\"subliteral\"`",
         "error": "syntax"
       },
       {
         "comment": "Projecting a literal onto an empty list",
-        "expression": "foo[*].name.noexist.`literal`",
+        "expression": "foo[*].name.noexist.`\"literal\"`",
         "error": "syntax"
       },
       {
-        "expression": "foo[].name.noexist.`literal`",
+        "expression": "foo[].name.noexist.`\"literal\"`",
         "error": "syntax"
       },
       {
-        "expression": "twolen[*].`foo`",
+        "expression": "twolen[*].`\"foo\"`",
         "error": "syntax"
       },
       {
         "comment": "Two level projection of a literal",
-        "expression": "twolen[*].threelen[*].`bar`",
+        "expression": "twolen[*].threelen[*].`\"bar\"`",
         "error": "syntax"
       },
       {
         "comment": "Two level flattened projection of a literal",
-        "expression": "twolen[].threelen[].`bar`",
+        "expression": "twolen[].threelen[].`\"bar\"`",
         "error": "syntax"
       }
     ]
@@ -578,31 +574,6 @@
       {
         "expression": "\"\\\\\"",
         "result": null
-      }
-    ]
-  },
-  {
-    "comment": "Literals",
-    "given": {"type": "object"},
-    "cases": [
-      {
-        "expression": "`foo`",
-        "result": "foo"
-      },
-      {
-        "comment": "Literal with leading whitespace",
-        "expression": "`  {\"foo\": true}`",
-        "result": {"foo": true}
-      },
-      {
-        "comment": "Literal with trailing whitespace",
-        "expression": "`{\"foo\": true}   `",
-        "result": {"foo": true}
-      },
-      {
-        "comment": "Literal on RHS of subexpr not allowed",
-        "expression": "foo.`bar`",
-        "error": "syntax"
       }
     ]
   },

@@ -4,7 +4,7 @@
     "cases": [
       {
         "comment": "Matching a literal",
-        "expression": "foo[?name == `a`]",
+        "expression": "foo[?name == 'a']",
         "result": [{"name": "a"}]
       }
     ]
@@ -86,7 +86,7 @@
     "cases": [
       {
         "comment": "Filter with subexpression",
-        "expression": "foo[?top.name == `a`]",
+        "expression": "foo[?top.name == 'a']",
         "result": [{"top": {"name": "a"}}]
       }
     ]
