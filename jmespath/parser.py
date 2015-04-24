@@ -57,7 +57,7 @@ class Parser(object):
         'or': 5,
         'flatten': 6,
         'star': 20,
-        'filter': 20,
+        'filter': 21,
         'dot': 40,
         'lbrace': 50,
         'lbracket': 55,
