@@ -54,11 +54,3 @@ else:
         for name, method in inspect.getmembers(cls,
                                                predicate=inspect.isfunction):
             yield name, method
-
-
-if sys.version_info[:2] == (2, 6):
-    from ordereddict import OrderedDict
-    import simplejson as json
-else:
-    from collections import OrderedDict
-    import json
