@@ -30,8 +30,8 @@ setup(
     long_description=io.open('README.rst', encoding='utf-8').read(),
     author='James Saryerwinnie',
     author_email='js@jamesls.com',
-    url='https://github.com/boto/jmespath',
-    scripts=['bin/jp'],
+    url='https://github.com/jmespath/jmespath.py',
+    scripts=['bin/jp.py'],
     packages=find_packages(exclude=['tests']),
     install_requires=requires,
     classifiers=(
@@ -44,5 +44,6 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
     ),
 )
