@@ -23,7 +23,7 @@ from jmespath.parser import Parser
 from jmespath.lexer import Lexer
 
 
-DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)))
+DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cases')
 DEFAULT_NUM_LOOP = 1000
 
 
