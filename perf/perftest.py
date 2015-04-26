@@ -24,7 +24,7 @@ from jmespath.lexer import Lexer
 
 
 DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cases')
-DEFAULT_NUM_LOOP = 1000
+DEFAULT_NUM_LOOP = 100
 
 
 def run_tests(tests):
@@ -32,10 +32,11 @@ def run_tests(tests):
     for test in tests:
         given = test['given']
         expression = test['expression']
+        result = test['result']
         lex_time = _lex_time(expression)
         parse_time = _parse_time(expression)
         search_time = _search_time(expression, given)
-        combined_time = _combined_time(expression, given)
+        combined_time = _combined_time(expression, given, result)
         sys.stdout.write(
             "lex_time: %.5fms, parse_time: %.5fms, search_time: %.5fms "
             "combined_time: %.5fms " % (1000 * lex_time,
@@ -86,15 +87,18 @@ def _parse_time(expression, clock=_clock):
     return best
 
 
-def _combined_time(expression, given, clock=_clock):
+def _combined_time(expression, given, result, clock=_clock):
     best = float('inf')
     p = Parser()
     for i in range(DEFAULT_NUM_LOOP):
         p.purge()
         start = clock()
-        p.parse(expression).search(given)
+        r = p.parse(expression).search(given)
         end = clock()
         total = end - start
+        if r != result:
+            raise RuntimeError("Unexpected result, received: %s, "
+                               "expected: %s" % (r, result))
         if total < best:
             best = total
     return best
