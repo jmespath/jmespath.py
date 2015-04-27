@@ -1,4 +1,3 @@
-import inspect
 import math
 import json
 import weakref

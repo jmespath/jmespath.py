@@ -276,6 +276,10 @@
         "result": [[{"foo": 2, "bar": 1}]]
       },
       {
+        "expression": "reservations[*].instances[?bar==`1`]",
+        "result": [[{"foo": 2, "bar": 1}]]
+      },
+      {
         "expression": "reservations[].instances[?bar==`1`][]",
         "result": [{"foo": 2, "bar": 1}]
       }
