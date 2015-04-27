@@ -6,15 +6,11 @@ import argparse
 
 import jmespath
 from jmespath import exceptions
-from jmespath.compat import OrderedDict
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('expression')
-    parser.add_argument('-o', '--ordered', action='store_true',
-                        help='Preserve the order of hash keys, which '
-                             'are normally unordered.')
     parser.add_argument('-f', '--filename',
                         help=('The filename containing the input data.  '
                               'If a filename is not given then data is '
@@ -34,10 +30,7 @@ def main():
             data = json.load(f)
     else:
         data = sys.stdin.read()
-        if args.ordered:
-            data = json.loads(data, object_pairs_hook=OrderedDict)
-        else:
-            data = json.loads(data)
+        data = json.loads(data)
     try:
         sys.stdout.write(json.dumps(
             jmespath.search(expression, data), indent=4))
