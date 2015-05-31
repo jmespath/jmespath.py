@@ -5,111 +5,11 @@ from json import loads
 from jmespath.exceptions import LexerError, EmptyExpressionError
 
 
-VALID_NUMBER = set(string.digits)
+START_IDENTIFIER = set(string.ascii_letters + '_')
 VALID_IDENTIFIER = set(string.ascii_letters + string.digits + '_')
-STATE_IDENTIFIER = 0;
-STATE_NUMBER = 1;
-STATE_SINGLE_CHAR = 2;
-STATE_WHITESPACE = 3;
-STATE_STRING_LITERAL = 4;
-STATE_QUOTED_STRING = 5;
-STATE_JSON_LITERAL = 6;
-STATE_LBRACKET = 7;
-STATE_PIPE = 8;
-STATE_LT = 9;
-STATE_GT = 10;
-STATE_EQ = 11;
-STATE_NOT = 12;
-TRANSITION_TABLE = {
-    '<': STATE_LT,
-    '>': STATE_GT,
-    '=': STATE_EQ,
-    '!': STATE_NOT,
-    '[': STATE_LBRACKET,
-    '|': STATE_PIPE,
-    '`': STATE_JSON_LITERAL,
-    '"': STATE_QUOTED_STRING,
-    "'": STATE_STRING_LITERAL,
-    '-': STATE_NUMBER,
-    '0': STATE_NUMBER,
-    '1': STATE_NUMBER,
-    '2': STATE_NUMBER,
-    '3': STATE_NUMBER,
-    '4': STATE_NUMBER,
-    '5': STATE_NUMBER,
-    '6': STATE_NUMBER,
-    '7': STATE_NUMBER,
-    '8': STATE_NUMBER,
-    '9': STATE_NUMBER,
-    '.': STATE_SINGLE_CHAR,
-    '*': STATE_SINGLE_CHAR,
-    ']': STATE_SINGLE_CHAR,
-    ',': STATE_SINGLE_CHAR,
-    ':': STATE_SINGLE_CHAR,
-    '@': STATE_SINGLE_CHAR,
-    '&': STATE_SINGLE_CHAR,
-    '(': STATE_SINGLE_CHAR,
-    ')': STATE_SINGLE_CHAR,
-    '{': STATE_SINGLE_CHAR,
-    '}': STATE_SINGLE_CHAR,
-    '_': STATE_IDENTIFIER,
-    'A': STATE_IDENTIFIER,
-    'B': STATE_IDENTIFIER,
-    'C': STATE_IDENTIFIER,
-    'D': STATE_IDENTIFIER,
-    'E': STATE_IDENTIFIER,
-    'F': STATE_IDENTIFIER,
-    'G': STATE_IDENTIFIER,
-    'H': STATE_IDENTIFIER,
-    'I': STATE_IDENTIFIER,
-    'J': STATE_IDENTIFIER,
-    'K': STATE_IDENTIFIER,
-    'L': STATE_IDENTIFIER,
-    'M': STATE_IDENTIFIER,
-    'N': STATE_IDENTIFIER,
-    'O': STATE_IDENTIFIER,
-    'P': STATE_IDENTIFIER,
-    'Q': STATE_IDENTIFIER,
-    'R': STATE_IDENTIFIER,
-    'S': STATE_IDENTIFIER,
-    'T': STATE_IDENTIFIER,
-    'U': STATE_IDENTIFIER,
-    'V': STATE_IDENTIFIER,
-    'W': STATE_IDENTIFIER,
-    'X': STATE_IDENTIFIER,
-    'Y': STATE_IDENTIFIER,
-    'Z': STATE_IDENTIFIER,
-    'a': STATE_IDENTIFIER,
-    'b': STATE_IDENTIFIER,
-    'c': STATE_IDENTIFIER,
-    'd': STATE_IDENTIFIER,
-    'e': STATE_IDENTIFIER,
-    'f': STATE_IDENTIFIER,
-    'g': STATE_IDENTIFIER,
-    'h': STATE_IDENTIFIER,
-    'i': STATE_IDENTIFIER,
-    'j': STATE_IDENTIFIER,
-    'k': STATE_IDENTIFIER,
-    'l': STATE_IDENTIFIER,
-    'm': STATE_IDENTIFIER,
-    'n': STATE_IDENTIFIER,
-    'o': STATE_IDENTIFIER,
-    'p': STATE_IDENTIFIER,
-    'q': STATE_IDENTIFIER,
-    'r': STATE_IDENTIFIER,
-    's': STATE_IDENTIFIER,
-    't': STATE_IDENTIFIER,
-    'u': STATE_IDENTIFIER,
-    'v': STATE_IDENTIFIER,
-    'w': STATE_IDENTIFIER,
-    'x': STATE_IDENTIFIER,
-    'y': STATE_IDENTIFIER,
-    'z': STATE_IDENTIFIER,
-    ' ': STATE_WHITESPACE,
-    "\t": STATE_WHITESPACE,
-    "\n": STATE_WHITESPACE,
-    "\r": STATE_WHITESPACE
-}
+START_NUMBER = set(string.digits)
+VALID_NUMBER = set(string.digits)
+WHITESPACE = set(" \t\n\r")
 SIMPLE_TOKENS = {
     '.': 'dot',
     '*': 'star',
@@ -166,29 +66,22 @@ class Lexer(object):
     def tokenize(self, expression):
         scanner = Scanner(expression)
         while scanner.current is not None:
-            if not scanner.current in TRANSITION_TABLE:
-                # The current char must be in the transition table to
-                # be valid.
-                yield {'type': 'unknown', 'value': scanner.current,
-                       'start': scanner.pos, 'end': scanner.pos}
-                scanner.next()
-                continue
-            state = TRANSITION_TABLE[scanner.current]
-            if state == STATE_SINGLE_CHAR:
+
+            if scanner.current in SIMPLE_TOKENS:
                 yield {'type': SIMPLE_TOKENS[scanner.current],
                        'value': scanner.current,
                        'start': scanner.pos, 'end': scanner.pos}
                 scanner.next()
-            elif state == STATE_IDENTIFIER:
+            elif scanner.current in START_IDENTIFIER:
                 start = scanner.pos
                 buffer = scanner.current
                 while scanner.next() in VALID_IDENTIFIER:
                     buffer += scanner.current
                 yield {'type': 'identifier', 'value': buffer,
                        'start': start, 'end': len(buffer)}
-            elif state == STATE_WHITESPACE:
+            elif scanner.current in WHITESPACE:
                 scanner.next()
-            elif state == STATE_LBRACKET:
+            elif scanner.current == '[':
                 start = scanner.pos
                 next_char = scanner.next()
                 if next_char == ']':
@@ -202,29 +95,33 @@ class Lexer(object):
                 else:
                     yield {'type': 'lbracket', 'value': '[',
                            'start': start, 'end': start}
-            elif state == STATE_STRING_LITERAL:
+            elif scanner.current == "'":
                 yield self._consume_raw_string_literal(scanner)
-            elif state == STATE_PIPE:
+            elif scanner.current == '|':
                 yield self._match_or_else(scanner, '|', 'or', 'pipe')
-            elif state == STATE_JSON_LITERAL:
+            elif scanner.current == '`':
                 yield self._consume_literal(scanner)
-            elif state == STATE_NUMBER:
+            elif scanner.current in START_NUMBER:
                 start = scanner.pos
                 buffer = scanner.current
                 while scanner.next() in VALID_NUMBER:
                     buffer += scanner.current
                 yield {'type': 'number', 'value': int(buffer),
                        'start': start, 'end': len(buffer)}
-            elif state == STATE_QUOTED_STRING:
+            elif scanner.current == '"':
                 yield self._consume_quoted_identifier(scanner)
-            elif state == STATE_LT:
+            elif scanner.current == '<':
                 yield self._match_or_else(scanner, '=', 'lte', 'lt')
-            elif state == STATE_GT:
+            elif scanner.current == '>':
                 yield self._match_or_else(scanner, '=', 'gte', 'gt')
-            elif state == STATE_EQ:
-                yield self._match_or_else(scanner, '=', 'eq', 'unknown')
-            elif state == STATE_NOT:
+            elif scanner.current == '!':
                 yield self._match_or_else(scanner, '=', 'ne', 'unknown')
+            elif scanner.current == '=':
+                yield self._match_or_else(scanner, '=', 'eq', 'unknown')
+            else:
+                yield {'type': 'unknown', 'value': scanner.current,
+                       'start': scanner.pos, 'end': scanner.pos}
+                scanner.next()
         yield {'type': 'eof', 'value': '',
                'start': len(expression), 'end': len(expression)}
 
