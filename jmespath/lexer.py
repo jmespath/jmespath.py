@@ -7,7 +7,7 @@ from jmespath.exceptions import LexerError, EmptyExpressionError
 
 START_IDENTIFIER = set(string.ascii_letters + '_')
 VALID_IDENTIFIER = set(string.ascii_letters + string.digits + '_')
-START_NUMBER = set(string.digits)
+START_NUMBER = set(string.digits + '-')
 VALID_NUMBER = set(string.digits)
 WHITESPACE = set(" \t\n\r")
 SIMPLE_TOKENS = {
@@ -43,7 +43,7 @@ class Scanner(object):
             self.current = self.chars[self.pos]
         return self.current
 
-    def in_delimter(self, delimiter):
+    def in_delimiter(self, delimiter):
         start = self.pos
         buffer = ''
         self.next()
@@ -66,7 +66,6 @@ class Lexer(object):
     def tokenize(self, expression):
         scanner = Scanner(expression)
         while scanner.current is not None:
-
             if scanner.current in SIMPLE_TOKENS:
                 yield {'type': SIMPLE_TOKENS[scanner.current],
                        'value': scanner.current,
@@ -77,7 +76,7 @@ class Lexer(object):
                 buffer = scanner.current
                 while scanner.next() in VALID_IDENTIFIER:
                     buffer += scanner.current
-                yield {'type': 'identifier', 'value': buffer,
+                yield {'type': 'unquoted_identifier', 'value': buffer,
                        'start': start, 'end': len(buffer)}
             elif scanner.current in WHITESPACE:
                 scanner.next()
@@ -127,7 +126,7 @@ class Lexer(object):
 
     def _consume_literal(self, scanner):
         start = scanner.pos
-        lexeme = scanner.in_delimter('`')
+        lexeme = scanner.in_delimiter('`')
         try:
             # Assume it is valid JSON and attempt to parse.
             parsed_json = loads(lexeme)
@@ -135,21 +134,21 @@ class Lexer(object):
             try:
                 # Invalid JSON values should be converted to quoted
                 # JSON strings during the JEP-12 deprecation period.
-                parsed_json = loads('"%s"' % lexeme)
+                parsed_json = loads('"%s"' % lexeme.lstrip())
                 warnings.warn("deprecated string literal syntax",
                               PendingDeprecationWarning)
             except ValueError:
                 raise LexerError(lexer_position=start,
                                  lexer_value=lexeme,
-                                 message="Bad token %s" % value)
+                                 message="Bad token %s" % lexeme)
         return {'type': 'literal', 'value': parsed_json,
                 'start': start, 'end': len(lexeme)}
 
     def _consume_quoted_identifier(self, scanner):
         start = scanner.pos
-        lexeme = scanner.in_delimter('"')
+        lexeme = scanner.in_delimiter('"')
         try:
-            return {'type': 'identifier', 'value': loads(lexeme),
+            return {'type': 'quoted_identifier', 'value': loads(lexeme),
                     'start': start, 'end': len(lexeme)}
         except ValueError as e:
             error_message = str(e).split(':')[0]
@@ -159,7 +158,7 @@ class Lexer(object):
 
     def _consume_raw_string_literal(self, scanner):
         start = scanner.pos
-        lexeme = scanner.in_delimter("'")
+        lexeme = scanner.in_delimiter("'")
         return {'type': 'literal', 'value': lexeme,
                 'start': start, 'end': len(lexeme)}
 
