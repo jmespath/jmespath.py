@@ -132,6 +132,17 @@ class TestRegexLexer(unittest.TestCase):
              ]
         )
 
+    def test_adds_quotes_when_invalid_json(self):
+        tokens = list(self.lexer.tokenize('`{{}`'))
+        self.assertEqual(
+            tokens,
+            [{'type': 'literal', 'value': '{{}',
+              'start': 0, 'end': 4},
+             {'type': 'eof', 'value': '',
+              'start': 5, 'end': 5}
+             ]
+        )
+
     def test_unknown_character(self):
         with self.assertRaises(LexerError):
             tokens = list(self.lexer.tokenize('foo[0^]'))

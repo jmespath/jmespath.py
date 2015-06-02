@@ -144,16 +144,10 @@ class TestErrorMessages(unittest.TestCase):
     def test_bad_lexer_values(self):
         error_message = (
             'Bad jmespath expression: '
-            'Starting quote is missing the ending quote:\n'
+            'Unclosed " delimiter:\n'
             'foo."bar\n'
             '    ^')
         self.assert_error_message('foo."bar', error_message,
-                                  exception=exceptions.LexerError)
-
-    def test_bad_lexer_literal_value_with_json_object(self):
-        error_message = ('Bad jmespath expression: '
-                         'Bad token `{{}`:\n`{{}`\n^')
-        self.assert_error_message('`{{}`', error_message,
                                   exception=exceptions.LexerError)
 
     def test_bad_unicode_string(self):
