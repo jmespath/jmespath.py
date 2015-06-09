@@ -26,15 +26,15 @@ class Lexer(object):
     }
 
     def tokenize(self, expression):
-        self._init_expr(expression)
+        self._initialize_for_expression(expression)
         while self._current is not None:
             if self._current in self.SIMPLE_TOKENS:
                 yield {'type': self.SIMPLE_TOKENS[self._current],
                        'value': self._current,
-                       'start': self._pos, 'end': self._pos + 1}
+                       'start': self._position, 'end': self._position + 1}
                 self._next()
             elif self._current in self.START_IDENTIFIER:
-                start = self._pos
+                start = self._position
                 buff = self._current
                 while self._next() in self.VALID_IDENTIFIER:
                     buff += self._current
@@ -43,7 +43,7 @@ class Lexer(object):
             elif self._current in self.WHITESPACE:
                 self._next()
             elif self._current == '[':
-                start = self._pos
+                start = self._position
                 next_char = self._next()
                 if next_char == ']':
                     self._next()
@@ -63,7 +63,7 @@ class Lexer(object):
             elif self._current == '`':
                 yield self._consume_literal()
             elif self._current in self.START_NUMBER:
-                start = self._pos
+                start = self._position
                 buff = self._current
                 while self._next() in self.VALID_NUMBER:
                     buff += self._current
@@ -80,31 +80,33 @@ class Lexer(object):
             elif self._current == '=':
                 yield self._match_or_else('=', 'eq', 'unknown')
             else:
-                raise LexerError(lexer_position=self._pos,
+                raise LexerError(lexer_position=self._position,
                                  lexer_value=self._current,
                                  message="Unknown token %s" % self._current)
         yield {'type': 'eof', 'value': '',
-               'start': self._len, 'end': self._len}
+               'start': self._length, 'end': self._length}
 
-    def _init_expr(self, expression):
+    def _initialize_for_expression(self, expression):
         if not expression:
             raise EmptyExpressionError()
-        self._pos = 0
+        self._position = 0
         self._expression = expression
         self._chars = list(self._expression)
-        self._current = self._chars[self._pos]
-        self._len = len(self._expression)
+        self._current = self._chars[self._position]
+        self._length = len(self._expression)
 
     def _next(self):
-        if self._pos == self._len - 1:
+        if self._position == self._length - 1:
             self._current = None
         else:
-            self._pos += 1
-            self._current = self._chars[self._pos]
+            self._position += 1
+            self._current = self._chars[self._position]
         return self._current
 
-    def _in_delimiter(self, delimiter):
-        start = self._pos
+    def _consume_until(self, delimiter):
+        # Consume until the delimiter is reached,
+        # allowing for the delimiter to be escaped with "\".
+        start = self._position
         buff = ''
         self._next()
         while self._current != delimiter:
@@ -122,8 +124,8 @@ class Lexer(object):
         return buff
 
     def _consume_literal(self):
-        start = self._pos
-        lexeme = self._in_delimiter('`')
+        start = self._position
+        lexeme = self._consume_until('`')
         lexeme = lexeme.replace('\\`', '`')
         try:
             # Assume it is valid JSON and attempt to parse.
@@ -139,15 +141,15 @@ class Lexer(object):
                 raise LexerError(lexer_position=start,
                                  lexer_value=self._expression,
                                  message="Bad token %s" % lexeme)
-        token_len = self._pos - start
+        token_len = self._position - start
         return {'type': 'literal', 'value': parsed_json,
                 'start': start, 'end': token_len}
 
     def _consume_quoted_identifier(self):
-        start = self._pos
-        lexeme = '"' + self._in_delimiter('"') + '"'
+        start = self._position
+        lexeme = '"' + self._consume_until('"') + '"'
         try:
-            token_len = self._pos - start
+            token_len = self._position - start
             return {'type': 'quoted_identifier', 'value': loads(lexeme),
                     'start': start, 'end': token_len}
         except ValueError as e:
@@ -157,14 +159,14 @@ class Lexer(object):
                              message=error_message)
 
     def _consume_raw_string_literal(self):
-        start = self._pos
-        lexeme = self._in_delimiter("'")
-        token_len = self._pos - start
+        start = self._position
+        lexeme = self._consume_until("'")
+        token_len = self._position - start
         return {'type': 'literal', 'value': lexeme,
                 'start': start, 'end': token_len}
 
     def _match_or_else(self, expected, match_type, else_type):
-        start = self._pos
+        start = self._position
         current = self._current
         next_char = self._next()
         if next_char == expected:
