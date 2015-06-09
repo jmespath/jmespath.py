@@ -3,6 +3,7 @@
 import sys
 import json
 import argparse
+from pprint import pformat
 
 import jmespath
 from jmespath import exceptions
@@ -22,7 +23,7 @@ def main():
     if args.ast:
         # Only print the AST
         expression = jmespath.compile(args.expression)
-        sys.stdout.write(str(expression))
+        sys.stdout.write(pformat(expression.parsed))
         sys.stdout.write('\n')
         return 0
     if args.filename:
