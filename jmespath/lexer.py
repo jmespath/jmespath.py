@@ -18,11 +18,10 @@ class Lexer(object):
         ',': 'comma',
         ':': 'colon',
         '@': 'current',
-        '&': 'expref',
         '(': 'lparen',
         ')': 'rparen',
         '{': 'lbrace',
-        '}': 'rbrace'
+        '}': 'rbrace',
     }
 
     def tokenize(self, expression):
@@ -60,6 +59,8 @@ class Lexer(object):
                 yield self._consume_raw_string_literal()
             elif self._current == '|':
                 yield self._match_or_else('|', 'or', 'pipe')
+            elif self._current == '&':
+                yield self._match_or_else('&', 'and', 'expref')
             elif self._current == '`':
                 yield self._consume_literal()
             elif self._current in self.START_NUMBER:
@@ -76,7 +77,7 @@ class Lexer(object):
             elif self._current == '>':
                 yield self._match_or_else('=', 'gte', 'gt')
             elif self._current == '!':
-                yield self._match_or_else('=', 'ne', 'unknown')
+                yield self._match_or_else('=', 'ne', 'not')
             elif self._current == '=':
                 yield self._match_or_else('=', 'eq', 'unknown')
             else:
