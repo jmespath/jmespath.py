@@ -202,6 +202,10 @@
         "error": "syntax"
       },
       {
+        "expression": "[foo bar]",
+        "error": "syntax"
+      },
+      {
         "expression": "foo.[*]",
         "result": null
       },
