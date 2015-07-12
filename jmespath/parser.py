@@ -338,12 +338,13 @@ class Parser(object):
 
     def _parse_multi_select_list(self):
         expressions = []
-        while not self._current_token() == 'rbracket':
+        while True:
             expression = self._expression()
             expressions.append(expression)
-            if self._current_token() == 'comma':
+            if self._current_token() == 'rbracket':
+                break
+            else:
                 self._match('comma')
-                self._assert_not_token('rbracket')
         self._match('rbracket')
         return ast.multi_select_list(expressions)
 
