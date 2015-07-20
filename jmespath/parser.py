@@ -74,8 +74,9 @@ class VariadictArityError(ArityError):
 
 class Grammar(object):
     precedence = (
+        ('left', 'PIPE'),
         ('left', 'OR'),
-        ('right', 'DOT', 'STAR'),
+        ('left', 'DOT', 'STAR'),
         ('left', 'LT', 'LTE', 'GT', 'GTE', 'EQ'),
         ('right', 'LBRACKET', 'RBRACKET'),
     )
@@ -281,13 +282,10 @@ class Grammar(object):
 
     def p_jmespath_function_arg(self, p):
         """function-arg : expression
-                        | CURRENT
                         | EXPREF expression
         """
         if len(p) == 3:
             p[0] = ast.ExpressionReference(p[2])
-        elif p[1] == '@':
-            p[0] = ast.CurrentNode()
         else:
             p[0] = p[1]
 
