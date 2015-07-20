@@ -97,6 +97,11 @@ class Grammar(object):
         """
         p[0] = ast.SubExpression(p[1], ast.Field(p[3]))
 
+    def p_jmespath_current(self, p):
+        """expression : CURRENT
+        """
+        p[0] = ast.CurrentNode()
+
     def p_jmespath_subexpression_wildcard(self, p):
         """expression : expression DOT STAR
         """

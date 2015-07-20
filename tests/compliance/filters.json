@@ -4,8 +4,18 @@
     "cases": [
       {
         "comment": "Matching a literal",
-        "expression": "foo[?name == `a`]",
+        "expression": "foo[?name == 'a']",
         "result": [{"name": "a"}]
+      }
+    ]
+  },
+  {
+    "given": {"foo": [0, 1], "bar": [2, 3]},
+    "cases": [
+      {
+        "comment": "Matching a literal",
+        "expression": "*[?[0] == `0`]",
+        "result": [[], []]
       }
     ]
   },
@@ -18,6 +28,11 @@
         "comment": "Matching an expression",
         "expression": "foo[?first == last]",
         "result": [{"first": "foo", "last": "foo"}]
+      },
+      {
+        "comment": "Verify projection created from filter",
+        "expression": "foo[?first == last].first",
+        "result": ["foo"]
       }
     ]
   },
@@ -71,7 +86,7 @@
     "cases": [
       {
         "comment": "Filter with subexpression",
-        "expression": "foo[?top.name == `a`]",
+        "expression": "foo[?top.name == 'a']",
         "result": [{"top": {"name": "a"}}]
       }
     ]
@@ -261,8 +276,43 @@
         "result": [[{"foo": 2, "bar": 1}]]
       },
       {
+        "expression": "reservations[*].instances[?bar==`1`]",
+        "result": [[{"foo": 2, "bar": 1}]]
+      },
+      {
         "expression": "reservations[].instances[?bar==`1`][]",
         "result": [{"foo": 2, "bar": 1}]
+      }
+    ]
+  },
+  {
+    "given": {
+      "baz": "other",
+      "foo": [
+        {"bar": 1}, {"bar": 2}, {"bar": 3}, {"bar": 4}, {"bar": 1, "baz": 2}
+      ]
+    },
+    "cases": [
+      {
+        "expression": "foo[?bar==`1`].bar[0]",
+        "result": []
+      }
+    ]
+  },
+  {
+    "given": {
+      "foo": [
+        {"a": 1, "b": {"c": "x"}},
+	{"a": 1, "b": {"c": "y"}},
+	{"a": 1, "b": {"c": "z"}},
+	{"a": 2, "b": {"c": "z"}},
+	{"a": 1, "baz": 2}
+      ]
+    },
+    "cases": [
+      {
+        "expression": "foo[?a==`1`].b.c",
+        "result": ["x", "y", "z"]
       }
     ]
   }
