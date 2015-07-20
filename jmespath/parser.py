@@ -126,7 +126,7 @@ class Grammar(object):
 
     def p_jmespath_bracket_specifier(self, p):
         """bracket-spec : LBRACKET STAR RBRACKET
-                        | LBRACKET NUMBER RBRACKET
+                        | LBRACKET range RBRACKET
                         | LBRACKET RBRACKET
         """
         if len(p) == 3:
@@ -135,6 +135,23 @@ class Grammar(object):
             p[0] = ast.WildcardIndex()
         else:
             p[0] = ast.Index(p[2])
+
+    def p_jmespath_range(self, p):
+        """range : NUMBER COLON NUMBER COLON NUMBER
+                 | NUMBER COLON NUMBER COLON
+                 | NUMBER COLON NUMBER
+                 | NUMBER COLON COLON
+                 | NUMBER COLON
+                 | NUMBER COLON COLON NUMBER
+                 | NUMBER
+                 | COLON NUMBER COLON NUMBER
+                 | COLON NUMBER COLON
+                 | COLON NUMBER
+                 | COLON
+                 | COLON COLON NUMBER
+                 | COLON COLON
+        """
+        p[0] = ast.Index('FAKE SLICE')
 
     def p_jmespath_bracket_specifier_filter(self, p):
         """bracket-spec : FILTER filter-expression RBRACKET
