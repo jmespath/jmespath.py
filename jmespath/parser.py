@@ -222,6 +222,10 @@ class Grammar(object):
         """expression : expression OR expression"""
         p[0] = ast.ORExpression(p[1], p[3])
 
+    def p_jmespath_pipe_expression(self, p):
+        """expression : expression PIPE expression"""
+        p[0] = ast.PipeExpression(p[1], p[3])
+
     def p_jmespath_literal_expression(self, p):
         """expression : LITERAL
                       | STRING_LITERAL

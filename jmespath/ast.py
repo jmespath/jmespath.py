@@ -270,6 +270,12 @@ class ListElements(AST):
         return "%sListElements()" % indent
 
 
+class PipeExpression(AST):
+    def __init__(self, first, remaining):
+        self.first = first
+        self.remaining = remaining
+
+
 class ORExpression(AST):
     def __init__(self, first, remaining):
         self.first = first
@@ -415,12 +421,11 @@ class FunctionExpression(AST):
     def __init__(self, name, args):
         self.name = name
         self.args = args
-        try:
-            self.function = getattr(self, '_func_%s' % name)
-        except AttributeError:
-            raise UnknownFunctionError("Unknown function: %s" % self.name)
-        self.arity = self.function.arity
-        self.variadic = self.function.variadic
+        # We would normally validate the function exist,
+        # but we're not actually calling anything yet.
+        self.function = getattr(self, '_func_%s' % name, None)
+        self.arity = 0
+        self.variadic = True
         self.function = self._resolve_arguments_wrapper(self.function)
 
     def pretty_print(self, indent=''):
@@ -601,6 +606,30 @@ class FunctionExpression(AST):
     @signature(_Arg(types=['array-string', 'array-number']))
     def _func_sort(self, arg):
         return list(sorted(arg))
+
+    @signature(_Arg(types=['string']), _Arg(types=['string']))
+    def _func_starts_with(self, search, prefix):
+        return search.startswith(prefix)
+
+    @signature(_Arg(types=['string']), _Arg(types=['string']))
+    def _func_ends_with(self, search, suffix):
+        return search.endswith(suffix)
+
+    @signature(_Arg(types=['string']), _Arg(types=['string']))
+    def _func_ends_with(self, search, suffix):
+        return search.endswith(suffix)
+
+    @signature(_Arg(), variadic=True)
+    def _func_merge(self, *args):
+        raise NotImplementedError("merge()")
+
+    @signature(_Arg(types=['array', 'string']))
+    def _func_reverse(self, arg):
+        return reversed(arg)
+
+    @signature(_Arg(types=['array-number']))
+    def _func_sum(self, arg):
+        return sum(arg)
 
     @signature(_Arg(types=['object']))
     def _func_keys(self, arg):

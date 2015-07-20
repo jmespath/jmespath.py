@@ -34,6 +34,7 @@ class LexerDefinition(object):
         'RBRACKET',
         'LBRACE',
         'RBRACE',
+        'PIPE',
         'OR',
         'NUMBER',
         'UNQUOTED_IDENTIFIER',
@@ -61,6 +62,7 @@ class LexerDefinition(object):
     t_RBRACKET = r'\]'
     t_LBRACE = r'\{'
     t_RBRACE = r'\}'
+    t_PIPE = r'\|'
     t_OR = r'\|\|'
     t_COMMA = r','
     t_COLON = r':'
