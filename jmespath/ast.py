@@ -275,6 +275,15 @@ class PipeExpression(AST):
         self.first = first
         self.remaining = remaining
 
+    def pretty_print(self, indent=''):
+        sub_indent = indent + ' ' * 4
+        return "%sPipeExpression(\n%s%s,\n%s%s)" % (
+            indent,
+            sub_indent, self.first.pretty_print(sub_indent),
+            sub_indent, self.remaining.pretty_print(sub_indent))
+
+
+
 
 class ORExpression(AST):
     def __init__(self, first, remaining):
