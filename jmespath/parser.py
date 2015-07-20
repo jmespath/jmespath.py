@@ -223,7 +223,9 @@ class Grammar(object):
         p[0] = ast.ORExpression(p[1], p[3])
 
     def p_jmespath_literal_expression(self, p):
-        """expression : LITERAL"""
+        """expression : LITERAL
+                      | STRING_LITERAL
+        """
         p[0] = ast.Literal(p[1])
 
     def p_jmespath_function(self, p):

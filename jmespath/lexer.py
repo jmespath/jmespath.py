@@ -46,6 +46,7 @@ class LexerDefinition(object):
         'GTE',
         'EQ',
         'NE',
+        'STRING_LITERAL',
         'LITERAL',
         'CURRENT',
         'EXPREF',
@@ -93,6 +94,11 @@ class LexerDefinition(object):
             raise LexerError(lexer_position=t.lexpos,
                                 lexer_value=t.value,
                                 message=error_message)
+        return t
+
+    def t_STRING_LITERAL(self, t):
+        r'(\'(?:\\\\|\\\'|[^\'])*\')'
+        t.value = t.value[1:-1].replace(r"\'", "'")
         return t
 
     def t_LITERAL(self, t):
