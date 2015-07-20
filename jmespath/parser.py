@@ -76,6 +76,7 @@ class Grammar(object):
     precedence = (
         ('left', 'PIPE'),
         ('left', 'OR'),
+        ('left', 'AND'),
         ('left', 'DOT', 'STAR'),
         ('left', 'LT', 'LTE', 'GT', 'GTE', 'EQ'),
         ('right', 'LBRACKET', 'RBRACKET'),
@@ -239,6 +240,10 @@ class Grammar(object):
     def p_jmespath_or_expression(self, p):
         """expression : expression OR expression"""
         p[0] = ast.ORExpression(p[1], p[3])
+
+    def p_jmespath_and_expression(self, p):
+        """expression : expression AND expression"""
+        p[0] = ast.AndExpression(p[1], p[3])
 
     def p_jmespath_pipe_expression(self, p):
         """expression : expression PIPE expression"""

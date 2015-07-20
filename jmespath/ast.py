@@ -283,6 +283,14 @@ class PipeExpression(AST):
             sub_indent, self.remaining.pretty_print(sub_indent))
 
 
+class AndExpression(AST):
+    def __init__(self, first, remaining):
+        self.first = first
+        self.remaining = remaining
+
+    def pretty_print(self, indent=''):
+        return "%sAndExpression(%s, %s)" % (indent, self.first,
+                                            self.remaining)
 
 
 class ORExpression(AST):
