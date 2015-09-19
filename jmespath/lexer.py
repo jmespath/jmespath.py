@@ -125,8 +125,7 @@ class Lexer(object):
 
     def _consume_literal(self):
         start = self._position
-        lexeme = self._consume_until('`')
-        lexeme = lexeme.replace('\\`', '`')
+        lexeme = self._consume_until('`').replace('\\`', '`')
         try:
             # Assume it is valid JSON and attempt to parse.
             parsed_json = loads(lexeme)
@@ -160,7 +159,7 @@ class Lexer(object):
 
     def _consume_raw_string_literal(self):
         start = self._position
-        lexeme = self._consume_until("'")
+        lexeme = self._consume_until("'").replace("\\'", "'")
         token_len = self._position - start
         return {'type': 'literal', 'value': lexeme,
                 'start': start, 'end': token_len}
