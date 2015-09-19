@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 import re
-from tests import unittest
+from tests import unittest, OrderedDict
 
 from jmespath import parser
+from jmespath import visitor
 from jmespath import ast
 from jmespath import exceptions
 
@@ -318,6 +319,18 @@ class TestParserAddsExpressionAttribute(unittest.TestCase):
         p = parser.Parser()
         parsed = p.parse('foo.bar')
         self.assertEqual(parsed.expression, 'foo.bar')
+
+
+class TestParsedResultAddsOptions(unittest.TestCase):
+    def test_can_have_ordered_dict(self):
+        p = parser.Parser()
+        parsed = p.parse('{a: a, b: b, c: c}')
+        options = visitor.Options(dict_cls=OrderedDict)
+        result = parsed.search(
+            {"c": "c", "b": "b", "a": "a"}, options=options)
+        # The order should be 'a', 'b' because we're using an
+        # OrderedDict
+        self.assertEqual(list(result), ['a', 'b', 'c'])
 
 
 class TestRenderGraphvizFile(unittest.TestCase):

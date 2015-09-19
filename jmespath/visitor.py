@@ -33,6 +33,20 @@ def _is_special_integer_case(x, y):
         return x is True or x is False
 
 
+class Options(object):
+    """Options to control how a JMESPath function is evaluated."""
+    def __init__(self, dict_cls):
+        #: The class to use when creating a dict.  The interpreter
+        #  may create dictionaries during the evalution of a JMESPath
+        #  expression.  For example, a multi-select hash will
+        #  create a dictionary.  By default we use a dict() type.
+        #  You can set this value to change what dict type is used.
+        #  The most common reason you would change this is if you
+        #  want to set a collections.OrderedDict so that you can
+        #  have predictible key ordering.
+        self.dict_cls = dict_cls
+
+
 class _Expression(object):
     def __init__(self, expression):
         self.expression = expression
@@ -67,8 +81,12 @@ class TreeInterpreter(Visitor):
     }
     MAP_TYPE = dict
 
-    def __init__(self):
+    def __init__(self, options=None):
         super(TreeInterpreter, self).__init__()
+        self._options = options
+        self._dict_cls = self.MAP_TYPE
+        if options is not None and options.dict_cls is not None:
+            self._dict_cls = self._options.dict_cls
         self._functions = functions.RuntimeFunctions()
         # Note that .interpreter is a property that uses
         # a weakref so that the cyclic reference can be
@@ -167,7 +185,7 @@ class TreeInterpreter(Visitor):
     def visit_multi_select_dict(self, node, value):
         if value is None:
             return None
-        collected = self.MAP_TYPE()
+        collected = self._dict_cls()
         for child in node['children']:
             collected[child['value']] = self.visit(child, value)
         return collected
