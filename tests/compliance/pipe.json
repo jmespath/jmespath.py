@@ -2,6 +2,52 @@
   "given": {
     "foo": {
       "bar": {
+        "baz": "subkey"
+      },
+      "other": {
+        "baz": "subkey"
+      },
+      "other2": {
+        "baz": "subkey"
+      },
+      "other3": {
+        "notbaz": ["a", "b", "c"]
+      },
+      "other4": {
+        "notbaz": ["a", "b", "c"]
+      }
+    }
+  },
+  "cases": [
+    {
+      "expression": "foo.*.baz | [0]",
+      "result": "subkey"
+    },
+    {
+      "expression": "foo.*.baz | [1]",
+      "result": "subkey"
+    },
+    {
+      "expression": "foo.*.baz | [2]",
+      "result": "subkey"
+    },
+    {
+      "expression": "foo.bar.* | [0]",
+      "result": "subkey"
+    },
+    {
+      "expression": "foo.*.notbaz | [*]",
+      "result": [["a", "b", "c"], ["a", "b", "c"]]
+    },
+    {
+      "expression": "{\"a\": foo.bar, \"b\": foo.other} | *.baz",
+      "result": ["subkey", "subkey"]
+    }
+  ]
+}, {
+  "given": {
+    "foo": {
+      "bar": {
         "baz": "one"
       },
       "other": {
@@ -19,26 +65,6 @@
     }
   },
   "cases": [
-    {
-      "expression": "foo.*.baz | [0]",
-      "result": "one"
-    },
-    {
-      "expression": "foo.*.baz | [1]",
-      "result": "two"
-    },
-    {
-      "expression": "foo.*.baz | [2]",
-      "result": "three"
-    },
-    {
-      "expression": "foo.bar.* | [0]",
-      "result": "one"
-    },
-    {
-      "expression": "foo.*.notbaz | [*]",
-      "result": [["a", "b", "c"], ["d", "e", "f"]]
-    },
     {
       "expression": "foo | bar",
       "result": {"baz": "one"}
@@ -70,10 +96,6 @@
     {
       "expression": "{\"a\": foo.bar, \"b\": foo.other} | b",
       "result": {"baz": "two"}
-    },
-    {
-      "expression": "{\"a\": foo.bar, \"b\": foo.other} | *.baz",
-      "result": ["one", "two"]
     },
     {
       "expression": "foo.bam || foo.bar | baz",

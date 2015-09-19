@@ -324,8 +324,8 @@
       "result": "object"
     },
     {
-      "expression": "keys(objects)",
-      "result": ["foo", "bar"]
+      "expression": "sort(keys(objects))",
+      "result": ["bar", "foo"]
     },
     {
       "expression": "keys(foo)",
@@ -340,7 +340,7 @@
       "error": "invalid-type"
     },
     {
-      "expression": "values(objects)",
+      "expression": "sort(values(objects))",
       "result": ["bar", "baz"]
     },
     {
@@ -611,6 +611,16 @@
     {
       "description": "sort by field expression",
       "expression": "sort_by(people, &age)",
+      "result": [
+         {"age": 10, "age_str": "10", "bool": true, "name": 3},
+         {"age": 20, "age_str": "20", "bool": true, "name": "a", "extra": "foo"},
+         {"age": 30, "age_str": "30", "bool": true, "name": "c"},
+         {"age": 40, "age_str": "40", "bool": false, "name": "b", "extra": "bar"},
+         {"age": 50, "age_str": "50", "bool": false, "name": "d"}
+      ]
+    },
+    {
+      "expression": "sort_by(people, &age_str)",
       "result": [
          {"age": 10, "age_str": "10", "bool": true, "name": 3},
          {"age": 20, "age_str": "20", "bool": true, "name": "a", "extra": "foo"},
