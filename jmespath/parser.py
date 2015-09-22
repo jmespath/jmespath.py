@@ -277,11 +277,7 @@ class Parser(object):
         name = left['value']
         args = []
         while not self._current_token() == 'rparen':
-            if self._current_token() == 'current':
-                expression = ast.current_node()
-                self._advance()
-            else:
-                expression = self._expression()
+            expression = self._expression()
             if self._current_token() == 'comma':
                 self._match('comma')
             args.append(expression)
