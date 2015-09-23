@@ -1,4 +1,4 @@
-import re
+import string
 import warnings
 from json import loads
 
@@ -6,143 +6,171 @@ from jmespath.exceptions import LexerError, EmptyExpressionError
 
 
 class Lexer(object):
-    TOKENS = (
-        r'(?P<number>-?\d+)|'
-        r'(?P<unquoted_identifier>([a-zA-Z_][a-zA-Z_0-9]*))|'
-        r'(?P<quoted_identifier>("(?:\\\\|\\"|[^"])*"))|'
-        r'(?P<string_literal>(\'(?:\\\\|\\\'|[^\'])*\'))|'
-        r'(?P<literal>(`(?:\\\\|\\`|[^`])*`))|'
-        r'(?P<filter>\[\?)|'
-        r'(?P<or>\|\|)|'
-        r'(?P<pipe>\|)|'
-        r'(?P<ne>!=)|'
-        r'(?P<rbrace>\})|'
-        r'(?P<eq>==)|'
-        r'(?P<dot>\.)|'
-        r'(?P<star>\*)|'
-        r'(?P<gte>>=)|'
-        r'(?P<lparen>\()|'
-        r'(?P<lbrace>\{)|'
-        r'(?P<lte><=)|'
-        r'(?P<flatten>\[\])|'
-        r'(?P<rbracket>\])|'
-        r'(?P<lbracket>\[)|'
-        r'(?P<rparen>\))|'
-        r'(?P<comma>,)|'
-        r'(?P<colon>:)|'
-        r'(?P<lt><)|'
-        r'(?P<expref>&)|'
-        r'(?P<gt>>)|'
-        r'(?P<current>@)|'
-        r'(?P<skip>[ \t]+)'
-    )
-
-    def __init__(self):
-        self.master_regex = re.compile(self.TOKENS)
+    START_IDENTIFIER = set(string.ascii_letters + '_')
+    VALID_IDENTIFIER = set(string.ascii_letters + string.digits + '_')
+    START_NUMBER = set(string.digits + '-')
+    VALID_NUMBER = set(string.digits)
+    WHITESPACE = set(" \t\n\r")
+    SIMPLE_TOKENS = {
+        '.': 'dot',
+        '*': 'star',
+        ']': 'rbracket',
+        ',': 'comma',
+        ':': 'colon',
+        '@': 'current',
+        '&': 'expref',
+        '(': 'lparen',
+        ')': 'rparen',
+        '{': 'lbrace',
+        '}': 'rbrace'
+    }
 
     def tokenize(self, expression):
+        self._initialize_for_expression(expression)
+        while self._current is not None:
+            if self._current in self.SIMPLE_TOKENS:
+                yield {'type': self.SIMPLE_TOKENS[self._current],
+                       'value': self._current,
+                       'start': self._position, 'end': self._position + 1}
+                self._next()
+            elif self._current in self.START_IDENTIFIER:
+                start = self._position
+                buff = self._current
+                while self._next() in self.VALID_IDENTIFIER:
+                    buff += self._current
+                yield {'type': 'unquoted_identifier', 'value': buff,
+                       'start': start, 'end': start + len(buff)}
+            elif self._current in self.WHITESPACE:
+                self._next()
+            elif self._current == '[':
+                start = self._position
+                next_char = self._next()
+                if next_char == ']':
+                    self._next()
+                    yield {'type': 'flatten', 'value': '[]',
+                           'start': start, 'end': start + 2}
+                elif next_char == '?':
+                    self._next()
+                    yield {'type': 'filter', 'value': '[?',
+                           'start': start, 'end': start + 2}
+                else:
+                    yield {'type': 'lbracket', 'value': '[',
+                           'start': start, 'end': start + 1}
+            elif self._current == "'":
+                yield self._consume_raw_string_literal()
+            elif self._current == '|':
+                yield self._match_or_else('|', 'or', 'pipe')
+            elif self._current == '`':
+                yield self._consume_literal()
+            elif self._current in self.START_NUMBER:
+                start = self._position
+                buff = self._current
+                while self._next() in self.VALID_NUMBER:
+                    buff += self._current
+                yield {'type': 'number', 'value': int(buff),
+                       'start': start, 'end': start + len(buff)}
+            elif self._current == '"':
+                yield self._consume_quoted_identifier()
+            elif self._current == '<':
+                yield self._match_or_else('=', 'lte', 'lt')
+            elif self._current == '>':
+                yield self._match_or_else('=', 'gte', 'gt')
+            elif self._current == '!':
+                yield self._match_or_else('=', 'ne', 'unknown')
+            elif self._current == '=':
+                yield self._match_or_else('=', 'eq', 'unknown')
+            else:
+                raise LexerError(lexer_position=self._position,
+                                 lexer_value=self._current,
+                                 message="Unknown token %s" % self._current)
+        yield {'type': 'eof', 'value': '',
+               'start': self._length, 'end': self._length}
+
+    def _initialize_for_expression(self, expression):
         if not expression:
             raise EmptyExpressionError()
-        previous_column = 0
-        for match in self.master_regex.finditer(expression):
-            value = match.group()
-            start = match.start()
-            end = match.end()
-            if match.lastgroup == 'skip':
-                # Ignore whitespace.
-                previous_column = end
-                continue
-            if start != previous_column:
-                bad_value = expression[previous_column:start]
-                # Try to give a good error message.
-                if bad_value == '"':
-                    raise LexerError(
-                        lexer_position=previous_column,
-                        lexer_value=value,
-                        message='Starting quote is missing the ending quote',
-                        expression=expression)
-                raise LexerError(lexer_position=previous_column,
-                                 lexer_value=value,
-                                 message='Unknown character',
-                                 expression=expression)
-            previous_column = end
-            token_type = match.lastgroup
-            handler = getattr(self, '_token_%s' % token_type.lower(), None)
-            if handler is not None:
-                value = handler(value, start, end)
-            yield {'type': token_type, 'value': value,
-                   'start': start, 'end': end}
-        # At the end of the loop make sure we've consumed all the input.
-        # If we haven't then we have unidentified characters.
-        if end != len(expression):
-            msg = "Unknown characters at the end of the expression"
-            raise LexerError(lexer_position=end,
-                             lexer_value='',
-                             message=msg, expression=expression)
+        self._position = 0
+        self._expression = expression
+        self._chars = list(self._expression)
+        self._current = self._chars[self._position]
+        self._length = len(self._expression)
+
+    def _next(self):
+        if self._position == self._length - 1:
+            self._current = None
         else:
-            yield {'type': 'eof', 'value': '',
-                   'start': len(expression), 'end': len(expression)}
+            self._position += 1
+            self._current = self._chars[self._position]
+        return self._current
 
-    def _token_number(self, value, start, end):
-        return int(value)
+    def _consume_until(self, delimiter):
+        # Consume until the delimiter is reached,
+        # allowing for the delimiter to be escaped with "\".
+        start = self._position
+        buff = ''
+        self._next()
+        while self._current != delimiter:
+            if self._current == '\\':
+                buff += '\\'
+                self._next()
+            if self._current is None:
+                raise LexerError(lexer_position=start,
+                                 lexer_value=self._expression,
+                                 message="Unclosed %s delimiter" % delimiter)
+            buff += self._current
+            self._next()
+        # Skip the closing delimiter.
+        self._next()
+        return buff
 
-    def _token_quoted_identifier(self, value, start, end):
+    def _consume_literal(self):
+        start = self._position
+        lexeme = self._consume_until('`').replace('\\`', '`')
         try:
-            return loads(value)
+            # Assume it is valid JSON and attempt to parse.
+            parsed_json = loads(lexeme)
+        except ValueError:
+            try:
+                # Invalid JSON values should be converted to quoted
+                # JSON strings during the JEP-12 deprecation period.
+                parsed_json = loads('"%s"' % lexeme.lstrip())
+                warnings.warn("deprecated string literal syntax",
+                              PendingDeprecationWarning)
+            except ValueError:
+                raise LexerError(lexer_position=start,
+                                 lexer_value=self._expression,
+                                 message="Bad token %s" % lexeme)
+        token_len = self._position - start
+        return {'type': 'literal', 'value': parsed_json,
+                'start': start, 'end': token_len}
+
+    def _consume_quoted_identifier(self):
+        start = self._position
+        lexeme = '"' + self._consume_until('"') + '"'
+        try:
+            token_len = self._position - start
+            return {'type': 'quoted_identifier', 'value': loads(lexeme),
+                    'start': start, 'end': token_len}
         except ValueError as e:
             error_message = str(e).split(':')[0]
             raise LexerError(lexer_position=start,
-                             lexer_value=value,
+                             lexer_value=lexeme,
                              message=error_message)
 
-    def _token_string_literal(self, value, start, end):
-        return value[1:-1]
+    def _consume_raw_string_literal(self):
+        start = self._position
+        lexeme = self._consume_until("'").replace("\\'", "'")
+        token_len = self._position - start
+        return {'type': 'literal', 'value': lexeme,
+                'start': start, 'end': token_len}
 
-    def _token_literal(self, value, start, end):
-        actual_value = value[1:-1]
-        actual_value = actual_value.replace('\\`', '`').lstrip()
-        # First, if it looks like JSON then we parse it as
-        # JSON and any json parsing errors propogate as lexing
-        # errors.
-        if self._looks_like_json(actual_value):
-            try:
-                return loads(actual_value)
-            except ValueError:
-                raise LexerError(lexer_position=start,
-                                 lexer_value=value,
-                                 message="Bad token %s" % value)
-        else:
-            potential_value = '"%s"' % actual_value
-            try:
-                # There's a shortcut syntax where string literals
-                # don't have to be quoted.  This is only true if the
-                # string doesn't start with chars that could start a valid
-                # JSON value.
-                value = loads(potential_value)
-                warnings.warn("deprecated string literal syntax",
-                              PendingDeprecationWarning)
-                return value
-            except ValueError:
-                raise LexerError(lexer_position=start,
-                                 lexer_value=value,
-                                 message="Bad token %s" % value)
-
-    def _looks_like_json(self, value):
-        # Figure out if the string "value" starts with something
-        # that looks like json.
-        if not value:
-            return False
-        elif value[0] in ['"', '{', '[']:
-            return True
-        elif value in ['true', 'false', 'null']:
-            return True
-        elif value[0] in ['-', '0', '1', '2', '3', '4', '5',
-                          '6', '7', '8', '9']:
-            # Then this is JSON, return True.
-            try:
-                loads(value)
-                return True
-            except ValueError:
-                return False
-        else:
-            return False
+    def _match_or_else(self, expected, match_type, else_type):
+        start = self._position
+        current = self._current
+        next_char = self._next()
+        if next_char == expected:
+            self._next()
+            return {'type': match_type, 'value': current + next_char,
+                    'start': start, 'end': start + 1}
+        return {'type': else_type, 'value': current,
+                'start': start, 'end': start}

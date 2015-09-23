@@ -251,6 +251,13 @@ class RuntimeFunctions(object):
     def _func_join(self, separator, array):
         return separator.join(array)
 
+    @builtin_function({'types': ['expref']}, {'types': ['array']})
+    def _func_map(self, expref, arg):
+        result = []
+        for element in arg:
+            result.append(self.interpreter.visit(expref.expression, element))
+        return result
+
     @builtin_function({"types": ['array-number', 'array-string']})
     def _func_max(self, arg):
         if arg:

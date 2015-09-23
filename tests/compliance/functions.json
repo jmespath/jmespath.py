@@ -324,8 +324,8 @@
       "result": "object"
     },
     {
-      "expression": "keys(objects)",
-      "result": ["foo", "bar"]
+      "expression": "sort(keys(objects))",
+      "result": ["bar", "foo"]
     },
     {
       "expression": "keys(foo)",
@@ -340,7 +340,7 @@
       "error": "invalid-type"
     },
     {
-      "expression": "values(objects)",
+      "expression": "sort(values(objects))",
       "result": ["bar", "baz"]
     },
     {
@@ -620,6 +620,16 @@
       ]
     },
     {
+      "expression": "sort_by(people, &age_str)",
+      "result": [
+         {"age": 10, "age_str": "10", "bool": true, "name": 3},
+         {"age": 20, "age_str": "20", "bool": true, "name": "a", "extra": "foo"},
+         {"age": 30, "age_str": "30", "bool": true, "name": "c"},
+         {"age": 40, "age_str": "40", "bool": false, "name": "b", "extra": "bar"},
+         {"age": 50, "age_str": "50", "bool": false, "name": "d"}
+      ]
+    },
+    {
       "description": "sort by function expression",
       "expression": "sort_by(people, &to_number(age_str))",
       "result": [
@@ -736,4 +746,76 @@
       ]
     }
   ]
-}]
+}, {
+  "given":
+  {
+    "people": [
+         {"a": 10, "b": 1, "c": "z"},
+         {"a": 10, "b": 2, "c": null},
+         {"a": 10, "b": 3},
+         {"a": 10, "b": 4, "c": "z"},
+         {"a": 10, "b": 5, "c": null},
+         {"a": 10, "b": 6},
+         {"a": 10, "b": 7, "c": "z"},
+         {"a": 10, "b": 8, "c": null},
+         {"a": 10, "b": 9}
+    ],
+    "empty": []
+  },
+  "cases": [
+    {
+      "expression": "map(&a, people)",
+      "result": [10, 10, 10, 10, 10, 10, 10, 10, 10]
+    },
+    {
+      "expression": "map(&c, people)",
+      "result": ["z", null, null, "z", null, null, "z", null, null]
+    },
+    {
+      "expression": "map(&a, badkey)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "map(&foo, empty)",
+      "result": []
+    }
+  ]
+}, {
+  "given": {
+    "array": [
+      {
+          "foo": {"bar": "yes1"}
+      },
+      {
+          "foo": {"bar": "yes2"}
+      },
+      {
+          "foo1": {"bar": "no"}
+      }
+  ]},
+  "cases": [
+    {
+      "expression": "map(&foo.bar, array)",
+      "result": ["yes1", "yes2", null]
+    },
+    {
+      "expression": "map(&foo1.bar, array)",
+      "result": [null, null, "no"]
+    },
+    {
+      "expression": "map(&foo.bar.baz, array)",
+      "result": [null, null, null]
+    }
+  ]
+}, {
+  "given": {
+    "array": [[1, 2, 3, [4]], [5, 6, 7, [8, 9]]]
+  },
+  "cases": [
+    {
+      "expression": "map(&[], array)",
+      "result": [[1, 2, 3, 4], [5, 6, 7, 8, 9]]
+    }
+  ]
+}
+]

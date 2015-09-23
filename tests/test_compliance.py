@@ -6,14 +6,14 @@ from tests import json
 from nose.tools import assert_equal
 
 import jmespath
-from jmespath.visitor import TreeInterpreter
+from jmespath.visitor import TreeInterpreter, Options
 
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 COMPLIANCE_DIR = os.path.join(TEST_DIR, 'compliance')
 LEGACY_DIR = os.path.join(TEST_DIR, 'legacy')
 NOT_SPECIFIED = object()
-TreeInterpreter.MAP_TYPE = OrderedDict
+OPTIONS = Options(dict_cls=OrderedDict)
 
 
 def test_compliance():
@@ -65,7 +65,7 @@ def _test_expression(given, expression, expected, filename):
         raise AssertionError(
             'jmespath expression failed to compile: "%s", error: %s"' %
             (expression, e))
-    actual = parsed.search(given)
+    actual = parsed.search(given, options=OPTIONS)
     expected_repr = json.dumps(expected, indent=4)
     actual_repr = json.dumps(actual, indent=4)
     error_msg = ("\n\n  (%s) The expression '%s' was suppose to give:\n%s\n"
