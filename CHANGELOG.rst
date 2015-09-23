@@ -1,3 +1,14 @@
+0.8.0
+=====
+
+* Improve lexing performance (`issue 84 <https://github.com/jmespath/jmespath.py/pull/84>`__)
+* Fix parsing error for multiselect lists (`issue 86 <https://github.com/jmespath/jmespath.py/issues/86>`__)
+* Fix issue with escaping single quotes in literal strings (`issue 85 <https://github.com/jmespath/jmespath.py/issues/85>`__)
+* Add support for providing your own dict cls to support
+  ordered dictionaries (`issue 94 <https://github.com/jmespath/jmespath.py/pull/94>`__)
+* Add map() function (`issue 95 <https://github.com/jmespath/jmespath.py/pull/95>`__)
+
+
 0.7.1
 =====
 
