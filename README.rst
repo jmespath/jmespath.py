@@ -69,6 +69,26 @@ This is useful if you're going to use the same jmespath expression to
 search multiple documents.  This avoids having to reparse the
 JMESPath expression each time you search a new document.
 
+Options
+-------
+
+You can provide an instance of ``jmespath.Options`` to control how
+a JMESPath expression is evaluated.  The most common scenario for
+using an ``Options`` instance is if you want to have ordered output
+of your dict keys.  To do this you can use either of these options::
+
+    >>> import jmespath
+    >>> jmespath.search('{a: a, b: b},
+    ...                 mydata,
+    ...                 jmespath.Options(dict_cls=collections.OrderedDict))
+
+
+    >>> import jmespath
+    >>> parsed = jmespath.compile('{a: a, b: b}')
+    >>> parsed.search('{a: a, b: b},
+    ...               mydata,
+    ...               jmespath.Options(dict_cls=collections.OrderedDict))
+
 
 Specification
 =============
