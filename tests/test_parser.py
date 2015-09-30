@@ -95,6 +95,15 @@ class TestParser(unittest.TestCase):
         result = parsed.search({'foo': {'bar': {'baz': 'CORRECT'}, 'qux': 'qux'}})
         self.assertEqual(result, {"bar": "CORRECT", "qux": "qux"})
 
+    def test_function_call_with_and_statement(self):
+        self.assert_parsed_ast(
+            'f(@ && @)',
+            {'children': [{'children': [{'children': [], 'type': 'current'},
+                                        {'children': [], 'type': 'current'}],
+                           'type': 'and_expression'}],
+             'type': 'function_expression',
+             'value': 'f'})
+
 
 class TestErrorMessages(unittest.TestCase):
 
