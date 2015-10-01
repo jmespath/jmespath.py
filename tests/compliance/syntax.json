@@ -85,6 +85,10 @@
         "error": "syntax"
       },
       {
+        "expression": "((&",
+        "error": "syntax"
+      },
+      {
         "expression": "a[",
         "error": "syntax"
       },
@@ -94,6 +98,20 @@
       },
       {
         "expression": "a][",
+        "error": "syntax"
+      },
+      {
+        "expression": "!",
+        "error": "syntax"
+      }
+    ]
+  },
+  {
+    "comment": "Boolean syntax errors",
+    "given": {"type": "object"},
+    "cases": [
+      {
+        "expression": "![!(!",
         "error": "syntax"
       }
     ]

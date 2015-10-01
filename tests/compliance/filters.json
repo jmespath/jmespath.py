@@ -321,15 +321,15 @@
     "cases": [
       {
         "comment": "Filter with or expression",
-        "expression": "foo[?name == `a` || name == `b`]",
+        "expression": "foo[?name == 'a' || name == 'b']",
         "result": [{"name": "a"}, {"name": "b"}]
       },
       {
-        "expression": "foo[?name == `a` || name == `e`]",
+        "expression": "foo[?name == 'a' || name == 'e']",
         "result": [{"name": "a"}]
       },
       {
-        "expression": "foo[?name == `a` || name == `b` || name == `c`]",
+        "expression": "foo[?name == 'a' || name == 'b' || name == 'c']",
         "result": [{"name": "a"}, {"name": "b"}, {"name": "c"}]
       }
     ]
