@@ -1,4 +1,21 @@
 #!/usr/bin/env python
+"""Script to manage releases.
+
+* Create release branches
+* Version bump setup.py, docs/conf.py, etc.
+* Tag the releases
+* Merge to master
+* Push everything up to github.
+
+The only thing this script doesn't do are the pypi uploads.
+You'll need to do those yourself.
+
+
+Usage::
+
+    scripts/release 1.0.0
+
+"""
 import argparse
 from subprocess import check_call, check_output
 
@@ -25,7 +42,7 @@ def no_outstanding_changes():
     output = check_output(
         'git status --short', shell=True).strip().decode('utf8')
     if output:
-        raise AssertionError("Can't have any pending changes: %s" % output)
+        raise AssertionError("Can't have any pending changes:\n%s" % output)
 
 
 def create_release_branch(version):
@@ -45,7 +62,7 @@ def merge_to_master(version):
 
 
 def tag_release(version):
-    run('git tag -a %s' % version)
+    run('git tag -s -m "Tagging %s release" %s' % (version, version))
 
 
 def merge_to_develop(version):
