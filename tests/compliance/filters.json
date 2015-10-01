@@ -315,5 +315,154 @@
         "result": ["x", "y", "z"]
       }
     ]
+  },
+  {
+    "given": {"foo": [{"name": "a"}, {"name": "b"}, {"name": "c"}]},
+    "cases": [
+      {
+        "comment": "Filter with or expression",
+        "expression": "foo[?name == 'a' || name == 'b']",
+        "result": [{"name": "a"}, {"name": "b"}]
+      },
+      {
+        "expression": "foo[?name == 'a' || name == 'e']",
+        "result": [{"name": "a"}]
+      },
+      {
+        "expression": "foo[?name == 'a' || name == 'b' || name == 'c']",
+        "result": [{"name": "a"}, {"name": "b"}, {"name": "c"}]
+      }
+    ]
+  },
+  {
+    "given": {"foo": [{"a": 1, "b": 2}, {"a": 1, "b": 3}]},
+    "cases": [
+      {
+        "comment": "Filter with and expression",
+        "expression": "foo[?a == `1` && b == `2`]",
+        "result": [{"a": 1, "b": 2}]
+      },
+      {
+        "expression": "foo[?a == `1` && b == `4`]",
+        "result": []
+      }
+    ]
+  },
+  {
+    "given": {"foo": [{"a": 1, "b": 2, "c": 3}, {"a": 3, "b": 4}]},
+    "cases": [
+      {
+        "comment": "Filter with Or and And expressions",
+        "expression": "foo[?c == `3` || a == `1` && b == `4`]",
+        "result": [{"a": 1, "b": 2, "c": 3}]
+      },
+      {
+        "expression": "foo[?b == `2` || a == `3` && b == `4`]",
+        "result": [{"a": 1, "b": 2, "c": 3}, {"a": 3, "b": 4}]
+      },
+      {
+        "expression": "foo[?a == `3` && b == `4` || b == `2`]",
+        "result": [{"a": 1, "b": 2, "c": 3}, {"a": 3, "b": 4}]
+      },
+      {
+        "expression": "foo[?(a == `3` && b == `4`) || b == `2`]",
+        "result": [{"a": 1, "b": 2, "c": 3}, {"a": 3, "b": 4}]
+      },
+      {
+        "expression": "foo[?((a == `3` && b == `4`)) || b == `2`]",
+        "result": [{"a": 1, "b": 2, "c": 3}, {"a": 3, "b": 4}]
+      },
+      {
+        "expression": "foo[?a == `3` && (b == `4` || b == `2`)]",
+        "result": [{"a": 3, "b": 4}]
+      },
+      {
+        "expression": "foo[?a == `3` && ((b == `4` || b == `2`))]",
+        "result": [{"a": 3, "b": 4}]
+      }
+    ]
+  },
+  {
+    "given": {"foo": [{"a": 1, "b": 2, "c": 3}, {"a": 3, "b": 4}]},
+    "cases": [
+      {
+        "comment": "Verify precedence of or/and expressions",
+        "expression": "foo[?a == `1` || b ==`2` && c == `5`]",
+        "result": [{"a": 1, "b": 2, "c": 3}]
+      },
+      {
+        "comment": "Parentheses can alter precedence",
+        "expression": "foo[?(a == `1` || b ==`2`) && c == `5`]",
+        "result": []
+      },
+      {
+        "comment": "Not expressions combined with and/or",
+        "expression": "foo[?!(a == `1` || b ==`2`)]",
+        "result": [{"a": 3, "b": 4}]
+      }
+    ]
+  },
+  {
+    "given": {
+      "foo": [
+        {"key": true},
+        {"key": false},
+        {"key": []},
+        {"key": {}},
+        {"key": [0]},
+        {"key": {"a": "b"}},
+        {"key": 0},
+        {"key": 1},
+        {"key": null},
+        {"notkey": true}
+      ]
+    },
+    "cases": [
+      {
+        "comment": "Unary filter expression",
+        "expression": "foo[?key]",
+        "result": [
+          {"key": true}, {"key": [0]}, {"key": {"a": "b"}},
+          {"key": 0}, {"key": 1}
+        ]
+      },
+      {
+        "comment": "Unary not filter expression",
+        "expression": "foo[?!key]",
+        "result": [
+          {"key": false}, {"key": []}, {"key": {}},
+          {"key": null}, {"notkey": true}
+        ]
+      },
+      {
+        "comment": "Equality with null RHS",
+        "expression": "foo[?key == `null`]",
+        "result": [
+          {"key": null}, {"notkey": true}
+        ]
+      }
+    ]
+  },
+  {
+    "given": {
+      "foo": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    },
+    "cases": [
+      {
+        "comment": "Using @ in a filter expression",
+        "expression": "foo[?@ < `5`]",
+        "result": [0, 1, 2, 3, 4]
+      },
+      {
+        "comment": "Using @ in a filter expression",
+        "expression": "foo[?`5` > @]",
+        "result": [0, 1, 2, 3, 4]
+      },
+      {
+        "comment": "Using @ in a filter expression",
+        "expression": "foo[?@ == @]",
+        "result": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+      }
+    ]
   }
 ]
