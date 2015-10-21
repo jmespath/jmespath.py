@@ -48,7 +48,9 @@ API
 
 The ``jmespath.py`` library has two functions
 that operate on python data structures.  You can use ``search``
-and give it the jmespath expression and the data::
+and give it the jmespath expression and the data:
+
+.. code:: python
 
     >>> import jmespath
     >>> path = jmespath.search('foo.bar', {'foo': {'bar': 'baz'}})
@@ -56,7 +58,9 @@ and give it the jmespath expression and the data::
 
 Similar to the ``re`` module, you can use the ``compile`` function
 to compile the JMESPath expression and use this parsed expression
-to perform repeated searches::
+to perform repeated searches:
+
+.. code:: python
 
     >>> import jmespath
     >>> expression = jmespath.compile('foo.bar')
@@ -75,7 +79,9 @@ Options
 You can provide an instance of ``jmespath.Options`` to control how
 a JMESPath expression is evaluated.  The most common scenario for
 using an ``Options`` instance is if you want to have ordered output
-of your dict keys.  To do this you can use either of these options::
+of your dict keys.  To do this you can use either of these options:
+
+.. code:: python
 
     >>> import jmespath
     >>> jmespath.search('{a: a, b: b},
