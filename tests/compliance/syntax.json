@@ -95,6 +95,10 @@
       {
         "expression": "a][",
         "error": "syntax"
+      },
+      {
+        "expression": "foo-bar",
+        "error": "syntax"
       }
     ]
   },
