@@ -1,6 +1,5 @@
 import math
 import json
-import weakref
 
 from jmespath import exceptions
 from jmespath.compat import string_type as STRING_TYPE
@@ -59,24 +58,6 @@ class RuntimeFunctions(object):
 
     FUNCTION_TABLE = {
     }
-
-    def __init__(self):
-        self._interpreter = None
-
-    @property
-    def interpreter(self):
-        if self._interpreter is None:
-            return None
-        else:
-            return self._interpreter()
-
-    @interpreter.setter
-    def interpreter(self, value):
-        # A weakref is used because we have
-        # a cyclic reference and we want to allow
-        # for the memory to be properly freed when
-        # the objects are no longer needed.
-        self._interpreter = weakref.ref(value)
 
     def call_function(self, function_name, resolved_args):
         try:
@@ -255,7 +236,7 @@ class RuntimeFunctions(object):
     def _func_map(self, expref, arg):
         result = []
         for element in arg:
-            result.append(self.interpreter.visit(expref.expression, element))
+            result.append(expref.visit(expref.expression, element))
         return result
 
     @builtin_function({"types": ['array-number', 'array-string']})
@@ -323,34 +304,32 @@ class RuntimeFunctions(object):
         # that validates that type, which requires that remaining array
         # elements resolve to the same type as the first element.
         required_type = self._convert_to_jmespath_type(
-            type(self.interpreter.visit(expref.expression, array[0])).__name__)
+            type(expref.visit(expref.expression, array[0])).__name__)
         if required_type not in ['number', 'string']:
             raise exceptions.JMESPathTypeError(
                 'sort_by', array[0], required_type, ['string', 'number'])
-        keyfunc = self._create_key_func(expref.expression,
+        keyfunc = self._create_key_func(expref,
                                         [required_type],
                                         'sort_by')
         return list(sorted(array, key=keyfunc))
 
     @builtin_function({'types': ['array']}, {'types': ['expref']})
     def _func_min_by(self, array, expref):
-        keyfunc = self._create_key_func(expref.expression,
+        keyfunc = self._create_key_func(expref,
                                         ['number', 'string'],
                                         'min_by')
         return min(array, key=keyfunc)
 
     @builtin_function({'types': ['array']}, {'types': ['expref']})
     def _func_max_by(self, array, expref):
-        keyfunc = self._create_key_func(expref.expression,
+        keyfunc = self._create_key_func(expref,
                                         ['number', 'string'],
                                         'min_by')
         return max(array, key=keyfunc)
 
-    def _create_key_func(self, expr_node, allowed_types, function_name):
-        interpreter = self.interpreter
-
+    def _create_key_func(self, expref, allowed_types, function_name):
         def keyfunc(x):
-            result = interpreter.visit(expr_node, x)
+            result = expref.visit(expref.expression, x)
             actual_typename = type(result).__name__
             jmespath_type = self._convert_to_jmespath_type(actual_typename)
             # allowed_types is in term of jmespath types, not python types.

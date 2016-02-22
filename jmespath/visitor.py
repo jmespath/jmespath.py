@@ -48,8 +48,12 @@ class Options(object):
 
 
 class _Expression(object):
-    def __init__(self, expression):
+    def __init__(self, expression, interpreter):
         self.expression = expression
+        self.interpreter = interpreter
+
+    def visit(self, node, *args, **kwargs):
+        return self.interpreter.visit(node, *args, **kwargs)
 
 
 class Visitor(object):
@@ -88,10 +92,6 @@ class TreeInterpreter(Visitor):
         if options is not None and options.dict_cls is not None:
             self._dict_cls = self._options.dict_cls
         self._functions = functions.RuntimeFunctions()
-        # Note that .interpreter is a property that uses
-        # a weakref so that the cyclic reference can be
-        # properly freed.
-        self._functions.interpreter = self
 
     def default_visit(self, node, *args, **kwargs):
         raise NotImplementedError(node['type'])
@@ -119,7 +119,7 @@ class TreeInterpreter(Visitor):
         return value
 
     def visit_expref(self, node, value):
-        return _Expression(node['children'][0])
+        return _Expression(node['children'][0], self)
 
     def visit_function_expression(self, node, value):
         resolved_args = []
