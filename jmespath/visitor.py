@@ -35,7 +35,7 @@ def _is_special_integer_case(x, y):
 
 class Options(object):
     """Options to control how a JMESPath function is evaluated."""
-    def __init__(self, dict_cls):
+    def __init__(self, dict_cls=None, custom_functions=None):
         #: The class to use when creating a dict.  The interpreter
         #  may create dictionaries during the evalution of a JMESPath
         #  expression.  For example, a multi-select hash will
@@ -45,6 +45,7 @@ class Options(object):
         #  want to set a collections.OrderedDict so that you can
         #  have predictible key ordering.
         self.dict_cls = dict_cls
+        self.custom_functions = custom_functions
 
 
 class _Expression(object):
@@ -87,11 +88,16 @@ class TreeInterpreter(Visitor):
 
     def __init__(self, options=None):
         super(TreeInterpreter, self).__init__()
-        self._options = options
         self._dict_cls = self.MAP_TYPE
-        if options is not None and options.dict_cls is not None:
+        if options is None:
+            options = Options()
+        self._options = options
+        if options.dict_cls is not None:
             self._dict_cls = self._options.dict_cls
-        self._functions = functions.RuntimeFunctions()
+        if options.custom_functions is not None:
+            self._functions = self._options.custom_functions
+        else:
+            self._functions = functions.RuntimeFunctions()
 
     def default_visit(self, node, *args, **kwargs):
         raise NotImplementedError(node['type'])
