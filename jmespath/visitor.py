@@ -97,7 +97,7 @@ class TreeInterpreter(Visitor):
         if options.custom_functions is not None:
             self._functions = self._options.custom_functions
         else:
-            self._functions = functions.RuntimeFunctions()
+            self._functions = functions.Functions()
 
     def default_visit(self, node, *args, **kwargs):
         raise NotImplementedError(node['type'])

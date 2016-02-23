@@ -3,7 +3,7 @@ import json
 
 from jmespath import exceptions
 from jmespath.compat import string_type as STRING_TYPE
-from jmespath.compat import get_methods
+from jmespath.compat import get_methods, with_metaclass
 
 
 # python types -> jmespath types
@@ -34,16 +34,6 @@ REVERSE_TYPES_MAP = {
 }
 
 
-def populate_function_table(cls):
-    func_table = cls.FUNCTION_TABLE
-    for name, method in get_methods(cls):
-        signature = getattr(method, 'signature', None)
-        if signature is not None:
-            func_table[name[6:]] = {"function": method,
-                                    "signature": signature}
-    return cls
-
-
 def signature(*arguments):
     def _record_signature(func):
         func.signature = arguments
@@ -51,10 +41,29 @@ def signature(*arguments):
     return _record_signature
 
 
-@populate_function_table
-class RuntimeFunctions(object):
-    # The built in functions are automatically populated in the FUNCTION_TABLE
-    # using the @signature decorator on methods defined in this class.
+class FunctionRegistry(type):
+    def __init__(cls, name, bases, attrs):
+        cls._populate_function_table()
+        super(FunctionRegistry, cls).__init__(name, bases, attrs)
+
+    def _populate_function_table(cls):
+        function_table = getattr(cls, 'FUNCTION_TABLE', {})
+        # Any method with a @signature decorator that also
+        # starts with "_func_" is registered as a function.
+        # _func_max_by -> max_by function.
+        for name, method in get_methods(cls):
+            if not name.startswith('_func_'):
+                continue
+            signature = getattr(method, 'signature', None)
+            if signature is not None:
+                function_table[name[6:]] = {
+                    'function': method,
+                    'signature': signature,
+                }
+        cls.FUNCTION_TABLE = function_table
+
+
+class Functions(with_metaclass(FunctionRegistry, object)):
 
     FUNCTION_TABLE = {
     }
