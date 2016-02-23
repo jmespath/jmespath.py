@@ -44,17 +44,17 @@ def populate_function_table(cls):
     return cls
 
 
-def builtin_function(*arguments):
-    def _record_arity(func):
+def signature(*arguments):
+    def _record_signature(func):
         func.signature = arguments
         return func
-    return _record_arity
+    return _record_signature
 
 
 @populate_function_table
 class RuntimeFunctions(object):
     # The built in functions are automatically populated in the FUNCTION_TABLE
-    # using the @builtin_function decorator on methods defined in this class.
+    # using the @signature decorator on methods defined in this class.
 
     FUNCTION_TABLE = {
     }
@@ -151,28 +151,28 @@ class RuntimeFunctions(object):
                     raise exceptions.JMESPathTypeError(
                         function_name, element, actual_typename, types)
 
-    @builtin_function({'types': ['number']})
+    @signature({'types': ['number']})
     def _func_abs(self, arg):
         return abs(arg)
 
-    @builtin_function({'types': ['array-number']})
+    @signature({'types': ['array-number']})
     def _func_avg(self, arg):
         return sum(arg) / float(len(arg))
 
-    @builtin_function({'types': [], 'variadic': True})
+    @signature({'types': [], 'variadic': True})
     def _func_not_null(self, *arguments):
         for argument in arguments:
             if argument is not None:
                 return argument
 
-    @builtin_function({'types': []})
+    @signature({'types': []})
     def _func_to_array(self, arg):
         if isinstance(arg, list):
             return arg
         else:
             return [arg]
 
-    @builtin_function({'types': []})
+    @signature({'types': []})
     def _func_to_string(self, arg):
         if isinstance(arg, STRING_TYPE):
             return arg
@@ -180,7 +180,7 @@ class RuntimeFunctions(object):
             return json.dumps(arg, separators=(',', ':'),
                               default=str)
 
-    @builtin_function({'types': []})
+    @signature({'types': []})
     def _func_to_number(self, arg):
         if isinstance(arg, (list, dict, bool)):
             return None
@@ -197,88 +197,88 @@ class RuntimeFunctions(object):
             except ValueError:
                 return None
 
-    @builtin_function({'types': ['array', 'string']}, {'types': []})
+    @signature({'types': ['array', 'string']}, {'types': []})
     def _func_contains(self, subject, search):
         return search in subject
 
-    @builtin_function({'types': ['string', 'array', 'object']})
+    @signature({'types': ['string', 'array', 'object']})
     def _func_length(self, arg):
         return len(arg)
 
-    @builtin_function({'types': ['string']}, {'types': ['string']})
+    @signature({'types': ['string']}, {'types': ['string']})
     def _func_ends_with(self, search, suffix):
         return search.endswith(suffix)
 
-    @builtin_function({'types': ['string']}, {'types': ['string']})
+    @signature({'types': ['string']}, {'types': ['string']})
     def _func_starts_with(self, search, suffix):
         return search.startswith(suffix)
 
-    @builtin_function({'types': ['array', 'string']})
+    @signature({'types': ['array', 'string']})
     def _func_reverse(self, arg):
         if isinstance(arg, STRING_TYPE):
             return arg[::-1]
         else:
             return list(reversed(arg))
 
-    @builtin_function({"types": ['number']})
+    @signature({"types": ['number']})
     def _func_ceil(self, arg):
         return math.ceil(arg)
 
-    @builtin_function({"types": ['number']})
+    @signature({"types": ['number']})
     def _func_floor(self, arg):
         return math.floor(arg)
 
-    @builtin_function({"types": ['string']}, {"types": ['array-string']})
+    @signature({"types": ['string']}, {"types": ['array-string']})
     def _func_join(self, separator, array):
         return separator.join(array)
 
-    @builtin_function({'types': ['expref']}, {'types': ['array']})
+    @signature({'types': ['expref']}, {'types': ['array']})
     def _func_map(self, expref, arg):
         result = []
         for element in arg:
             result.append(expref.visit(expref.expression, element))
         return result
 
-    @builtin_function({"types": ['array-number', 'array-string']})
+    @signature({"types": ['array-number', 'array-string']})
     def _func_max(self, arg):
         if arg:
             return max(arg)
         else:
             return None
 
-    @builtin_function({"types": ["object"], "variadic": True})
+    @signature({"types": ["object"], "variadic": True})
     def _func_merge(self, *arguments):
         merged = {}
         for arg in arguments:
             merged.update(arg)
         return merged
 
-    @builtin_function({"types": ['array-number', 'array-string']})
+    @signature({"types": ['array-number', 'array-string']})
     def _func_min(self, arg):
         if arg:
             return min(arg)
         else:
             return None
 
-    @builtin_function({"types": ['array-string', 'array-number']})
+    @signature({"types": ['array-string', 'array-number']})
     def _func_sort(self, arg):
         return list(sorted(arg))
 
-    @builtin_function({"types": ['array-number']})
+    @signature({"types": ['array-number']})
     def _func_sum(self, arg):
         return sum(arg)
 
-    @builtin_function({"types": ['object']})
+    @signature({"types": ['object']})
     def _func_keys(self, arg):
         # To be consistent with .values()
         # should we also return the indices of a list?
         return list(arg.keys())
 
-    @builtin_function({"types": ['object']})
+    @signature({"types": ['object']})
     def _func_values(self, arg):
         return list(arg.values())
 
-    @builtin_function({'types': []})
+    @signature({'types': []})
     def _func_type(self, arg):
         if isinstance(arg, STRING_TYPE):
             return "string"
@@ -293,7 +293,7 @@ class RuntimeFunctions(object):
         elif arg is None:
             return "null"
 
-    @builtin_function({'types': ['array']}, {'types': ['expref']})
+    @signature({'types': ['array']}, {'types': ['expref']})
     def _func_sort_by(self, array, expref):
         if not array:
             return array
@@ -313,14 +313,14 @@ class RuntimeFunctions(object):
                                         'sort_by')
         return list(sorted(array, key=keyfunc))
 
-    @builtin_function({'types': ['array']}, {'types': ['expref']})
+    @signature({'types': ['array']}, {'types': ['expref']})
     def _func_min_by(self, array, expref):
         keyfunc = self._create_key_func(expref,
                                         ['number', 'string'],
                                         'min_by')
         return min(array, key=keyfunc)
 
-    @builtin_function({'types': ['array']}, {'types': ['expref']})
+    @signature({'types': ['array']}, {'types': ['expref']})
     def _func_max_by(self, array, expref):
         keyfunc = self._create_key_func(expref,
                                         ['number', 'string'],
