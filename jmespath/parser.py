@@ -133,9 +133,6 @@ class Parser(object):
                 current_token = self._current_token()
         return left
 
-    def _token_nud_string_literal(self, token):
-        return ast.literal(token['value'])
-
     def _token_nud_literal(self, token):
         return ast.literal(token['value'])
 
@@ -434,16 +431,6 @@ class Parser(object):
                 lex_position, actual_value, actual_type,
                 "Expecting: %s, got: %s" % (allowed,
                                             actual_type))
-
-    def _assert_not_token(self, *token_types):
-        if self._current_token() in token_types:
-            t = self._lookahead_token(0)
-            lex_position = t['start']
-            actual_value = t['value']
-            actual_type = t['type']
-            raise exceptions.ParseError(
-                lex_position, actual_value, actual_type,
-                "Token %s not allowed to be: %s" % (actual_type, token_types))
 
     def _error_nud_token(self, token):
         if token['type'] == 'eof':
