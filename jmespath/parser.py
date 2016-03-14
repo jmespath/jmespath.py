@@ -221,6 +221,13 @@ class Parser(object):
         while not current_token == 'rbracket' and index < 3:
             if current_token == 'colon':
                 index += 1
+                if index == 3:
+                    t = self._lookahead_token(0)
+                    lex_position = t['start']
+                    actual_value = t['value']
+                    actual_type = t['type']
+                    raise exceptions.ParseError(lex_position, actual_value,
+                                                actual_type, 'syntax error')
                 self._advance()
             elif current_token == 'number':
                 parts[index] = self._lookahead_token(0)['value']
@@ -271,6 +278,14 @@ class Parser(object):
         return ast.and_expression(left, right)
 
     def _token_led_lparen(self, left):
+        if left['type'] != 'field':
+            #  0 - first func arg or closing paren.
+            # -1 - '(' token
+            # -2 - invalid function "name".
+            prev_t = self._lookahead_token(-2)
+            raise exceptions.ParseError(
+                prev_t['start'], prev_t['value'], prev_t['type'],
+                "Invalid function name '%s'" % prev_t['value'])
         name = left['value']
         args = []
         while not self._current_token() == 'rparen':

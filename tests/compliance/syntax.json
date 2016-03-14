@@ -15,14 +15,6 @@
       "error": "syntax"
     },
     {
-      "expression": "foo",
-      "result": null
-    },
-    {
-      "expression": "foo.",
-      "error": "syntax"
-    },
-    {
       "expression": "foo.",
       "error": "syntax"
     },
@@ -117,6 +109,33 @@
     ]
   },
   {
+    "comment": "Paren syntax errors",
+    "given": {},
+    "cases": [
+      {
+        "comment": "missing closing paren",
+        "expression": "(@",
+        "error": "syntax"
+      }
+    ]
+  },
+  {
+    "comment": "Function syntax errors",
+    "given": {},
+    "cases": [
+      {
+        "comment": "invalid start of function",
+        "expression": "@(foo)",
+        "error": "syntax"
+      },
+      {
+        "comment": "function names cannot be quoted",
+        "expression": "\"foo\"(bar)",
+        "error": "syntax"
+      }
+    ]
+  },
+  {
     "comment": "Wildcard syntax",
     "given": {"type": "object"},
     "cases": [
@@ -198,6 +217,37 @@
       },
       {
         "expression": "foo[#]",
+        "error": "syntax"
+      },
+      {
+        "comment": "missing rbracket for led wildcard index",
+        "expression": "led[*",
+        "error": "syntax"
+      }
+    ]
+  },
+  {
+    "comment": "slice syntax",
+    "given": {},
+    "cases": [
+      {
+        "comment": "slice expected colon or rbracket",
+        "expression": "[:@]",
+        "error": "syntax"
+      },
+      {
+        "comment": "slice has too many colons",
+        "expression": "[:::]",
+        "error": "syntax"
+      },
+      {
+        "comment": "slice expected number",
+        "expression": "[:@:]",
+        "error": "syntax"
+      },
+      {
+        "comment": "slice expected number of colon",
+        "expression": "[:1@]",
         "error": "syntax"
       }
     ]
@@ -359,16 +409,6 @@
         "error": "syntax"
       },
       {
-        "comment": "Missing value",
-        "expression": "a.{foo:}",
-        "error": "syntax"
-      },
-      {
-        "comment": "Missing value with trailing comma",
-        "expression": "a.{foo: ,}",
-        "error": "syntax"
-      },
-      {
         "comment": "Valid multi-select hash extraction",
         "expression": "a.{foo: bar}",
         "result": null
@@ -402,6 +442,11 @@
         "comment": "Nested multi select",
         "expression": "{\"\\\\\":{\" \":*}}",
         "result": {"\\": {" ": ["object"]}}
+      },
+      {
+        "comment": "Missing closing } after a valid nud",
+        "expression": "{a: @",
+        "error": "syntax"
       }
     ]
   },
@@ -574,6 +619,11 @@
         "comment": "Two level flattened projection of a literal",
         "expression": "twolen[].threelen[].`\"bar\"`",
         "error": "syntax"
+      },
+      {
+        "comment": "expects closing ]",
+        "expression": "foo[? @ | @",
+        "error": "syntax"
       }
     ]
   },
@@ -592,6 +642,10 @@
       {
         "expression": "\"\\\\\"",
         "result": null
+      },
+      {
+        "expression": "\"\\u\"",
+        "error": "syntax"
       }
     ]
   },
