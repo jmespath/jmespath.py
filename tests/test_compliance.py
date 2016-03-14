@@ -5,8 +5,7 @@ from tests import json
 
 from nose.tools import assert_equal
 
-import jmespath
-from jmespath.visitor import TreeInterpreter, Options
+from jmespath.visitor import Options
 
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,16 +18,17 @@ OPTIONS = Options(dict_cls=OrderedDict)
 def test_compliance():
     for full_path in _walk_files():
         if full_path.endswith('.json'):
-            for given, expression, result, error in _load_cases(full_path):
-                if error is NOT_SPECIFIED and result is not NOT_SPECIFIED:
-                    yield (_test_expression, given, expression,
-                        result, os.path.basename(full_path))
-                elif result is NOT_SPECIFIED and error is not NOT_SPECIFIED:
-                    yield (_test_error_expression, given, expression,
-                           error, os.path.basename(full_path))
-                else:
-                    parts = (given, expression, result, error)
-                    raise RuntimeError("Invalid test description: %s" % parts)
+            for given, test_type, test_data in load_cases(full_path):
+                t = test_data
+                # Benchmark tests aren't run as part of the normal
+                # test suite, so we only care about 'result' and
+                # 'error' test_types.
+                if test_type == 'result':
+                    yield (_test_expression, given, t['expression'],
+                           t['result'], os.path.basename(full_path))
+                elif test_type == 'error':
+                    yield (_test_error_expression, given, t['expression'],
+                           t['error'], os.path.basename(full_path))
 
 
 def _walk_files():
@@ -47,14 +47,20 @@ def _walk_files():
                 yield os.path.join(root, filename)
 
 
-def _load_cases(full_path):
+def load_cases(full_path):
     all_test_data = json.load(open(full_path), object_pairs_hook=OrderedDict)
     for test_data in all_test_data:
         given = test_data['given']
         for case in test_data['cases']:
-            yield (given, case['expression'],
-                   case.get('result', NOT_SPECIFIED),
-                   case.get('error', NOT_SPECIFIED))
+            if 'result' in case:
+                test_type = 'result'
+            elif 'error' in case:
+                test_type = 'error'
+            elif 'bench' in case:
+                test_type = 'bench'
+            else:
+                raise RuntimeError("Unknown test type: %s" % json.dumps(case))
+            yield (given, test_type, case)
 
 
 def _test_expression(given, expression, expected, filename):
@@ -85,7 +91,7 @@ def _test_error_expression(given, expression, error, filename):
     try:
         parsed = jmespath.compile(expression)
         parsed.search(given)
-    except ValueError as e:
+    except ValueError:
         # Test passes, it raised a parse error as expected.
         pass
     else:

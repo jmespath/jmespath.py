@@ -103,10 +103,6 @@
       {
         "expression": "!",
         "error": "syntax"
-      },
-      {
-        "expression": "foo-bar",
-        "error": "syntax"
       }
     ]
   },
