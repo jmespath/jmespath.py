@@ -222,23 +222,15 @@ class Parser(object):
             if current_token == 'colon':
                 index += 1
                 if index == 3:
-                    t = self._lookahead_token(0)
-                    lex_position = t['start']
-                    actual_value = t['value']
-                    actual_type = t['type']
-                    raise exceptions.ParseError(lex_position, actual_value,
-                                                actual_type, 'syntax error')
+                    self._raise_parse_error_for_token(
+                        self._lookahead_token(0), 'syntax error')
                 self._advance()
             elif current_token == 'number':
                 parts[index] = self._lookahead_token(0)['value']
                 self._advance()
             else:
-                t = self._lookahead_token(0)
-                lex_position = t['start']
-                actual_value = t['value']
-                actual_type = t['type']
-                raise exceptions.ParseError(lex_position, actual_value,
-                                            actual_type, 'syntax error')
+                self._raise_parse_error_for_token(
+                    self._lookahead_token(0), 'syntax error')
             current_token = self._current_token()
         self._match('rbracket')
         return ast.slice(*parts)
@@ -408,12 +400,8 @@ class Parser(object):
             self._match('dot')
             right = self._parse_dot_rhs(binding_power)
         else:
-            t = self._lookahead_token(0)
-            lex_position = t['start']
-            actual_value = t['value']
-            actual_type = t['type']
-            raise exceptions.ParseError(lex_position, actual_value,
-                                        actual_type, 'syntax error')
+            self._raise_parse_error_for_token(self._lookahead_token(0),
+                                              'syntax error')
         return right
 
     def _parse_dot_rhs(self, binding_power):
@@ -439,24 +427,19 @@ class Parser(object):
             t = self._lookahead_token(0)
             allowed = ['quoted_identifier', 'unquoted_identifier',
                        'lbracket', 'lbrace']
-            lex_position = t['start']
-            actual_value = t['value']
-            actual_type = t['type']
-            raise exceptions.ParseError(
-                lex_position, actual_value, actual_type,
-                "Expecting: %s, got: %s" % (allowed,
-                                            actual_type))
+            msg = (
+                "Expecting: %s, got: %s" % (allowed, t['type'])
+            )
+            self._raise_parse_error_for_token(t, msg)
 
     def _error_nud_token(self, token):
         if token['type'] == 'eof':
             raise exceptions.IncompleteExpressionError(
                 token['start'], token['value'], token['type'])
-        raise exceptions.ParseError(token['start'], token['value'],
-                                    token['type'], 'Invalid token.')
+        self._raise_parse_error_for_token(token, 'invalid token')
 
     def _error_led_token(self, token):
-        raise exceptions.ParseError(token['start'], token['value'],
-                                    token['type'], 'Invalid token')
+        self._raise_parse_error_for_token(token, 'invalid token')
 
     def _match(self, token_type=None):
         # inline'd self._current_token()
@@ -464,33 +447,13 @@ class Parser(object):
             # inline'd self._advance()
             self._advance()
         else:
-            t = self._lookahead_token(0)
-            lex_position = t['start']
-            actual_value = t['value']
-            actual_type = t['type']
-            if actual_type == 'eof':
-                raise exceptions.IncompleteExpressionError(
-                    lex_position, actual_value, actual_type)
-            else:
-                message = 'Expecting: %s, got: %s' % (token_type,
-                                                      actual_type)
-            raise exceptions.ParseError(
-                lex_position, actual_value, actual_type, message)
+            self._raise_parse_error_maybe_eof(
+                token_type, self._lookahead_token(0))
 
     def _match_multiple_tokens(self, token_types):
         if self._current_token() not in token_types:
-            t = self._lookahead_token(0)
-            lex_position = t['start']
-            actual_value = t['value']
-            actual_type = t['type']
-            if actual_type == 'eof':
-                raise exceptions.IncompleteExpressionError(
-                    lex_position, actual_value, actual_type)
-            else:
-                message = 'Expecting: %s, got: %s' % (token_types,
-                                                      actual_type)
-            raise exceptions.ParseError(
-                lex_position, actual_value, actual_type, message)
+            self._raise_parse_error_maybe_eof(
+                token_types, self._lookahead_token(0))
         self._advance()
 
     def _advance(self):
@@ -504,6 +467,25 @@ class Parser(object):
 
     def _lookahead_token(self, number):
         return self._tokens[self._index + number]
+
+    def _raise_parse_error_for_token(self, token, reason):
+        lex_position = token['start']
+        actual_value = token['value']
+        actual_type = token['type']
+        raise exceptions.ParseError(lex_position, actual_value,
+                                    actual_type, reason)
+
+    def _raise_parse_error_maybe_eof(self, expected_type, token):
+        lex_position = token['start']
+        actual_value = token['value']
+        actual_type = token['type']
+        if actual_type == 'eof':
+            raise exceptions.IncompleteExpressionError(
+                lex_position, actual_value, actual_type)
+        message = 'Expecting: %s, got: %s' % (expected_type,
+                                              actual_type)
+        raise exceptions.ParseError(
+            lex_position, actual_value, actual_type, message)
 
     def _free_cache_entries(self):
         for key in random.sample(self._CACHE.keys(), int(self._MAX_SIZE / 2)):
