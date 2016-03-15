@@ -32,27 +32,41 @@
             }
           }
         }
+      },
+      "b": true,
+      "c": {
+        "d": true
       }
     },
     "cases": [
       {
         "comment": "simple field",
-        "expression": "a",
+        "expression": "b",
+        "result": true,
         "bench": "full"
       },
       {
         "comment": "simple subexpression",
-        "expression": "a.b",
+        "expression": "c.d",
+        "result": true,
+        "bench": "full"
+      },
+      {
+        "comment": "deep field selection no match",
+        "expression": "a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s",
+        "result": null,
         "bench": "full"
       },
       {
         "comment": "deep field selection",
-        "expression": "a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s",
+        "expression": "a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p",
+        "result": true,
         "bench": "full"
       },
       {
         "comment": "simple or",
-        "expression": "not_there || a",
+        "expression": "not_there || b",
+        "result": true,
         "bench": "full"
       }
     ]
@@ -67,21 +81,31 @@
       {
         "comment": "deep ands",
         "expression": "a && b && c && d && e && f && g && h && i && j && k && l && m && n && o && p && q && r && s && t && u && v && w && x && y && z",
+        "result": 25,
         "bench": "full"
       },
       {
         "comment": "deep ors",
         "expression": "z || y || x || w || v || u || t || s || r || q || p || o || n || m || l || k || j || i || h || g || f || e || d || c || b || a",
+        "result": 25,
         "bench": "full"
       },
       {
         "comment": "lots of summing",
-        "expression": "sum(z, y, x, w, v, u, t, s, r, q, p, o, n, m, l, k, j, i, h, g, f, e, d, c, b, a)",
+        "expression": "sum([z, y, x, w, v, u, t, s, r, q, p, o, n, m, l, k, j, i, h, g, f, e, d, c, b, a])",
+        "result": 325,
+        "bench": "full"
+      },
+      {
+        "comment": "lots of function application",
+        "expression": "sum([z, sum([y, sum([x, sum([w, sum([v, sum([u, sum([t, sum([s, sum([r, sum([q, sum([p, sum([o, sum([n, sum([m, sum([l, sum([k, sum([j, sum([i, sum([h, sum([g, sum([f, sum([e, sum([d, sum([c, sum([b, a])])])])])])])])])])])])])])])])])])])])])])])])])",
+        "result": 325,
         "bench": "full"
       },
       {
         "comment": "lots of multi list",
         "expression": "[z, y, x, w, v, u, t, s, r, q, p, o, n, m, l, k, j, i, h, g, f, e, d, c, b, a]",
+        "result": [25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
         "bench": "full"
       }
     ]
@@ -116,7 +140,7 @@
       },
       {
         "comment": "filter projection",
-        "expression": "foo[bar > baz][qux > baz]",
+        "expression": "foo[?bar > baz][?qux > baz]",
         "bench": "parse"
       }
     ]
