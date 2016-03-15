@@ -20,7 +20,11 @@ from jmespath.parser import Parser
 from jmespath.lexer import Lexer
 
 
-DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cases')
+BENCHMARK_FILE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    'tests',
+    'compliance',
+    'benchmarks.json')
 APPROX_RUN_TIME = 0.5
 
 
@@ -30,16 +34,21 @@ def run_tests(tests):
         given = test['given']
         expression = test['expression']
         result = test['result']
+        should_search = test['bench_type'] == 'full'
         lex_time = _lex_time(expression)
         parse_time = _parse_time(expression)
-        search_time = _search_time(expression, given)
-        combined_time = _combined_time(expression, given, result)
+        if should_search:
+            search_time = _search_time(expression, given)
+            combined_time = _combined_time(expression, given, result)
+        else:
+            search_time = 0
+            combined_time = 0
         sys.stdout.write(
-            "lex_time: %.5fms, parse_time: %.5fms, search_time: %.5fms "
-            "combined_time: %.5fms " % (1000 * lex_time,
-                                        1000 * parse_time,
-                                        1000 * search_time,
-                                        1000 * combined_time))
+            "lex_time: %10.5fus, parse_time: %10.5fus, search_time: %10.5fus "
+            "combined_time: %10.5fus " % (1000000 * lex_time,
+                                          1000000 * parse_time,
+                                          1000000 * search_time,
+                                          1000000 * combined_time))
         sys.stdout.write("name: %s\n" % test['name'])
 
 
@@ -129,28 +138,23 @@ def load_tests(filename):
 
 def _add_cases(data, loaded, filename):
     for case in data['cases']:
-        current = {'description': data.get('description', filename),
-                   'given': data['given'],
-                   'name': case.get('name', case['expression']),
-                   'expression': case['expression'],
-                   'result': case.get('result')}
+        current = {
+            'given': data['given'],
+            'name': case.get('comment', case['expression']),
+            'expression': case['expression'],
+            'result': case.get('result'),
+            'bench_type': case['bench'],
+        }
         loaded.append(current)
     return loaded
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--directory', default=DIRECTORY)
-    parser.add_argument('-f', '--filename')
+    parser.add_argument('-f', '--filename', default=BENCHMARK_FILE)
     args = parser.parse_args()
     collected_tests = []
-    if args.filename:
-        collected_tests.extend(load_tests(args.filename))
-    else:
-        for filename in os.listdir(args.directory):
-            if filename.endswith('.json'):
-                full_path = os.path.join(args.directory, filename)
-                collected_tests.extend(load_tests(full_path))
+    collected_tests.extend(load_tests(args.filename))
     run_tests(collected_tests)
 
 
