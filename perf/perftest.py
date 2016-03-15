@@ -11,12 +11,9 @@ import time
 import os
 import json
 import sys
+import timeit
 
-try:
-    _clock = time.process_time
-except AttributeError:
-    # Python 2.x does not have time.process_time
-    _clock = time.clock
+_clock = timeit.default_timer
 
 
 from jmespath.parser import Parser
@@ -24,7 +21,7 @@ from jmespath.lexer import Lexer
 
 
 DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cases')
-DEFAULT_NUM_LOOP = 100
+APPROX_RUN_TIME = 0.5
 
 
 def run_tests(tests):
@@ -47,50 +44,63 @@ def run_tests(tests):
 
 
 def _lex_time(expression, clock=_clock):
-    best = float('inf')
     lex = Lexer()
-    for i in range(DEFAULT_NUM_LOOP):
+    duration = 0
+    i = 0
+    while True:
+        i += 1
         start = clock()
         list(lex.tokenize(expression))
         end = clock()
         total = end - start
-        if total < best:
-            best = total
-    return best
+        duration += total
+        if duration >= APPROX_RUN_TIME:
+            break
+    return duration / i
 
 
 def _search_time(expression, given, clock=_clock):
     p = Parser()
     parsed = p.parse(expression)
-    best = float('inf')
-    for i in range(DEFAULT_NUM_LOOP):
+    duration =  0
+    i = 0
+    while True:
+        i += 1
         start = clock()
         parsed.search(given)
         end = clock()
         total = end - start
-        if total < best:
-            best = total
-    return best
+        duration += total
+        if duration >= APPROX_RUN_TIME:
+            break
+    return duration / i
 
 
 def _parse_time(expression, clock=_clock):
     best = float('inf')
     p = Parser()
-    for i in range(DEFAULT_NUM_LOOP):
+    duration = 0
+    i = 0
+    while True:
+        i += 1
         p.purge()
         start = clock()
         p.parse(expression)
         end = clock()
         total = end - start
-        if total < best:
-            best = total
-    return best
+        duration += total
+        if duration >= APPROX_RUN_TIME:
+            break
+    return duration / i
 
 
 def _combined_time(expression, given, result, clock=_clock):
     best = float('inf')
     p = Parser()
-    for i in range(DEFAULT_NUM_LOOP):
+    duration = 0
+    i = 0
+    while True:
+        i += 1
         p.purge()
         start = clock()
         r = p.parse(expression).search(given)
@@ -99,9 +109,10 @@ def _combined_time(expression, given, result, clock=_clock):
         if r != result:
             raise RuntimeError("Unexpected result, received: %s, "
                                "expected: %s" % (r, result))
-        if total < best:
-            best = total
-    return best
+        duration += total
+        if duration >= APPROX_RUN_TIME:
+            break
+    return duration / i
 
 
 def load_tests(filename):
