@@ -39,6 +39,7 @@ class Parser(object):
         'eof': 0,
         'unquoted_identifier': 0,
         'quoted_identifier': 0,
+        'literal': 0,
         'rbracket': 0,
         'rparen': 0,
         'comma': 0,

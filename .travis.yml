@@ -14,6 +14,8 @@ install:
   - pip install -r requirements.txt
   - python setup.py bdist_wheel
   - pip install dist/*.whl
-script: cd tests/ && nosetests --with-coverage --cover-package jmespath .
+script:
+  - cd tests/ && nosetests --with-coverage --cover-package jmespath .
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then JP_MAX_EXAMPLES=10000 nosetests test_hypothesis.py; fi
 after_success:
   - codecov
