@@ -177,8 +177,8 @@
       "error": "invalid-type"
     },
     {
-      "expression": "items(objects)",
-      "result": [["foo", "bar"], ["bar", "baz"]]
+      "expression": "sort_by(items(objects), &[0])",
+      "result": [["bar", "baz"], ["foo", "bar"]]
     },
     {
       "expression": "items(empty_hash)",
