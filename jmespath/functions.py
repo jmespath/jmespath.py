@@ -2,8 +2,11 @@ import math
 import json
 
 from jmespath import exceptions
+from jmespath.compat import get_methods
+from jmespath.compat import iteritems
+from jmespath.compat import map
 from jmespath.compat import string_type as STRING_TYPE
-from jmespath.compat import get_methods, with_metaclass
+from jmespath.compat import with_metaclass
 
 
 # python types -> jmespath types
@@ -184,6 +187,10 @@ class Functions(with_metaclass(FunctionRegistry, object)):
         else:
             return [arg]
 
+    @signature({'types': ['array']})
+    def _func_to_object(self, pairs):
+        return dict(pairs)
+
     @signature({'types': []})
     def _func_to_string(self, arg):
         if isinstance(arg, STRING_TYPE):
@@ -280,6 +287,10 @@ class Functions(with_metaclass(FunctionRegistry, object)):
     def _func_sum(self, arg):
         return sum(arg)
 
+    @signature({'types': ['object']})
+    def _func_items(self, arg):
+        return list(map(list, iteritems(arg)))
+
     @signature({"types": ['object']})
     def _func_keys(self, arg):
         # To be consistent with .values()
@@ -338,6 +349,10 @@ class Functions(with_metaclass(FunctionRegistry, object)):
                                         ['number', 'string'],
                                         'min_by')
         return max(array, key=keyfunc)
+
+    @signature({'types': ['array'], 'variadic': True})
+    def _func_zip(self, *arguments):
+        return list(map(list, zip(*arguments)))
 
     def _create_key_func(self, expref, allowed_types, function_name):
         def keyfunc(x):
