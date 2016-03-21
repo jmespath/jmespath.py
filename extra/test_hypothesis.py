@@ -14,30 +14,22 @@ from jmespath import parser
 from jmespath import exceptions
 
 
-MAX_EXAMPLES = int(os.environ.get('JP_MAX_EXAMPLES', 100))
-if sys.version_info[:2] != (2, 6):
-    RANDOM_JSON = st.recursive(
-        st.floats() | st.booleans() | st.text() | st.none(),
-        lambda children: st.lists(children) | st.dictionaries(st.text(), children)
-    )
-else:
-    # hypothesis doesn't work on py26 and the prevous definition of
-    # RANDOM_JSON would throw an error.  We set RANDOM_JSON to some
-    # arbitrary value that we know will work.  This isn't going to get
-    # called anyways.
-    # XXX: Is there a better way to do this?
-    RANDOM_JSON = st.none()
+if sys.version_info[:2] == (2, 6):
+    raise RuntimeError("Hypothesis tests are not supported on python2.6. "
+                       "Use python2.7, or python3.3 and greater.")
 
 
+RANDOM_JSON = st.recursive(
+    st.floats() | st.booleans() | st.text() | st.none(),
+    lambda children: st.lists(children) | st.dictionaries(st.text(), children)
+)
+
+
+MAX_EXAMPLES = int(os.environ.get('JP_MAX_EXAMPLES', 1000))
 BASE_SETTINGS = {
     'max_examples': MAX_EXAMPLES,
     'suppress_health_check': [HealthCheck.too_slow],
 }
-
-
-def setup_module():
-    if sys.version_info[:2] == (2, 6):
-        raise SkipTest("Hypothesis test not supported on py26")
 
 
 # For all of these tests they verify these proprties:
