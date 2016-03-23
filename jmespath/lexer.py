@@ -87,7 +87,15 @@ class Lexer(object):
             elif self._current == '!':
                 yield self._match_or_else('=', 'ne', 'not')
             elif self._current == '=':
-                yield self._match_or_else('=', 'eq', 'unknown')
+                if self._next() == '=':
+                    yield {'type': 'eq', 'value': '==',
+                        'start': self._position - 1, 'end': self._position}
+                    self._next()
+                else:
+                    raise LexerError(
+                        lexer_position=self._position - 1,
+                        lexer_value='=',
+                        message="Unknown token =")
             else:
                 raise LexerError(lexer_position=self._position,
                                  lexer_value=self._current,
