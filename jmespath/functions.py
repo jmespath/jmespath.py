@@ -188,10 +188,6 @@ class Functions(metaclass=FunctionRegistry):
         else:
             return [arg]
 
-    @signature({'types': ['array']})
-    def _func_to_object(self, pairs):
-        return dict(pairs)
-
     @signature({'types': []})
     def _func_to_string(self, arg):
         if isinstance(arg, STRING_TYPE):
@@ -291,6 +287,10 @@ class Functions(metaclass=FunctionRegistry):
     @signature({'types': ['object']})
     def _func_items(self, arg):
         return list(map(list, iteritems(arg)))
+
+    @signature({'types': ['array']})
+    def _func_from_items(self, items):
+        return dict(items)
 
     @signature({"types": ['object']})
     def _func_keys(self, arg):

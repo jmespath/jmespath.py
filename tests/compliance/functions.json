@@ -12,7 +12,7 @@
     "empty_list": [],
     "empty_hash": {},
     "objects": {"foo": "bar", "bar": "baz"},
-    "pairs": [["a", "first"], ["b", "second"], ["c", "third"]],
+    "items": [["a", "first"], ["b", "second"], ["c", "third"]],
     "null_key": null
   },
   "cases": [
@@ -187,6 +187,10 @@
     {
       "expression": "items(numbers)",
       "error": "invalid-type"
+    },
+    {
+      "expression": "from_items(items)",
+      "result": {"a": "first", "b": "second", "c": "third"}
     },
     {
       "expression": "length('abc')",
@@ -491,10 +495,6 @@
     {
       "expression": "to_array(false)",
       "result": [false]
-    },
-    {
-      "expression": "to_object(pairs)",
-      "result": {"a": "first", "b": "second", "c": "third"}
     },
     {
       "expression": "to_string('foo')",
