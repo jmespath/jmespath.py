@@ -17,6 +17,7 @@ setup(
     url='https://github.com/jmespath/jmespath.py',
     scripts=['bin/jp.py'],
     packages=find_packages(exclude=['tests']),
+    license='MIT',
     classifiers=(
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
