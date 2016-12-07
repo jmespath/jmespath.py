@@ -166,7 +166,10 @@ class Functions(with_metaclass(FunctionRegistry, object)):
 
     @signature({'types': ['array-number']})
     def _func_avg(self, arg):
-        return sum(arg) / float(len(arg))
+        if arg:
+            return sum(arg) / float(len(arg))
+        else:
+            return None
 
     @signature({'types': [], 'variadic': True})
     def _func_not_null(self, *arguments):
