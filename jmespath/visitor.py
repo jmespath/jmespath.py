@@ -33,6 +33,19 @@ def _is_special_integer_case(x, y):
         return x is True or x is False
 
 
+def _is_actual_number(x):
+    # We need to handle python's quirkiness with booleans,
+    # specifically:
+    #
+    # >>> isinstance(False, int)
+    # True
+    # >>> isinstance(True, int)
+    # True
+    if x is True or x is False:
+        return False
+    return isinstance(x, (float, int))
+
+
 class Options(object):
     """Options to control how a JMESPath function is evaluated."""
     def __init__(self, dict_cls=None, custom_functions=None):
@@ -76,14 +89,14 @@ class Visitor(object):
 
 class TreeInterpreter(Visitor):
     COMPARATOR_FUNC = {
-        'le': operator.le,
+        'eq': _equals,
         'ne': lambda x, y: not _equals(x, y),
         'lt': operator.lt,
-        'lte': operator.le,
-        'eq': _equals,
         'gt': operator.gt,
+        'lte': operator.le,
         'gte': operator.ge
     }
+    _EQUALITY_OPS = ['eq', 'ne']
     MAP_TYPE = dict
 
     def __init__(self, options=None):
@@ -115,11 +128,24 @@ class TreeInterpreter(Visitor):
             return None
 
     def visit_comparator(self, node, value):
+        # Common case: comparator is == or !=
         comparator_func = self.COMPARATOR_FUNC[node['value']]
-        return comparator_func(
-            self.visit(node['children'][0], value),
-            self.visit(node['children'][1], value)
-        )
+        if node['value'] in self._EQUALITY_OPS:
+            return comparator_func(
+                self.visit(node['children'][0], value),
+                self.visit(node['children'][1], value)
+            )
+        else:
+            # Ordering operators are only valid for numbers.
+            # Evaluating any other type with a comparison operator
+            # will yield a None value.
+            left = self.visit(node['children'][0], value)
+            right = self.visit(node['children'][1], value)
+            num_types = (int, float)
+            if not (_is_actual_number(left) and
+                    _is_actual_number(right)):
+                return None
+            return comparator_func(left, right)
 
     def visit_current(self, node, value):
         return value
