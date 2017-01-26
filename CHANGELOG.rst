@@ -1,3 +1,16 @@
+0.9.1
+=====
+
+* Raise LexerError on invalid numbers
+  (`issue 98 <https://github.com/jmespath/jmespath.py/issues/98>`__)
+* Add support for custom functions (#100)
+  (`issue 100 <https://github.com/jmespath/jmespath.py/issues/100>`__)
+* Fix ZeroDivisionError for built-in function avg() on empty lists (#115)
+  (`issue 115 <https://github.com/jmespath/jmespath.py/issues/115>`__)
+* Properly handle non numerical ordering operators (#117)
+  (`issue 117 <https://github.com/jmespath/jmespath.py/issues/117>`__)
+
+
 0.9.0
 =====
 
