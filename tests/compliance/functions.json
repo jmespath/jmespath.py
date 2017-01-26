@@ -84,6 +84,10 @@
       "error": "invalid-type"
     },
     {
+      "expression": "avg(empty_list)",
+      "result": null
+    },
+    {
       "expression": "ceil(`1.2`)",
       "result": 2
     },

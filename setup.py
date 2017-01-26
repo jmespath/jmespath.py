@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='jmespath',
-    version='0.9.0',
+    version='0.9.1',
     description='JSON Matching Expressions',
     long_description=io.open('README.rst', encoding='utf-8').read(),
     author='James Saryerwinnie',
@@ -17,6 +17,7 @@ setup(
     url='https://github.com/jmespath/jmespath.py',
     scripts=['bin/jp.py'],
     packages=find_packages(exclude=['tests']),
+    license='MIT',
     classifiers=(
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',

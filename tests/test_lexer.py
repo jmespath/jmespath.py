@@ -144,12 +144,16 @@ class TestRegexLexer(unittest.TestCase):
         )
 
     def test_unknown_character(self):
-        with self.assertRaises(LexerError):
+        with self.assertRaises(LexerError) as e:
             tokens = list(self.lexer.tokenize('foo[0^]'))
 
     def test_bad_first_character(self):
         with self.assertRaises(LexerError):
             tokens = list(self.lexer.tokenize('^foo[0]'))
+
+    def test_unknown_character_with_identifier(self):
+        with self.assertRaisesRegexp(LexerError, "Unknown token"):
+            list(self.lexer.tokenize('foo-bar'))
 
 
 if __name__ == '__main__':

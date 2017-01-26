@@ -2,3 +2,5 @@ nose==1.2.1
 py==1.4.12
 tox==1.4.2
 wheel==0.24.0
+coverage==3.7.1
+hypothesis==3.1.0

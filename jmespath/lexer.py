@@ -8,7 +8,6 @@ from jmespath.exceptions import LexerError, EmptyExpressionError
 class Lexer(object):
     START_IDENTIFIER = set(string.ascii_letters + '_')
     VALID_IDENTIFIER = set(string.ascii_letters + string.digits + '_')
-    START_NUMBER = set(string.digits + '-')
     VALID_NUMBER = set(string.digits)
     WHITESPACE = set(" \t\n\r")
     SIMPLE_TOKENS = {
@@ -63,13 +62,22 @@ class Lexer(object):
                 yield self._match_or_else('&', 'and', 'expref')
             elif self._current == '`':
                 yield self._consume_literal()
-            elif self._current in self.START_NUMBER:
+            elif self._current in self.VALID_NUMBER:
                 start = self._position
-                buff = self._current
-                while self._next() in self.VALID_NUMBER:
-                    buff += self._current
+                buff = self._consume_number()
                 yield {'type': 'number', 'value': int(buff),
                        'start': start, 'end': start + len(buff)}
+            elif self._current == '-':
+                # Negative number.
+                start = self._position
+                buff = self._consume_number()
+                if len(buff) > 1:
+                    yield {'type': 'number', 'value': int(buff),
+                           'start': start, 'end': start + len(buff)}
+                else:
+                    raise LexerError(lexer_position=start,
+                                     lexer_value=buff,
+                                     message="Unknown token '%s'" % buff)
             elif self._current == '"':
                 yield self._consume_quoted_identifier()
             elif self._current == '<':
@@ -79,13 +87,28 @@ class Lexer(object):
             elif self._current == '!':
                 yield self._match_or_else('=', 'ne', 'not')
             elif self._current == '=':
-                yield self._match_or_else('=', 'eq', 'unknown')
+                if self._next() == '=':
+                    yield {'type': 'eq', 'value': '==',
+                        'start': self._position - 1, 'end': self._position}
+                    self._next()
+                else:
+                    raise LexerError(
+                        lexer_position=self._position - 1,
+                        lexer_value='=',
+                        message="Unknown token =")
             else:
                 raise LexerError(lexer_position=self._position,
                                  lexer_value=self._current,
                                  message="Unknown token %s" % self._current)
         yield {'type': 'eof', 'value': '',
                'start': self._length, 'end': self._length}
+
+    def _consume_number(self):
+        start = self._position
+        buff = self._current
+        while self._next() in self.VALID_NUMBER:
+            buff += self._current
+        return buff
 
     def _initialize_for_expression(self, expression):
         if not expression:

@@ -1,3 +1,29 @@
+0.9.1
+=====
+
+* Raise LexerError on invalid numbers
+  (`issue 98 <https://github.com/jmespath/jmespath.py/issues/98>`__)
+* Add support for custom functions (#100)
+  (`issue 100 <https://github.com/jmespath/jmespath.py/issues/100>`__)
+* Fix ZeroDivisionError for built-in function avg() on empty lists (#115)
+  (`issue 115 <https://github.com/jmespath/jmespath.py/issues/115>`__)
+* Properly handle non numerical ordering operators (#117)
+  (`issue 117 <https://github.com/jmespath/jmespath.py/issues/117>`__)
+
+
+0.9.0
+=====
+
+* Add support for new lines with tokens in an expression
+* Add support for `JEP 9 <http://jmespath.org/proposals/improved-filters.html>`__,
+  which introduces "and" expressions, "unary" expressions, "not" expressions,
+  and "paren" expressions
+* Fix issue with hardcoded path in ``jp.py`` executable
+  (`issue 90 <https://github.com/jmespath/jmespath.py/issues/90>`__,
+   `issue 88 <https://github.com/jmespath/jmespath.py/issues/88>`__,
+   `issue 82 <https://github.com/jmespath/jmespath.py/issues/82>`__)
+
+
 0.8.0
 =====
 

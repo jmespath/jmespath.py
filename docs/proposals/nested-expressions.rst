@@ -10,7 +10,7 @@ Nested Expressions
 Abstract
 ========
 
-This document proposes modifying the `JMESPath grammar <http://jmespath.readthedocs.org/en/latest/specification.html#grammar>`_
+This document proposes modifying the `JMESPath grammar <https://jmespath.readthedocs.io/en/latest/specification.html#grammar>`_
 to support arbitrarily nested expressions within ``multi-select-list`` and
 ``multi-select-hash`` expressions.
 

@@ -11,7 +11,7 @@ Abstract
 ========
 
 This document proposes modifying the
-`JMESPath grammar <http://jmespath.readthedocs.org/en/latest/specification.html#grammar>`__
+`JMESPath grammar <https://jmespath.readthedocs.io/en/latest/specification.html#grammar>`__
 to support function expressions.
 
 Motivation

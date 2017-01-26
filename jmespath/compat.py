@@ -3,6 +3,15 @@ import inspect
 
 PY2 = sys.version_info[0] == 2
 
+
+def with_metaclass(meta, *bases):
+    # Taken from flask/six.
+    class metaclass(meta):
+        def __new__(cls, name, this_bases, d):
+            return meta(name, bases, d)
+    return type.__new__(metaclass, 'temporary_class', (), {})
+
+
 if PY2:
     text_type = unicode
     string_type = basestring
