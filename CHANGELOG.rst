@@ -1,3 +1,10 @@
+0.9.2
+=====
+
+* Fix regression when using ordering comparators on strings
+  (`issue 124 <https://github.com/jmespath/jmespath.py/issues/124>`__)
+
+
 0.9.1
 =====
 
