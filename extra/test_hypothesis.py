@@ -14,11 +14,6 @@ from jmespath import parser
 from jmespath import exceptions
 
 
-if sys.version_info[:2] == (2, 6):
-    raise RuntimeError("Hypothesis tests are not supported on python2.6. "
-                       "Use python2.7, or python3.3 and greater.")
-
-
 RANDOM_JSON = st.recursive(
     st.floats() | st.booleans() | st.text() | st.none(),
     lambda children: st.lists(children) | st.dictionaries(st.text(), children)
