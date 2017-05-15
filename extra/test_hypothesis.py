@@ -40,11 +40,31 @@ BASE_SETTINGS = {
 def test_lexer_api(expr):
     try:
         tokens = list(lexer.Lexer().tokenize(expr))
-    except exceptions.JMESPathError as e:
+    except exceptions.EmptyExpressionError:
+        return
+    except exceptions.LexerError as e:
+        assert e.lex_position >= 0, e.lex_position
+        assert e.lex_position < len(expr), e.lex_position
+        if expr:
+            assert expr[e.lex_position] == e.token_value[0], (
+                "Lex position does not match first token char.\n"
+                "Expression: %s\n%s != %s" % (expr, expr[e.lex_position],
+                                              e.token_value[0])
+            )
         return
     except Exception as e:
         raise AssertionError("Non JMESPathError raised: %s" % e)
     assert isinstance(tokens, list)
+    # Token starting positions must be unique, can't have two
+    # tokens with the same start position.
+    start_locations = [t['start'] for t in tokens]
+    assert len(set(start_locations)) == len(start_locations), (
+        "Tokens must have unique starting locations.")
+    # Starting positions must be increasing (i.e sorted).
+    assert sorted(start_locations) == start_locations, (
+        "Tokens must have increasing start locations.")
+    # Last token is always EOF.
+    assert tokens[-1]['type'] == 'eof'
 
 
 @settings(**BASE_SETTINGS)
