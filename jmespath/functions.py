@@ -47,7 +47,7 @@ class FunctionRegistry(type):
         super(FunctionRegistry, cls).__init__(name, bases, attrs)
 
     def _populate_function_table(cls):
-        function_table = getattr(cls, 'FUNCTION_TABLE', {})
+        function_table = {}
         # Any method with a @signature decorator that also
         # starts with "_func_" is registered as a function.
         # _func_max_by -> max_by function.
