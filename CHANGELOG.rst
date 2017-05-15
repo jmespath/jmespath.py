@@ -4,6 +4,8 @@ Next Release (TBD)
 * Fix issue where long types in py2 and ``Decimal`` types
   were not being evaluated as numbers
   (`issue 125 <https://github.com/jmespath/jmespath.py/issues/125>`__)
+* Handle numbers in scientific notation in ``to_number()`` function
+  (`issue 120 <https://github.com/jmespath/jmespath.py/issues/120>`__)
 
 
 0.9.2
