@@ -85,6 +85,9 @@ def test_parser_api_from_str(expr):
     except Exception as e:
         raise AssertionError("Non JMESPathError raised: %s" % e)
     assert isinstance(ast.parsed, dict)
+    assert 'type' in ast.parsed
+    assert 'children' in ast.parsed
+    assert isinstance(ast.parsed['children'], list)
 
 
 @settings(**BASE_SETTINGS)
