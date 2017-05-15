@@ -1,3 +1,11 @@
+Next Release (TBD)
+==================
+
+* Fix issue where long types in py2 and ``Decimal`` types
+  were not being evaluated as numbers
+  (`issue 125 <https://github.com/jmespath/jmespath.py/issues/125>`__)
+
+
 0.9.2
 =====
 
