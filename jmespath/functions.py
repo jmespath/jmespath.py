@@ -16,6 +16,7 @@ TYPES_MAP = {
     'str': 'string',
     'float': 'number',
     'int': 'number',
+    'long': 'number',
     'OrderedDict': 'object',
     '_Projection': 'array',
     '_Expression': 'expref',
@@ -29,7 +30,7 @@ REVERSE_TYPES_MAP = {
     'object': ('dict', 'OrderedDict',),
     'null': ('None',),
     'string': ('unicode', 'str'),
-    'number': ('float', 'int'),
+    'number': ('float', 'int', 'long'),
     'expref': ('_Expression',),
 }
 

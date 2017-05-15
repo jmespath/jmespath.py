@@ -4,6 +4,7 @@
 # via env var for longer runs in travis.
 import os
 import sys
+import numbers
 
 from nose.plugins.skip import SkipTest
 from hypothesis import given, settings, assume, HealthCheck
@@ -12,6 +13,7 @@ import hypothesis.strategies as st
 from jmespath import lexer
 from jmespath import parser
 from jmespath import exceptions
+from jmespath.functions import Functions
 
 
 if sys.version_info[:2] == (2, 6):
@@ -19,11 +21,13 @@ if sys.version_info[:2] == (2, 6):
                        "Use python2.7, or python3.3 and greater.")
 
 
+JSON_NUMBERS = (st.integers() | st.floats(allow_nan=False,
+                                          allow_infinity=False))
+
 RANDOM_JSON = st.recursive(
-    st.floats() | st.booleans() | st.text() | st.none(),
+    JSON_NUMBERS | st.booleans() | st.text() | st.none(),
     lambda children: st.lists(children) | st.dictionaries(st.text(), children)
 )
-
 
 MAX_EXAMPLES = int(os.environ.get('JP_MAX_EXAMPLES', 1000))
 BASE_SETTINGS = {
@@ -105,3 +109,32 @@ def test_search_api(expr, data):
         return
     except Exception as e:
         raise AssertionError("Non JMESPathError raised: %s" % e)
+
+
+# Additional property tests for functions.
+
+@given(arg=JSON_NUMBERS)
+def test_abs(arg):
+    assert Functions().call_function('abs', [arg]) >= 0
+
+
+@given(arg=st.lists(JSON_NUMBERS))
+def test_avg(arg):
+    result = Functions().call_function('avg', [arg])
+    if result is not None:
+        assert isinstance(result, numbers.Number)
+
+
+@given(arg=st.lists(st.floats() | st.booleans() | st.text() | st.none(),
+                    min_size=1))
+def test_not_null(arg):
+    result = Functions().call_function('not_null', arg)
+    if result is not None:
+        assert result in arg
+
+
+@given(arg=RANDOM_JSON)
+def test_to_number(arg):
+    result = Functions().call_function('to_number', [arg])
+    if result is not None:
+        assert isinstance(result, numbers.Number)
