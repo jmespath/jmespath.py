@@ -202,12 +202,12 @@ class Functions(with_metaclass(FunctionRegistry, object)):
             return arg
         else:
             try:
-                if '.' in arg:
-                    return float(arg)
-                else:
-                    return int(arg)
+                return int(arg)
             except ValueError:
-                return None
+                try:
+                    return float(arg)
+                except ValueError:
+                    return None
 
     @signature({'types': ['array', 'string']}, {'types': []})
     def _func_contains(self, subject, search):
