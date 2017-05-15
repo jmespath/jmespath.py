@@ -38,6 +38,12 @@ class TestSearchOptions(unittest.TestCase):
             jmespath.search('my_subtract(`10`, `3`)', {}, options=options),
             7
         )
+        # Should still be able to use the original functions without
+        # any interference from the CustomFunctions class.
+        self.assertEqual(
+            jmespath.search('length(`[1, 2]`)', {}), 2
+        )
+
 
 
 class TestPythonSpecificCases(unittest.TestCase):
