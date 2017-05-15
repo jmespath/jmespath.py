@@ -291,6 +291,10 @@ class Functions(with_metaclass(FunctionRegistry, object)):
     def _func_values(self, arg):
         return list(arg.values())
 
+    @signature({"types": ['object']})
+    def _func_items(self, arg):
+        return list(map(list, arg.items()))
+
     @signature({'types': []})
     def _func_type(self, arg):
         if isinstance(arg, STRING_TYPE):
