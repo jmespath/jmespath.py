@@ -92,10 +92,17 @@ class Lexer(object):
                         'start': self._position - 1, 'end': self._position}
                     self._next()
                 else:
+                    if self._current is None:
+                        # If we're at the EOF, we never advanced
+                        # the position so we don't need to rewind
+                        # it back one location.
+                        position = self._position
+                    else:
+                        position = self._position - 1
                     raise LexerError(
-                        lexer_position=self._position - 1,
+                        lexer_position=position,
                         lexer_value='=',
-                        message="Unknown token =")
+                        message="Unknown token '='")
             else:
                 raise LexerError(lexer_position=self._position,
                                  lexer_value=self._current,
@@ -138,8 +145,9 @@ class Lexer(object):
                 buff += '\\'
                 self._next()
             if self._current is None:
+                # We're at the EOF.
                 raise LexerError(lexer_position=start,
-                                 lexer_value=self._expression,
+                                 lexer_value=self._expression[start:],
                                  message="Unclosed %s delimiter" % delimiter)
             buff += self._current
             self._next()
@@ -162,7 +170,7 @@ class Lexer(object):
                               PendingDeprecationWarning)
             except ValueError:
                 raise LexerError(lexer_position=start,
-                                 lexer_value=self._expression,
+                                 lexer_value=self._expression[start:],
                                  message="Bad token %s" % lexeme)
         token_len = self._position - start
         return {'type': 'literal', 'value': parsed_json,
