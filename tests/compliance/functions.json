@@ -496,6 +496,10 @@
       "result": 1.0
     },
     {
+      "expression": "to_number('1e21')",
+      "result": 1e21
+    },
+    {
       "expression": "to_number('1.1')",
       "result": 1.1
     },

@@ -16,6 +16,7 @@ TYPES_MAP = {
     'str': 'string',
     'float': 'number',
     'int': 'number',
+    'long': 'number',
     'OrderedDict': 'object',
     '_Projection': 'array',
     '_Expression': 'expref',
@@ -29,7 +30,7 @@ REVERSE_TYPES_MAP = {
     'object': ('dict', 'OrderedDict',),
     'null': ('None',),
     'string': ('unicode', 'str'),
-    'number': ('float', 'int'),
+    'number': ('float', 'int', 'long'),
     'expref': ('_Expression',),
 }
 
@@ -47,7 +48,7 @@ class FunctionRegistry(type):
         super(FunctionRegistry, cls).__init__(name, bases, attrs)
 
     def _populate_function_table(cls):
-        function_table = getattr(cls, 'FUNCTION_TABLE', {})
+        function_table = {}
         # Any method with a @signature decorator that also
         # starts with "_func_" is registered as a function.
         # _func_max_by -> max_by function.
@@ -202,12 +203,12 @@ class Functions(with_metaclass(FunctionRegistry, object)):
             return arg
         else:
             try:
-                if '.' in arg:
-                    return float(arg)
-                else:
-                    return int(arg)
+                return int(arg)
             except ValueError:
-                return None
+                try:
+                    return float(arg)
+                except ValueError:
+                    return None
 
     @signature({'types': ['array', 'string']}, {'types': []})
     def _func_contains(self, subject, search):

@@ -1,3 +1,5 @@
+import sys
+import decimal
 from tests import unittest, OrderedDict
 
 import jmespath
@@ -36,6 +38,12 @@ class TestSearchOptions(unittest.TestCase):
             jmespath.search('my_subtract(`10`, `3`)', {}, options=options),
             7
         )
+        # Should still be able to use the original functions without
+        # any interference from the CustomFunctions class.
+        self.assertEqual(
+            jmespath.search('length(`[1, 2]`)', {}), 2
+        )
+
 
 
 class TestPythonSpecificCases(unittest.TestCase):
@@ -43,3 +51,14 @@ class TestPythonSpecificCases(unittest.TestCase):
         # This is python specific behavior that's not in the official spec
         # yet, but this was regression from 0.9.0 so it's been added back.
         self.assertTrue(jmespath.search('a < b', {'a': '2016', 'b': '2017'}))
+
+    @unittest.skipIf(not hasattr(sys, 'maxint'), 'Test requires long() type')
+    def test_can_handle_long_ints(self):
+        result = sys.maxint + 1
+        self.assertEqual(jmespath.search('[?a >= `1`].a', [{'a': result}]),
+                         [result])
+
+    def test_can_handle_decimals_as_numeric_type(self):
+        result = decimal.Decimal('3')
+        self.assertEqual(jmespath.search('[?a >= `1`].a', [{'a': result}]),
+                         [result])
