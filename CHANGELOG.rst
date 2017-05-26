@@ -1,5 +1,5 @@
-Next Release (TBD)
-==================
+0.9.3
+=====
 
 * Fix issue where long types in py2 and ``Decimal`` types
   were not being evaluated as numbers
