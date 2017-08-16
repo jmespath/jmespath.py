@@ -1,7 +1,4 @@
-import sys
 import inspect
-
-PY2 = sys.version_info[0] == 2
 
 
 def with_metaclass(meta, *bases):
@@ -12,7 +9,7 @@ def with_metaclass(meta, *bases):
     return type.__new__(metaclass, 'temporary_class', (), {})
 
 
-if PY2:
+try:  # Python 2
     text_type = unicode
     string_type = basestring
     from itertools import izip_longest as zip_longest
@@ -47,7 +44,7 @@ if PY2:
                                                predicate=inspect.ismethod):
             yield name, method
 
-else:
+except NameError:  # Python 3
     text_type = str
     string_type = str
     from itertools import zip_longest
