@@ -88,14 +88,14 @@ of your dict keys.  To do this you can use either of these options:
 .. code:: python
 
     >>> import jmespath
-    >>> jmespath.search('{a: a, b: b},
+    >>> jmespath.search('{a: a, b: b}',
     ...                 mydata,
     ...                 jmespath.Options(dict_cls=collections.OrderedDict))
 
 
     >>> import jmespath
     >>> parsed = jmespath.compile('{a: a, b: b}')
-    >>> parsed.search('{a: a, b: b},
+    >>> parsed.search('{a: a, b: b}',
     ...               mydata,
     ...               jmespath.Options(dict_cls=collections.OrderedDict))
 
