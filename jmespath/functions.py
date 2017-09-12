@@ -28,7 +28,7 @@ REVERSE_TYPES_MAP = {
     'boolean': ('bool',),
     'array': ('list', '_Projection'),
     'object': ('dict', 'OrderedDict',),
-    'null': ('None',),
+    'null': ('NoneType',),
     'string': ('unicode', 'str'),
     'number': ('float', 'int', 'long'),
     'expref': ('_Expression',),
