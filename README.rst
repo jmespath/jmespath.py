@@ -95,8 +95,7 @@ of your dict keys.  To do this you can use either of these options:
 
     >>> import jmespath
     >>> parsed = jmespath.compile('{a: a, b: b}')
-    >>> parsed.search('{a: a, b: b}',
-    ...               mydata,
+    >>> parsed.search(mydata,
     ...               jmespath.Options(dict_cls=collections.OrderedDict))
 
 
