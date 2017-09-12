@@ -1,7 +1,7 @@
 import unittest
 
-import functions
 import jmespath
+from jmespath import functions
 
 
 class CustomFunctions(functions.Functions):
@@ -14,7 +14,7 @@ class TestCustomFunctions(unittest.TestCase):
     def setUp(self):
         self.options = jmespath.Options(custom_functions=CustomFunctions())
 
-    def test_allows_null(self):
+    def test_null_to_nonetype(self):
         data = {
             'a': {
                 'b': [1, 2, 3]
