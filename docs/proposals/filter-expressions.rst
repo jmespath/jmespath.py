@@ -143,7 +143,7 @@ element resolves to the comparison ``"char" < "bar"``, and because these types
 are string, the expression results in ``null``, so the first element is not
 included in the result list.  The second element resolves to ``2 < 1``,
 which is ``false``, so the second element is excluded from the result list.
-The third expression resolves to ``1 < 2`` which evalutes to ``true``, so the
+The third expression resolves to ``1 < 2`` which evaluates to ``true``, so the
 third element is included in the list.  The final result of that expression
 is ``[{"a": 1, "b": 2}]``.
 
@@ -247,7 +247,7 @@ In order for this to be useful we need to define what corresponds to true and
 false values, e.g. an empty list is a false value.  Additionally, "or
 expressions" would need to change its semantics to branch based on the
 true/false value of an expression instead of whether or not the expression
-evalutes to null.
+evaluates to null.
 
 This is certainly a direction to take in the future, adding arbitrary
 expressions in a filter would be a backwards compatible change, so it's not

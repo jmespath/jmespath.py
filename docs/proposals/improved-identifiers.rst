@@ -199,7 +199,7 @@ identifier cannot start with ``-``::
 escape.json
 -----------
 
-The escape.json has several more interseting cases that need to be updated.
+The escape.json has several more interesting cases that need to be updated.
 This has to do with the updated escaping rules.  Each one will be explained.
 
 ::

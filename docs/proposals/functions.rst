@@ -118,7 +118,7 @@ Each function signature declares the types of its input parameters.  If any
 type constraints are not met, implementations must indicate that an
 ``invalid-type`` error occurred.
 
-In order to accommodate type contraints, functions are provided to convert
+In order to accommodate type constraints, functions are provided to convert
 types to other types (``to_string``, ``to_number``) which are defined below.
 No explicit type conversion happens unless a user specifically uses one of
 these type conversion functions.
