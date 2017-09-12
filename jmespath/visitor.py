@@ -60,13 +60,13 @@ class Options(object):
     """Options to control how a JMESPath function is evaluated."""
     def __init__(self, dict_cls=None, custom_functions=None):
         #: The class to use when creating a dict.  The interpreter
-        #  may create dictionaries during the evalution of a JMESPath
+        #  may create dictionaries during the evaluation of a JMESPath
         #  expression.  For example, a multi-select hash will
         #  create a dictionary.  By default we use a dict() type.
         #  You can set this value to change what dict type is used.
         #  The most common reason you would change this is if you
         #  want to set a collections.OrderedDict so that you can
-        #  have predictible key ordering.
+        #  have predictable key ordering.
         self.dict_cls = dict_cls
         self.custom_functions = custom_functions
 

@@ -104,7 +104,7 @@ The following modified JMESPath grammar supports piped expressions.
 
 .. note::
 
-    ``pipe-expression`` has a higher precendent than the ``or-operator``
+    ``pipe-expression`` has a higher precedent than the ``or-operator``
 
 Compliance Tests
 ================

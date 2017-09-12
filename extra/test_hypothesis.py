@@ -36,7 +36,7 @@ BASE_SETTINGS = {
 }
 
 
-# For all of these tests they verify these proprties:
+# For all of these tests they verify these properties:
 # either the operation succeeds or it raises a JMESPathError.
 # If any other exception is raised then we error out.
 @settings(**BASE_SETTINGS)

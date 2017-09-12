@@ -42,7 +42,7 @@ def main():
         svg_name = os.path.splitext(f.name)[0] + '.png'
         check_call('dot -Tpng %s -o %s' % (f.name, svg_name), shell=True)
         webbrowser.open('file://%s' % svg_name)
-    # Rather than prompt the user to hit enterr
+    # Rather than prompt the user to hit enter
     # just sleep for as long as we think is reasonable for
     # an application to open and display the png.
     time.sleep(2)
