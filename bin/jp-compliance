@@ -127,7 +127,8 @@ class ComplianceTestRunner(object):
         command.append(test_case['expression'])
         process = subprocess.Popen(command, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
-                                   stdin=subprocess.PIPE)
+                                   stdin=subprocess.PIPE,
+                                   encoding='utf-8')
         process.stdin.write(json.dumps(test_case['given']))
         process.stdin.flush()
         stdout, stderr = process.communicate()
