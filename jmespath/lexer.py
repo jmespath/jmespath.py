@@ -1,6 +1,7 @@
 import string
 import warnings
 from json import loads
+import re
 
 from jmespath.exceptions import LexerError, EmptyExpressionError
 
@@ -62,6 +63,8 @@ class Lexer(object):
                 yield self._match_or_else('&', 'and', 'expref')
             elif self._current == '`':
                 yield self._consume_literal()
+            elif self._current == '/':
+                yield self._consume_regex_literal()
             elif self._current in self.VALID_NUMBER:
                 start = self._position
                 buff = self._consume_number()
@@ -195,6 +198,28 @@ class Lexer(object):
         token_len = self._position - start
         return {'type': 'literal', 'value': lexeme,
                 'start': start, 'end': token_len}
+
+    def _consume_regex_literal(self):
+        start = self._position
+        regex_pattern = self._consume_until("/").replace("\\/", "/")
+        regex_flags = 0
+        while self._current in ['i', 'm', 's', 'l', 'a', 'u']:
+            try:
+                regex_flags |= getattr(re, self._current.upper())
+            except AttributeError as e:
+                raise LexerError(lexer_position=start,
+                                 lexer_value=''.join(self._chars[start:self._position]),
+                                 message='regex error: flag "{}" is unavailable in this version of Python'.format(self._current))
+            self._next()
+        token_len = self._position - start
+        try:
+            regex = re.compile(regex_pattern, regex_flags)
+            return {'type': 'literal', 'value': regex,
+                    'start': start, 'end': token_len}
+        except re.error as e:
+            raise LexerError(lexer_position=start,
+                             lexer_value=''.join(self._chars[start:self._position]),
+                             message='regex error: ' + str(e))
 
     def _match_or_else(self, expected, match_type, else_type):
         start = self._position
