@@ -1,4 +1,5 @@
 import operator
+import re
 
 from jmespath import functions
 from jmespath.compat import string_type
@@ -10,6 +11,17 @@ def _equals(x, y):
         return False
     else:
         return x == y
+
+
+def _regex_match(lhs, rhs):
+    try:
+        if hasattr(rhs, 'search'):
+            return rhs.search(lhs) is not None
+        if hasattr(lhs, 'search'):
+            return lhs.search(rhs) is not None
+        return re.search(rhs, lhs) is not None
+    except TypeError:
+        return None
 
 
 def _is_special_integer_case(x, y):
@@ -101,12 +113,13 @@ class TreeInterpreter(Visitor):
     COMPARATOR_FUNC = {
         'eq': _equals,
         'ne': lambda x, y: not _equals(x, y),
+        'regex_match': _regex_match,
         'lt': operator.lt,
         'gt': operator.gt,
         'lte': operator.le,
         'gte': operator.ge
     }
-    _EQUALITY_OPS = ['eq', 'ne']
+    _EQUALITY_OPS = ['eq', 'ne', 'regex_match']
     MAP_TYPE = dict
 
     def __init__(self, options=None):

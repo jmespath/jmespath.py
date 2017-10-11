@@ -464,5 +464,54 @@
         "result": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
       }
     ]
+  },
+  {
+    "given": {
+      "foo": [
+        {"name": "ax"},
+        {"name": "Ax"},
+        {"name": "bx"},
+        {"name": "Bx"}
+      ]
+    },
+    "cases": [
+      {
+        "comment": "Using regex in a filter expression",
+        "expression": "foo[? name =~ '^a']",
+        "result": [
+          {"name": "ax"}
+        ]
+      },
+      {
+        "comment": "Using regex in a filter expression (pre-compiled)",
+        "expression": "foo[? name =~ /^a/]",
+        "result": [
+          {"name": "ax"}
+        ]
+      },
+      {
+        "comment": "Using regex in a filter expression (pre-compiled with flag)",
+        "expression": "foo[? name =~ /^a/i]",
+        "result": [
+          {"name": "ax"},
+          {"name": "Ax"}
+        ]
+      },
+      {
+        "comment": "Using regex as a lhs in a filter expression (pre-compiled)",
+        "expression": "foo[? /^a/ =~ name]",
+        "result": [
+          {"name": "ax"}
+        ]
+      },
+      {
+        "comment": "Using regex as a lhs in a filter expression (pre-compiled with flag)",
+        "expression": "foo[? /^a/i =~ name]",
+        "result": [
+          {"name": "ax"},
+          {"name": "Ax"}
+        ]
+      }
+    ]
   }
 ]

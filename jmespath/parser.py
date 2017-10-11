@@ -57,6 +57,7 @@ class Parser(object):
         'gte': 5,
         'lte': 5,
         'ne': 5,
+        'regex_match': 5,
         'flatten': 9,
         # Everything above stops a projection.
         'star': 20,
@@ -305,6 +306,9 @@ class Parser(object):
 
     def _token_led_ne(self, left):
         return self._parse_comparator(left, 'ne')
+
+    def _token_led_regex_match(self, left):
+        return self._parse_comparator(left, 'regex_match')
 
     def _token_led_gt(self, left):
         return self._parse_comparator(left, 'gt')

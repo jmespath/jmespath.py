@@ -90,8 +90,13 @@ class Lexer(object):
             elif self._current == '!':
                 yield self._match_or_else('=', 'ne', 'not')
             elif self._current == '=':
-                if self._next() == '=':
+                next_char = self._next()
+                if next_char == '=':
                     yield {'type': 'eq', 'value': '==',
+                        'start': self._position - 1, 'end': self._position}
+                    self._next()
+                elif next_char == '~':
+                    yield {'type': 'regex_match', 'value': '=~',
                         'start': self._position - 1, 'end': self._position}
                     self._next()
                 else:
