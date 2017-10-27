@@ -331,14 +331,20 @@ class Functions(with_metaclass(FunctionRegistry, object)):
         keyfunc = self._create_key_func(expref,
                                         ['number', 'string'],
                                         'min_by')
-        return min(array, key=keyfunc)
+        if array:
+            return min(array, key=keyfunc)
+        else:
+            return None
 
     @signature({'types': ['array']}, {'types': ['expref']})
     def _func_max_by(self, array, expref):
         keyfunc = self._create_key_func(expref,
                                         ['number', 'string'],
-                                        'min_by')
-        return max(array, key=keyfunc)
+                                        'max_by')
+        if array:
+            return max(array, key=keyfunc)
+        else:
+            return None
 
     def _create_key_func(self, expref, allowed_types, function_name):
         def keyfunc(x):
