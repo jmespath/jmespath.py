@@ -164,6 +164,14 @@ class Functions(with_metaclass(FunctionRegistry, object)):
     @signature({'types': ['number']})
     def _func_abs(self, arg):
         return abs(arg)
+    
+    @signature({'types': ['string']})
+    def _func_lower(self, arg):
+        return arg.lower()
+    
+    @signature({'types': ['string']})
+    def _func_upper(self, arg):
+        return arg.upper()
 
     @signature({'types': ['array-number']})
     def _func_avg(self, arg):
