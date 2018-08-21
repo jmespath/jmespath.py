@@ -7,7 +7,6 @@ over time.  The test files are data driven similar to the
 compliance tests.
 """
 import argparse
-import time
 import os
 import json
 import sys

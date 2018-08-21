@@ -3,10 +3,8 @@
 # can a) be run separately and b) allow for customization
 # via env var for longer runs in travis.
 import os
-import sys
 import numbers
 
-from nose.plugins.skip import SkipTest
 from hypothesis import given, settings, assume, HealthCheck
 import hypothesis.strategies as st
 
