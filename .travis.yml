@@ -1,6 +1,5 @@
 language: python
 python:
-  - "2.6"
   - "2.7"
   - "3.3"
   - "3.4"
@@ -10,13 +9,11 @@ python:
 before_install:
   - pip install codecov
 install:
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; pip install -r requirements26.txt; fi
   - "rm -rf dist/*"
   - pip install -r requirements.txt
   - python setup.py bdist_wheel
   - pip install dist/*.whl
 script:
   - cd tests/ && nosetests --with-coverage --cover-package jmespath .
-  - if [[ $TRAVIS_PYTHON_VERSION != '2.6' ]]; then JP_MAX_EXAMPLES=10000 nosetests ../extra/test_hypothesis.py; fi
 after_success:
   - codecov

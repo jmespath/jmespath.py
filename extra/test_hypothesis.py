@@ -16,11 +16,6 @@ from jmespath import exceptions
 from jmespath.functions import Functions
 
 
-if sys.version_info[:2] == (2, 6):
-    raise RuntimeError("Hypothesis tests are not supported on python2.6. "
-                       "Use python2.7, or python3.3 and greater.")
-
-
 JSON_NUMBERS = (st.integers() | st.floats(allow_nan=False,
                                           allow_infinity=False))
 

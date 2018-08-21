@@ -55,12 +55,8 @@ import json
 import shlex
 
 
-if sys.version_info[:2] == (2, 6):
-    import simplejson as json
-    from ordereddict import OrderedDict
-else:
-    import json
-    from collections import OrderedDict
+import json
+from collections import OrderedDict
 
 
 _abs = os.path.abspath
