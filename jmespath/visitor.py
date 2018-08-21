@@ -312,17 +312,17 @@ class GraphvizVisitor(Visitor):
 
     def visit(self, node, *args, **kwargs):
         self._lines.append('digraph AST {')
-        current = '%s%s' % (node['type'], self._count)
+        current = '{}{}'.format(node['type'], self._count)
         self._count += 1
         self._visit(node, current)
         self._lines.append('}')
         return '\n'.join(self._lines)
 
     def _visit(self, node, current):
-        self._lines.append('%s [label="%s(%s)"]' % (
+        self._lines.append('{} [label="{}({})"]'.format(
             current, node['type'], node.get('value', '')))
         for child in node.get('children', []):
-            child_name = '%s%s' % (child['type'], self._count)
+            child_name = '{}{}'.format(child['type'], self._count)
             self._count += 1
-            self._lines.append('  %s -> %s' % (current, child_name))
+            self._lines.append('  {} -> {}'.format(current, child_name))
             self._visit(child, child_name)

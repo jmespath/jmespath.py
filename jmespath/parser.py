@@ -429,7 +429,7 @@ class Parser(object):
             allowed = ['quoted_identifier', 'unquoted_identifier',
                        'lbracket', 'lbrace']
             msg = (
-                "Expecting: %s, got: %s" % (allowed, t['type'])
+                "Expecting: {}, got: {}".format(allowed, t['type'])
             )
             self._raise_parse_error_for_token(t, msg)
 
@@ -483,7 +483,7 @@ class Parser(object):
         if actual_type == 'eof':
             raise exceptions.IncompleteExpressionError(
                 lex_position, actual_value, actual_type)
-        message = 'Expecting: %s, got: %s' % (expected_type,
+        message = 'Expecting: {}, got: {}'.format(expected_type,
                                               actual_type)
         raise exceptions.ParseError(
             lex_position, actual_value, actual_type, message)

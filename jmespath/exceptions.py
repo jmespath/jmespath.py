@@ -58,7 +58,7 @@ class LexerError(ParseError):
 
     def __str__(self):
         underline = ' ' * self.lexer_position + '^'
-        return 'Bad jmespath expression: %s:\n%s\n%s' % (
+        return 'Bad jmespath expression: {}:\n{}\n{}'.format(
             self.message, self.expression, underline)
 
 
