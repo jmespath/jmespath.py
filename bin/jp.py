@@ -17,7 +17,7 @@ def main():
                               'If a filename is not given then data is '
                               'read from stdin.'))
     parser.add_argument('--ast', action='store_true',
-                        help=('Pretty print the AST, do not search the data.'))
+                        help='Pretty print the AST, do not search the data.')
     args = parser.parse_args()
     expression = args.expression
     if args.ast:
