@@ -1,3 +1,10 @@
+Next Release (TBD)
+==================
+
+* Python 2.6 and 3.3 have reached end-of-life and have been deprecated.
+  They will be dropped in version 0.11.0.
+
+
 0.9.5
 =====
 
