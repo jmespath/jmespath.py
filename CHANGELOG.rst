@@ -1,3 +1,9 @@
+0.9.4
+=====
+
+* Python 2.6 and 3.3 have reached end-of-life and have been deprecated.
+  They will be dropped in JMESPath 1.0.
+
 0.9.3
 =====
 
