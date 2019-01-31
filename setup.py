@@ -18,7 +18,7 @@ setup(
     scripts=['bin/jp.py'],
     packages=find_packages(exclude=['tests']),
     license='MIT',
-    classifiers=(
+    classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Natural Language :: English',
@@ -33,5 +33,5 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
-    ),
+    ],
 )
