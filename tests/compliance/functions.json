@@ -702,6 +702,10 @@
       "result": {"age": 50, "age_str": "50", "bool": false, "name": "d"}
     },
     {
+      "expression": "max_by(`[]`, &age)",
+      "result": null
+    },
+    {
       "expression": "min_by(people, &age)",
       "result": {"age": 10, "age_str": "10", "bool": true, "name": 3}
     },
@@ -720,6 +724,10 @@
     {
       "expression": "min_by(people, &to_number(age_str))",
       "result": {"age": 10, "age_str": "10", "bool": true, "name": 3}
+    },
+    {
+      "expression": "min_by(`[]`, &age)",
+      "result": null
     }
   ]
 }, {

@@ -202,7 +202,7 @@ SubExpressions
                                          "*" )
 
 A subexpression is a combination of two expressions separated by the '.' char.
-A subexpression is evaluted as follows:
+A subexpression is evaluated as follows:
 
 * Evaluate the expression on the left with the original JSON document.
 * Evaluate the expression on the right with the result of the left expression
@@ -455,7 +455,7 @@ evaluated as follows:
 1. A hash is created: ``{}``
 2. A key ``foo`` is created whose value is the result of evaluating ``one.two``
    against the provided JSON document: ``{"foo": evaluate(one.two, <data>)}``
-3. A key ``bar`` is created whose value is the result of evaluting the
+3. A key ``bar`` is created whose value is the result of evaluating the
    expression ``bar`` against the provided JSON document.
 
 The final result will be: ``{"foo": "one-two", "bar": "bar"}``.
@@ -576,7 +576,7 @@ Filter Expressions
 A filter expression provides a way to select JSON elements based on a
 comparison to another expression.  A filter expression is evaluated as follows:
 for each element in an array evaluate the ``list-filter-expr`` against the
-element.  If the expression evalutes to ``true``, the item (in its entirety) is
+element.  If the expression evaluates to ``true``, the item (in its entirety) is
 added to the result list.  Otherwise it is excluded from the result list.  A
 filter expression is only defined for a JSON array.  Attempting to evaluate a
 filter expression against any other type will return ``null``.
@@ -606,7 +606,7 @@ For ``string/number/true/false/null`` types, equality is an exact match. A
 ``string`` is equal to another ``string`` if they they have the exact sequence
 of code points.  The literal values ``true/false/null`` are only equal to their
 own literal values.  Two JSON objects are equal if they have the same set of
-keys and values (given two JSON objeccts ``x`` and ``y``, for each key value
+keys and values (given two JSON objects ``x`` and ``y``, for each key value
 pair ``(i, j)`` in ``x``, there exists an equivalent pair ``(i, j)`` in ``y``).
 Two JSON arrays are equal if they have equal elements in the same order (given
 two arrays ``x`` and ``y``, for each ``i`` from ``0`` until ``length(x)``,
@@ -629,7 +629,7 @@ element resolves to the comparison ``"char" < "bar"``, and because these types
 are string, the expression results in ``null``, so the first element is not
 included in the result list.  The second element resolves to ``2 < 1``,
 which is ``false``, so the second element is excluded from the result list.
-The third expression resolves to ``1 < 2`` which evalutes to ``true``, so the
+The third expression resolves to ``1 < 2`` which evaluates to ``true``, so the
 third element is included in the list.  The final result of that expression
 is ``[{"a": 1, "b": 2}]``.
 
@@ -734,7 +734,7 @@ Each function signature declares the types of its input parameters.  If any
 type constraints are not met, implementations must indicate that an
 ``invalid-type`` error occurred.
 
-In order to accommodate type contraints, functions are provided to convert
+In order to accommodate type constraints, functions are provided to convert
 types to other types (``to_string``, ``to_number``) which are defined below.
 No explicit type conversion happens unless a user specifically uses one of
 these type conversion functions.
@@ -1258,7 +1258,7 @@ not_null
 
 Returns the first argument that does not resolve to ``null``.  This function
 accepts one or more arguments, and will evaluate them in order until a
-non null argument is encounted.  If all arguments values resolve to ``null``,
+non null argument is encountered.  If all arguments values resolve to ``null``,
 then a value of ``null`` is returned.
 
 .. list-table:: Examples
