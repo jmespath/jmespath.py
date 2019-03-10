@@ -202,7 +202,7 @@ class TreeInterpreter(Visitor):
     def visit_index(self, node, value):
         # Even though we can index strings, we don't
         # want to support that.
-        if not isinstance(value, list):
+        if not isinstance(value, (list, tuple)):
             return None
         try:
             return value[node['value']]
@@ -216,7 +216,7 @@ class TreeInterpreter(Visitor):
         return result
 
     def visit_slice(self, node, value):
-        if not isinstance(value, list):
+        if not isinstance(value, (list, tuple)):
             return None
         s = slice(*node['children'])
         return value[s]
