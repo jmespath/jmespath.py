@@ -47,6 +47,16 @@ The ``*`` can also be used for hash types::
 The expression: ``foo.*.name`` will return ["one", "two"].
 
 
+Installation
+============
+
+Install jmespath from pypi with
+
+.. code:: bash
+
+    pip install jmespath
+    
+
 API
 ===
 
