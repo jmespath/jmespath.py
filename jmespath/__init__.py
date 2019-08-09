@@ -3,7 +3,7 @@ import sys
 from jmespath import parser
 from jmespath.visitor import Options
 
-__version__ = '0.9.3'
+__version__ = '0.9.4'
 
 
 if sys.version_info[:2] <= (2, 6) or ((3, 0) <= sys.version_info[:2] <= (3, 3)):

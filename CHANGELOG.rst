@@ -3,6 +3,10 @@
 
 * Python 2.6 and 3.3 have reached end-of-life and have been deprecated.
   They will be dropped in JMESPath 1.0.
+* Fix ``min_by``/``max_by`` with empty lists
+  `(`issue 151 <https://github.com/jmespath/jmespath.py/pull/151>`__)
+* Fix reverse type for ``null`` type
+  (`issue 145 <https://github.com/jmespath/jmespath.py/pull/145>`__)
 
 0.9.3
 =====
