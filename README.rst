@@ -6,8 +6,8 @@ JMESPath
    :target: https://gitter.im/jmespath/chat
 
 
-.. image:: https://secure.travis-ci.org/jmespath/jmespath.py.png?branch=develop
-   :target: http://travis-ci.org/jmespath/jmespath.py
+.. image:: https://travis-ci.org/jmespath/jmespath.py.svg?branch=develop
+    :target: https://travis-ci.org/jmespath/jmespath.py
 
 
 .. image:: https://codecov.io/github/jmespath/jmespath.py/coverage.svg?branch=develop
