@@ -1,3 +1,10 @@
+0.9.5
+=====
+
+* Fix syntax warnings on python 3.8
+  `(`issue 187 <https://github.com/jmespath/jmespath.py/issues/187>`__)
+
+
 0.9.4
 =====
 
