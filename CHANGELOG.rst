@@ -1,6 +1,13 @@
 0.9.4
 =====
 
+* Fix syntax warnings on python 3.8
+  `(`issue 187 <https://github.com/jmespath/jmespath.py/issues/187>`__)
+
+
+0.9.4
+=====
+
 * Fix ``min_by``/``max_by`` with empty lists
   `(`issue 151 <https://github.com/jmespath/jmespath.py/pull/151>`__)
 * Fix reverse type for ``null`` type
