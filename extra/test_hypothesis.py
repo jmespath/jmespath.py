@@ -32,7 +32,9 @@ RANDOM_JSON = st.recursive(
 MAX_EXAMPLES = int(os.environ.get('JP_MAX_EXAMPLES', 1000))
 BASE_SETTINGS = {
     'max_examples': MAX_EXAMPLES,
-    'suppress_health_check': [HealthCheck.too_slow],
+    'suppress_health_check': [HealthCheck.too_slow,
+                              HealthCheck.filter_too_much,
+                              HealthCheck.data_too_large],
 }
 
 
