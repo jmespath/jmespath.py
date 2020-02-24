@@ -1,4 +1,4 @@
-0.9.4
+0.9.5
 =====
 
 * Fix syntax warnings on python 3.8
