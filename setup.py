@@ -10,9 +10,10 @@ from setuptools import setup, find_packages
 if sys.version_info[:2] <= (2, 6) or ((3, 0) <= sys.version_info[:2] <= (3, 3)):
     python_ver = '.'.join(str(x) for x in sys.version_info[:3])
 
-    warnings.warn('You are using Python {0}, which will no longer be supported in '
-                  'JMESPath 1.0'.format(python_ver),
-                  PendingDeprecationWarning)
+    warnings.warn(
+        'You are using Python {0}, which will no longer be supported in '
+        'version 0.11.0'.format(python_ver),
+        DeprecationWarning)
 
 
 setup(
