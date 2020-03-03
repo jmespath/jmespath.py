@@ -50,12 +50,12 @@ The expression: ``foo.*.name`` will return ["one", "two"].
 Installation
 ============
 
-Install jmespath from pypi with
+You can install JMESPath from pypi with:
 
 .. code:: bash
 
     pip install jmespath
-    
+
 
 API
 ===
