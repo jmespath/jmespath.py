@@ -19,7 +19,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
-        pip setup.py bdist_wheel
+        python setup.py bdist_wheel
         pip install dist/*.whl
     - name: Test with pytest
       run: |
