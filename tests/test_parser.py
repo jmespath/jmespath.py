@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+from concurrent.futures.thread import ThreadPoolExecutor
 import re
 from tests import unittest, OrderedDict
 
@@ -321,6 +321,31 @@ class TestParserCaching(unittest.TestCase):
                          second.parsed)
         self.assertEqual(first.parsed,
                          cached.parsed)
+
+    def test_free_cache_entries(self):
+        """
+        Test for a race that occurs during cache eviction. The parser cache is
+        shared by all threads in a process so if two threads randomly select to
+        evict the same entry, one of them would raise a KeyError if they used
+        `del` to evict it.
+        """
+        num_workers = 32
+        num_repetitions = 4096
+
+        def worker():
+            for _ in range(num_repetitions):
+                p = parser.Parser()
+                p.parse('foo')
+                p.parse('bar')
+                p.parse('fubaz')
+
+        parser.Parser._MAX_SIZE, original_size = 2, parser.Parser._MAX_SIZE,
+        try:
+            with ThreadPoolExecutor(max_workers=num_workers) as tpe:
+                futures = [tpe.submit(worker) for _ in range(num_workers)]
+            self.assertTrue(all(f.result() is None for f in futures))
+        finally:
+            parser.Parser._MAX_SIZE = original_size
 
 
 class TestParserAddsExpressionAttribute(unittest.TestCase):
