@@ -1,6 +1,8 @@
 #!/usr/bin/env python
-from concurrent.futures.thread import ThreadPoolExecutor
 import re
+import random
+import string
+import threading
 from tests import unittest, OrderedDict
 
 from jmespath import parser
@@ -322,30 +324,29 @@ class TestParserCaching(unittest.TestCase):
         self.assertEqual(first.parsed,
                          cached.parsed)
 
-    def test_free_cache_entries(self):
-        """
-        Test for a race that occurs during cache eviction. The parser cache is
-        shared by all threads in a process so if two threads randomly select to
-        evict the same entry, one of them would raise a KeyError if they used
-        `del` to evict it.
-        """
-        num_workers = 32
-        num_repetitions = 4096
-
+    def test_thread_safety_of_cache(self):
+        errors = []
+        expressions = [
+            ''.join(random.choice(string.ascii_letters) for _ in range(3))
+            for _ in range(2000)
+        ]
         def worker():
-            for _ in range(num_repetitions):
-                p = parser.Parser()
-                p.parse('foo')
-                p.parse('bar')
-                p.parse('fubaz')
+            p = parser.Parser()
+            for expression in expressions:
+                try:
+                    p.parse(expression)
+                except Exception as e:
+                    errors.append(e)
 
-        parser.Parser._MAX_SIZE, original_size = 2, parser.Parser._MAX_SIZE,
-        try:
-            with ThreadPoolExecutor(max_workers=num_workers) as tpe:
-                futures = [tpe.submit(worker) for _ in range(num_workers)]
-            self.assertTrue(all(f.result() is None for f in futures))
-        finally:
-            parser.Parser._MAX_SIZE = original_size
+        threads = []
+        for i in range(10):
+            threads.append(threading.Thread(target=worker))
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        self.assertEqual(errors, [])
 
 
 class TestParserAddsExpressionAttribute(unittest.TestCase):
