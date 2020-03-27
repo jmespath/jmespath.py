@@ -3,6 +3,8 @@ Next Release (TBD)
 
 * Python 2.6 and 3.3 have reached end-of-life and have been deprecated.
   (`issue 175 <https://github.com/jmespath/jmespath.py/issues/175>`__)
+* Fix race condition when clearing cached parsed expressions.
+  (`issue 197 <https://github.com/jmespath/jmespath.py/pull/197>`__)
 
 
 0.9.5
