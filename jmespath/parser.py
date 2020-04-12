@@ -490,7 +490,7 @@ class Parser(object):
 
     def _free_cache_entries(self):
         for key in random.sample(self._CACHE.keys(), int(self._MAX_SIZE / 2)):
-            del self._CACHE[key]
+            self._CACHE.pop(key, None)
 
     @classmethod
     def purge(cls):
