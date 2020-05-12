@@ -1,13 +1,24 @@
 #!/usr/bin/env python
 
 import io
+import sys
+import warnings
 
 from setuptools import setup, find_packages
 
 
+if sys.version_info[:2] <= (2, 6) or ((3, 0) <= sys.version_info[:2] <= (3, 3)):
+    python_ver = '.'.join(str(x) for x in sys.version_info[:3])
+
+    warnings.warn(
+        'You are using Python {0}, which will no longer be supported in '
+        'version 0.11.0'.format(python_ver),
+        DeprecationWarning)
+
+
 setup(
     name='jmespath',
-    version='0.9.5',
+    version='0.10.0',
     description='JSON Matching Expressions',
     long_description=io.open('README.rst', encoding='utf-8').read(),
     author='James Saryerwinnie',
@@ -16,6 +27,7 @@ setup(
     scripts=['bin/jp.py'],
     packages=find_packages(exclude=['tests']),
     license='MIT',
+    python_requires='>=2.6, !=3.0.*, !=3.1.*, !=3.2.*',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
