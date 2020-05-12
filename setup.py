@@ -18,7 +18,7 @@ if sys.version_info[:2] <= (2, 6) or ((3, 0) <= sys.version_info[:2] <= (3, 3)):
 
 setup(
     name='jmespath',
-    version='0.9.5',
+    version='0.10.0',
     description='JSON Matching Expressions',
     long_description=io.open('README.rst', encoding='utf-8').read(),
     author='James Saryerwinnie',
