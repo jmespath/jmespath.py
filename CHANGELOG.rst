@@ -1,5 +1,5 @@
-Next Release (TBD)
-==================
+0.10.0
+======
 
 * Python 2.6 and 3.3 have reached end-of-life and have been deprecated.
   (`issue 175 <https://github.com/jmespath/jmespath.py/issues/175>`__)
