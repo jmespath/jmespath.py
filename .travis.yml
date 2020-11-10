@@ -15,6 +15,8 @@ matrix:
       dist: xenial
     - python: "3.8"
       dist: xenial
+    - python: "3.9"
+      dist: xenial
 before_install:
   - pip install codecov
 install:
@@ -25,6 +27,6 @@ install:
   - pip install dist/*.whl
 script:
   - cd tests/ && nosetests --with-coverage --cover-package jmespath .
-  - if [[ $TRAVIS_PYTHON_VERSION != '2.6' ]] && [[ $TRAVIS_PYTHON_VERSION != '3.8' ]]; then JP_MAX_EXAMPLES=10000 nosetests ../extra/test_hypothesis.py; fi
+  - if [[ $TRAVIS_PYTHON_VERSION != '2.6' ]] && [[ $TRAVIS_PYTHON_VERSION != '3.8' ]] && [[ $TRAVIS_PYTHON_VERSION != '3.9' ]]; then JP_MAX_EXAMPLES=10000 nosetests ../extra/test_hypothesis.py; fi
 after_success:
   - codecov
