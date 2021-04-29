@@ -132,10 +132,7 @@ class TreeInterpreter(Visitor):
         return result
 
     def visit_field(self, node, value):
-        try:
-            return value.get(node['value'])
-        except AttributeError:
-            return None
+        return value.get(node['value'], None)
 
     def visit_comparator(self, node, value):
         # Common case: comparator is == or !=
