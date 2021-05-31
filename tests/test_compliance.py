@@ -1,8 +1,11 @@
 import os
+import re
 from pprint import pformat
 from tests import OrderedDict
 from tests import json
+from tests import unittest
 
+from future.utils import with_metaclass
 from nose.tools import assert_equal
 
 from jmespath.visitor import Options
@@ -13,22 +16,6 @@ COMPLIANCE_DIR = os.path.join(TEST_DIR, 'compliance')
 LEGACY_DIR = os.path.join(TEST_DIR, 'legacy')
 NOT_SPECIFIED = object()
 OPTIONS = Options(dict_cls=OrderedDict)
-
-
-def test_compliance():
-    for full_path in _walk_files():
-        if full_path.endswith('.json'):
-            for given, test_type, test_data in load_cases(full_path):
-                t = test_data
-                # Benchmark tests aren't run as part of the normal
-                # test suite, so we only care about 'result' and
-                # 'error' test_types.
-                if test_type == 'result':
-                    yield (_test_expression, given, t['expression'],
-                           t['result'], os.path.basename(full_path))
-                elif test_type == 'error':
-                    yield (_test_error_expression, given, t['expression'],
-                           t['error'], os.path.basename(full_path))
 
 
 def _walk_files():
@@ -60,7 +47,7 @@ def load_cases(full_path):
                 test_type = 'bench'
             else:
                 raise RuntimeError("Unknown test type: %s" % json.dumps(case))
-            yield (given, test_type, case)
+            yield given, test_type, case
 
 
 def _test_expression(given, expression, expected, filename):
@@ -107,3 +94,62 @@ def _test_error_expression(given, expression, error, filename):
                          filename, expression, pformat(parsed.parsed)))
         error_msg = error_msg.replace(r'\n', '\n')
         raise AssertionError(error_msg)
+
+
+# Generate and run test functions from json dataset
+class GeneratorTestJsonComplianceMeta(type):
+    dict_key_increment = 0
+
+    def __new__(mcs, name, bases, dict):
+
+        # Load dataset from json files
+        def compile_tests():
+            for full_path in _walk_files():
+                if full_path.endswith('.json'):
+                    for given, test_type, test_data in load_cases(full_path):
+                        t = test_data
+                        # Benchmark tests aren't run as part of the normal
+                        # test suite, so we only care about 'result' and
+                        # 'error' test_types.
+                        if test_type == 'result':
+                            yield (_test_expression, given, t['expression'],
+                                   t['result'], full_path)
+                        elif test_type == 'error':
+                            yield (_test_error_expression, given, t['expression'],
+                                   t['error'], full_path)
+
+        # Generate test function executor
+        def gen_test(function, given_arg, expression_arg, expected_result, json_filename):
+            def test(self):
+                function(given_arg, expression_arg, expected_result, json_filename)
+
+            return test
+
+        # Compile all tests from json files
+        for (f, given_json, expression, expected, file_path) in compile_tests():
+            parent_dir = os.path.basename(os.path.dirname(file_path))
+            filename = os.path.basename(file_path)
+            # Create test function name, remove '.', '\' and '/' from path
+            test_name = "test_%s" % re.sub(r"[\\./]", "_", parent_dir + "_" + filename)
+
+            if test_name in dict:
+                # If this name is exist, add incremented number to name and try to check it again
+                while test_name in dict:
+                    mcs.dict_key_increment += 1
+                    test_name = test_name + str(mcs.dict_key_increment)
+
+                dict[test_name] = gen_test(f, given_json, expression, expected, filename)
+            else:
+                mcs.dict_key_increment = 0
+                dict[test_name] = gen_test(f, given_json, expression, expected, filename)
+
+        return type.__new__(mcs, name, bases, dict)
+
+
+# Use with_metaclass() for Python 2 and 3 compatibility
+class TestJsonCompliance(with_metaclass(GeneratorTestJsonComplianceMeta, unittest.TestCase)):
+    pass
+
+
+if __name__ == '__main__':
+    unittest.main()
