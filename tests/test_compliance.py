@@ -1,6 +1,9 @@
 import os
 import re
 from pprint import pformat
+
+import six
+
 from tests import OrderedDict
 from tests import json
 from tests import unittest
@@ -10,6 +13,8 @@ from nose.tools import assert_equal
 
 from jmespath.visitor import Options
 
+if six.PY2:
+    from io import open
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 COMPLIANCE_DIR = os.path.join(TEST_DIR, 'compliance')
