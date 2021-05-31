@@ -48,7 +48,7 @@ def _walk_files():
 
 
 def load_cases(full_path):
-    all_test_data = json.load(open(full_path), object_pairs_hook=OrderedDict)
+    all_test_data = json.load(open(full_path, encoding='utf-8'), object_pairs_hook=OrderedDict)
     for test_data in all_test_data:
         given = test_data['given']
         for case in test_data['cases']:
