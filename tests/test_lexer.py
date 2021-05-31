@@ -1,3 +1,4 @@
+from six import assertRaisesRegex
 from tests import unittest
 
 from jmespath import lexer
@@ -152,7 +153,7 @@ class TestRegexLexer(unittest.TestCase):
             tokens = list(self.lexer.tokenize('^foo[0]'))
 
     def test_unknown_character_with_identifier(self):
-        with self.assertRaisesRegexp(LexerError, "Unknown token"):
+        with assertRaisesRegex(self, LexerError, "Unknown token"):
             list(self.lexer.tokenize('foo-bar'))
 
 

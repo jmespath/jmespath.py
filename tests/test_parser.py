@@ -3,6 +3,8 @@ import re
 import random
 import string
 import threading
+
+from six import assertRaisesRegex
 from tests import unittest, OrderedDict
 
 from jmespath import parser
@@ -169,7 +171,7 @@ class TestErrorMessages(unittest.TestCase):
         error_message = re.compile(
             r'Bad jmespath expression: '
             r'Invalid \\uXXXX escape.*\\uAZ12', re.DOTALL)
-        with self.assertRaisesRegexp(exceptions.LexerError, error_message):
+        with assertRaisesRegex(self, exceptions.LexerError, error_message):
             self.parser.parse(r'"\uAZ12"')
 
 
