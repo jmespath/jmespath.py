@@ -1,0 +1,7 @@
+[build-system]
+requires = [
+	"jmespath",
+	"setuptools",
+	"wheel",
+]
+build-backend = "setuptools.build_meta"
