@@ -229,7 +229,11 @@ def merge(base, head):
         result = []
         if isinstance(base, list):
             result.extend(base)
-        result.extend(head)
+            for node in head:
+                if node not in result:
+                    result.append(node)
+        else:
+            result.extend(head)
     else:
         result = head
 
