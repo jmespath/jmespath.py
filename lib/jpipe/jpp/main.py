@@ -3,6 +3,7 @@ import json
 import os
 import pprint
 import sys
+import itertools
 
 import jmespath
 
@@ -65,6 +66,16 @@ def jpp_main(argv=None):
         prog=os.path.basename(argv[0]),
     )
     parser.add_argument("expression", nargs="?", default=None)
+    parser.add_argument(
+        "-a",
+        "--accumulate",
+        action="store_true",
+        dest="accumulate",
+        default=False,
+        help=(
+            "Accumulate all output objects into a single recursively merged output object."
+        ),
+    )
     parser.add_argument(
         "-c",
         "--compact",
@@ -152,28 +163,77 @@ def jpp_main(argv=None):
     else:
         f = sys.stdin
 
+    accumulator = None
+    eof = False
+
     with f:
         stream_iter = decode_json_stream(f)
         while True:
-            if args.slurp:
-                data = list(stream_iter)
-                if not data:
-                    break
-            else:
-                try:
-                    data = next(stream_iter)
-                except StopIteration:
+            while True:
+                if args.slurp:
+                    data = list(stream_iter)
+                    if not data:
+                        eof = True
+                        break
+                else:
+                    try:
+                        data = next(stream_iter)
+                    except StopIteration:
+                        eof = True
+                        break
+
+                result = jmespath.search(expression, data)
+
+                if args.accumulate:
+                    if accumulator is None:
+                        accumulator = result
+                    else:
+                        accumulator = merge(accumulator, result)
+                else:
                     break
 
-            result = jmespath.search(expression, data)
+            if args.accumulate:
+                result = accumulator
+            elif eof:
+                break
+
             if args.quoted or not isinstance(result, str):
                 result = json.dumps(result, **dump_kwargs)
 
             sys.stdout.write(result)
             sys.stdout.write("\n")
-            if args.slurp:
+            if eof or args.accumulate or args.slurp:
                 break
     return 0
+
+
+def merge(base, head):
+    """
+    Recursively merge head onto base.
+    """
+    if isinstance(head, dict):
+        if not isinstance(base, dict):
+            return head
+
+        result = {}
+        for k in itertools.chain(head, base):
+            try:
+                result[k] = merge(base[k], head[k])
+            except KeyError:
+                try:
+                    result[k] = head[k]
+                except KeyError:
+                    result[k] = base[k]
+
+    elif isinstance(head, list):
+        result = []
+        if isinstance(base, list):
+            result.extend(base)
+        result.extend(head)
+    else:
+        result = head
+
+    return result
 
 
 if __name__ == "__main__":

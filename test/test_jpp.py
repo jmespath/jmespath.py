@@ -21,6 +21,9 @@ class JPPTest(unittest.TestCase):
             ((), """{"hello": "world"}""", "@", '{\n  "hello": "world"\n}\n', 0),
             (("-c",), """{"hello": "world"}""", "@", '{"hello":"world"}\n', 0),
             (("-c",), """{\n  "foo": "bar"\n}{   \n"foo": "x"\n}""", "@", '{"foo":"bar"}\n{"foo":"x"}\n', 0),
+            (("-a", "-c",), """{"foo": ["a"]}{"foo": ["x"]}""", "@", '{"foo":["a","x"]}\n', 0),
+            (("-a", "-c",), """["a"]["x"]""", "@", '["a","x"]\n', 0),
+            (("-c", "-s",), """"a"\n"x"\n""", "@", '["a","x"]\n', 0),
             ((), """{"hello": "world"}""", "@.hello", '"world"\n', 0),
             (("-u",), """{"hello": "world"}""", "@.hello", "world\n", 0),
         ):
