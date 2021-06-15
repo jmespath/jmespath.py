@@ -19,6 +19,7 @@ class JPPTest(unittest.TestCase):
     def testJPP(self):
         for input_args, input_json, input_expr, expected_output, expected_retval in (
             ((), """{"hello": "world"}""", "@", '{\n  "hello": "world"\n}\n', 0),
+            (("-c",), """{"hello": "world"}""", "@", '{"hello":"world"}\n', 0),
             ((), """{"hello": "world"}""", "@.hello", '"world"\n', 0),
             (("-u",), """{"hello": "world"}""", "@.hello", "world\n", 0),
         ):

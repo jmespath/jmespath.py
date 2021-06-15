@@ -25,6 +25,16 @@ def jpp_main(argv=None):
     )
     parser.add_argument("expression", nargs="?", default=None)
     parser.add_argument(
+        "-c",
+        "--compact",
+        action="store_true",
+        dest="compact",
+        default=False,
+        help=(
+            "Produce compact JSON output that omits nonessential whitespace."
+        ),
+    )
+    parser.add_argument(
         "-e",
         "--expr-file",
         dest="expr_file",
@@ -70,6 +80,11 @@ def jpp_main(argv=None):
     if expression and args.expr_file:
         parser.error("Only use one of the expression or --expr-file arguments.")
 
+    dump_kwargs = dict(JP_COMPAT_DUMP_KWARGS)
+    if args.compact:
+        dump_kwargs.pop("indent", None)
+        dump_kwargs["separators"] = (',', ':')
+
     if args.expr_file:
         with open(args.expr_file, "rt") as f:
             expression = f.read()
@@ -89,7 +104,7 @@ def jpp_main(argv=None):
 
     result = jmespath.search(expression, data)
     if args.quoted or not isinstance(result, str):
-        result = json.dumps(result, **dict(JP_COMPAT_DUMP_KWARGS))
+        result = json.dumps(result, **dump_kwargs)
 
     sys.stdout.write(result)
     sys.stdout.write("\n")
