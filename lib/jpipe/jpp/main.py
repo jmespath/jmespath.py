@@ -96,6 +96,16 @@ def jpp_main(argv=None):
         ),
     )
     parser.add_argument(
+        "-s",
+        "--slurp",
+        action="store_true",
+        dest="slurp",
+        default=False,
+        help=(
+            "Read one or more input JSON objects into an array and apply the JMESPath expression to the resulting array."
+        ),
+    )
+    parser.add_argument(
         "-u",
         "--unquoted",
         action="store_false",
@@ -143,13 +153,26 @@ def jpp_main(argv=None):
         f = sys.stdin
 
     with f:
-        for data in decode_json_stream(f):
+        stream_iter = decode_json_stream(f)
+        while True:
+            if args.slurp:
+                data = list(stream_iter)
+                if not data:
+                    break
+            else:
+                try:
+                    data = next(stream_iter)
+                except StopIteration:
+                    break
+
             result = jmespath.search(expression, data)
             if args.quoted or not isinstance(result, str):
                 result = json.dumps(result, **dump_kwargs)
 
             sys.stdout.write(result)
             sys.stdout.write("\n")
+            if args.slurp:
+                break
     return 0
 
 
