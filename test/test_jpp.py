@@ -20,6 +20,7 @@ class JPPTest(unittest.TestCase):
         for input_args, input_json, input_expr, expected_output, expected_retval in (
             ((), """{"hello": "world"}""", "@", '{\n  "hello": "world"\n}\n', 0),
             (("-c",), """{"hello": "world"}""", "@", '{"hello":"world"}\n', 0),
+            (("-c",), """{\n  "foo": "bar"\n}{   \n"foo": "x"\n}""", "@", '{"foo":"bar"}\n{"foo":"x"}\n', 0),
             ((), """{"hello": "world"}""", "@.hello", '"world"\n', 0),
             (("-u",), """{"hello": "world"}""", "@.hello", "world\n", 0),
         ):

@@ -18,6 +18,47 @@ JP_COMPAT_DUMP_KWARGS = (
 )
 
 
+def decode_json_stream(stream):
+    """
+    Decode a text JSON input stream and generate objects until EOF.
+    """
+    eof = False
+    line_buffer = []
+    while line_buffer or not eof:
+        progress = False
+        if not eof:
+            line = stream.readline()
+            if line:
+                progress = True
+                line_buffer.append(line)
+            else:
+                eof = True
+
+        if line_buffer:
+            chunk = "".join(line_buffer)
+            del line_buffer[:]
+
+            try:
+                yield json.loads(chunk)
+                progress = True
+            except json.JSONDecodeError as e:
+                if e.pos > 0:
+                    try:
+                        yield json.loads(chunk[:e.pos])
+                        progress = True
+                    except json.JSONDecodeError:
+                        # Raise if there's no progress, since a given
+                        # chunk should be growning if it is not yet
+                        # decodable.
+                        if not progress:
+                            raise
+                        line_buffer.append(chunk)
+                    else:
+                        line_buffer.append(chunk[e.pos:])
+                else:
+                    raise
+
+
 def jpp_main(argv=None):
     argv = sys.argv if argv is None else argv
     parser = argparse.ArgumentParser(
@@ -95,19 +136,20 @@ def jpp_main(argv=None):
         sys.stdout.write(pprint.pformat(expression.parsed))
         sys.stdout.write("\n")
         return 0
+
     if args.filename:
-        with open(args.filename, "rt") as f:
-            data = json.load(f)
+        f = open(args.filename, "rt")
     else:
-        data = sys.stdin.read()
-        data = json.loads(data)
+        f = sys.stdin
 
-    result = jmespath.search(expression, data)
-    if args.quoted or not isinstance(result, str):
-        result = json.dumps(result, **dump_kwargs)
+    with f:
+        for data in decode_json_stream(f):
+            result = jmespath.search(expression, data)
+            if args.quoted or not isinstance(result, str):
+                result = json.dumps(result, **dump_kwargs)
 
-    sys.stdout.write(result)
-    sys.stdout.write("\n")
+            sys.stdout.write(result)
+            sys.stdout.write("\n")
     return 0
 
 
