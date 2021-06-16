@@ -29,6 +29,9 @@ class JPPTest(unittest.TestCase):
             (("-c", "-s",), """"a"\n"x"\n""", "@", '["a","x"]\n', 0),
             ((), """{"hello": "world"}""", "@.hello", '"world"\n', 0),
             (("-u",), """{"hello": "world"}""", "@.hello", "world\n", 0),
+            (("-R", "-a", "-c",), "hello world", "@", '"hello world"\n', 0),
+            (("-R", "-c",), "line 1\nline 2\nline 3\n", "@", '"line 1\\n"\n"line 2\\n"\n"line 3\\n"\n', 0),
+            (("-R", "-s", "-c",), "line 1\nline 2\nline 3\n", "@", '"line 1\\nline 2\\nline 3\\n"\n', 0),
         ):
             self._test_inputs(
                 input_args, input_json, input_expr, expected_output, expected_retval
