@@ -30,6 +30,8 @@ class JPPTest(unittest.TestCase):
             ((), """{"hello": "world"}""", "@.hello", '"world"\n', 0),
             (("-u",), """{"hello": "world"}""", "@.hello", "world\n", 0),
             (("-R", "-a", "-c",), "hello world", "@", '"hello world"\n', 0),
+            (("-R", "-r",), "hello world\n", "@", 'hello world\n', 0),
+            (("-R", "-u",), "hello world\n", "@", 'hello world\n', 0),
             (("-R", "-c",), "line 1\nline 2\nline 3\n", "@", '"line 1\\n"\n"line 2\\n"\n"line 3\\n"\n', 0),
             (("-R", "-s", "-c",), "line 1\nline 2\nline 3\n", "@", '"line 1\\nline 2\\nline 3\\n"\n', 0),
         ):

@@ -107,6 +107,16 @@ def jpp_main(argv=None):
         ),
     )
     parser.add_argument(
+        "-r",
+        "--raw",
+        action="store_false",
+        dest="quoted",
+        default=True,
+        help=(
+            "If the final result is a string, it will be printed without quotes (an alias for unquoted)."
+        ),
+    )
+    parser.add_argument(
         "-R",
         "--read-raw",
         action="store_true",
@@ -224,7 +234,12 @@ def jpp_main(argv=None):
                 result = json.dumps(result, **dump_kwargs)
 
             sys.stdout.write(result)
-            sys.stdout.write("\n")
+
+            if args.quoted or (
+                not args.quoted and isinstance(result, str) and result[-1:] != "\n"
+            ):
+                sys.stdout.write("\n")
+
             if eof or args.accumulate or args.slurp:
                 break
     return 0
