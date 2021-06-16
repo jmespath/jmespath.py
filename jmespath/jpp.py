@@ -5,7 +5,7 @@ import pprint
 import sys
 import itertools
 
-import jmespath
+import jmespath.exceptions
 
 # This 2 space indent matches https://github.com/jmespath/jp behavior.
 JP_COMPAT_DUMP_KWARGS = (
@@ -144,6 +144,10 @@ def jpp_main(argv=None):
     if args.expr_file:
         with open(args.expr_file, "rt") as f:
             expression = f.read()
+        if not expression:
+            raise jmespath.exceptions.EmptyExpressionError()
+    elif not expression:
+        expression = "@"
 
     if args.ast:
         # Only print the AST
