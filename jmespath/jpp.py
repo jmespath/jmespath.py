@@ -98,6 +98,16 @@ def jpp_main(argv=None):
         ),
     )
     parser.add_argument(
+        "-R",
+        "--read-raw",
+        action="store_true",
+        dest="read_raw",
+        default=False,
+        help=(
+            "Read raw string input and box it as JSON strings."
+        ),
+    )
+    parser.add_argument(
         "-s",
         "--slurp",
         action="store_true",
@@ -162,23 +172,30 @@ def jpp_main(argv=None):
         f = sys.stdin
 
     accumulator = None
+    stream_iter = None
     eof = False
 
     with f:
-        stream_iter = decode_json_stream(f)
+        if not args.read_raw:
+            stream_iter = decode_json_stream(f)
         while True:
             while True:
                 if args.slurp:
-                    data = list(stream_iter)
-                    if not data:
-                        eof = True
-                        break
+                    if stream_iter is None:
+                        data = f.read()
+                    else:
+                        data = list(stream_iter)
+                elif stream_iter is None:
+                    data = f.readline()
                 else:
                     try:
                         data = next(stream_iter)
                     except StopIteration:
-                        eof = True
-                        break
+                        data = None
+
+                if not data:
+                    eof = True
+                    break
 
                 result = jmespath.search(expression, data)
 
@@ -187,6 +204,8 @@ def jpp_main(argv=None):
                         accumulator = result
                     else:
                         accumulator = merge(accumulator, result)
+                    if args.slurp:
+                        break
                 else:
                     break
 
