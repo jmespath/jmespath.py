@@ -5,7 +5,7 @@ import pprint
 import sys
 import itertools
 
-import jmespath
+import jmespath.exceptions
 
 from .. import __version__
 from .. import __project__
@@ -150,6 +150,10 @@ def jpp_main(argv=None):
     if args.expr_file:
         with open(args.expr_file, "rt") as f:
             expression = f.read()
+        if not expression:
+            raise jmespath.exceptions.EmptyExpressionError()
+    elif not expression:
+        expression = "@"
 
     if args.ast:
         # Only print the AST
