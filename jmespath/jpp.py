@@ -103,7 +103,9 @@ def jpp_main(argv=None):
         action="store_false",
         dest="quoted",
         default=True,
-        help=("If the final result is a string, it will be printed without quotes."),
+        help=(
+            "If the final result is a string, it will be printed without quotes (an alias for --unquoted)."
+        ),
     )
     parser.add_argument(
         "-R",
@@ -132,6 +134,13 @@ def jpp_main(argv=None):
         help=(
             "If the final result is a list, unbox it into a stream of output objects that is suitable for consumption by --slurp mode."
         ),
+    )
+    parser.add_argument(
+        "--unquoted",
+        action="store_false",
+        dest="quoted",
+        default=True,
+        help=("If the final result is a string, it will be printed without quotes."),
     )
     parser.add_argument(
         "--ast",
