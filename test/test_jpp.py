@@ -90,6 +90,7 @@ class JPPTest(unittest.TestCase):
             ),
             ((), """{"hello": "world"}""", "@.hello", '"world"\n', 0),
             (("-r",), """{"hello": "world"}""", "@.hello", "world\n", 0),
+            (("--unquoted",), """{"hello": "world"}""", "@.hello", "world\n", 0),
             (
                 (
                     "-R",
