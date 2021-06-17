@@ -41,9 +41,7 @@ def jpipe_main(argv=None):
         "--expr-file",
         dest="expr_file",
         default=None,
-        help=(
-            "Read JMESPath expression from the specified file."
-        ),
+        help=("Read JMESPath expression from the specified file."),
     )
     parser.add_argument(
         "-f",
@@ -62,16 +60,18 @@ def jpipe_main(argv=None):
         action="store_false",
         dest="quoted",
         default=True,
-        help=(
-            "If the final result is a string, it will be printed without quotes."
-        ),
+        help=("If the final result is a string, it will be printed without quotes."),
     )
     parser.add_argument(
         "--ast",
         action="store_true",
-        help=("Only print the AST of the parsed expression.  Do not rely on this output, only useful for debugging purposes."),
+        help=(
+            "Only print the AST of the parsed expression.  Do not rely on this output, only useful for debugging purposes."
+        ),
     )
-    parser.usage = "{}\n  {} - {}".format(parser.format_usage().partition("usage: ")[-1], __project__, __description__)
+    parser.usage = "{}\n  {} - {}".format(
+        parser.format_usage().partition("usage: ")[-1], __project__, __description__
+    )
 
     args = parser.parse_args(argv[1:])
     expression = args.expression

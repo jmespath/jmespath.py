@@ -45,7 +45,7 @@ def decode_json_stream(stream):
             except json.JSONDecodeError as e:
                 if e.pos > 0:
                     try:
-                        yield json.loads(chunk[:e.pos])
+                        yield json.loads(chunk[: e.pos])
                         progress = True
                     except json.JSONDecodeError:
                         # Raise if there's no progress, since a given
@@ -55,7 +55,7 @@ def decode_json_stream(stream):
                             raise
                         line_buffer.append(chunk)
                     else:
-                        line_buffer.append(chunk[e.pos:])
+                        line_buffer.append(chunk[e.pos :])
                 else:
                     raise
 
@@ -82,18 +82,14 @@ def jpp_main(argv=None):
         action="store_true",
         dest="compact",
         default=False,
-        help=(
-            "Produce compact JSON output that omits nonessential whitespace."
-        ),
+        help=("Produce compact JSON output that omits nonessential whitespace."),
     )
     parser.add_argument(
         "-e",
         "--expr-file",
         dest="expr_file",
         default=None,
-        help=(
-            "Read JMESPath expression from the specified file."
-        ),
+        help=("Read JMESPath expression from the specified file."),
     )
     parser.add_argument(
         "-f",
@@ -112,9 +108,7 @@ def jpp_main(argv=None):
         action="store_false",
         dest="quoted",
         default=True,
-        help=(
-            "If the final result is a string, it will be printed without quotes."
-        ),
+        help=("If the final result is a string, it will be printed without quotes."),
     )
     parser.add_argument(
         "-R",
@@ -122,9 +116,7 @@ def jpp_main(argv=None):
         action="store_true",
         dest="raw_input",
         default=False,
-        help=(
-            "Read raw string input and box it as JSON strings."
-        ),
+        help=("Read raw string input and box it as JSON strings."),
     )
     parser.add_argument(
         "-s",
@@ -149,9 +141,13 @@ def jpp_main(argv=None):
     parser.add_argument(
         "--ast",
         action="store_true",
-        help=("Only print the AST of the parsed expression.  Do not rely on this output, only useful for debugging purposes."),
+        help=(
+            "Only print the AST of the parsed expression.  Do not rely on this output, only useful for debugging purposes."
+        ),
     )
-    parser.usage = "{}\n  {} - {}".format(parser.format_usage().partition("usage: ")[-1], __project__, __description__)
+    parser.usage = "{}\n  {} - {}".format(
+        parser.format_usage().partition("usage: ")[-1], __project__, __description__
+    )
 
     args = parser.parse_args(argv[1:])
     expression = args.expression
@@ -165,7 +161,7 @@ def jpp_main(argv=None):
     dump_kwargs = dict(JP_COMPAT_DUMP_KWARGS)
     if args.compact:
         dump_kwargs.pop("indent", None)
-        dump_kwargs["separators"] = (',', ':')
+        dump_kwargs["separators"] = (",", ":")
 
     if args.expr_file:
         with open(args.expr_file, "rt") as f:
@@ -242,15 +238,15 @@ def jpp_main(argv=None):
 
 
 def output_result(args, dump_kwargs, result):
-	if args.quoted or not isinstance(result, str):
-		result = json.dumps(result, **dump_kwargs)
+    if args.quoted or not isinstance(result, str):
+        result = json.dumps(result, **dump_kwargs)
 
-	sys.stdout.write(result)
+    sys.stdout.write(result)
 
-	if args.quoted or (
-		not args.quoted and isinstance(result, str) and result[-1:] != "\n"
-	):
-		sys.stdout.write("\n")
+    if args.quoted or (
+        not args.quoted and isinstance(result, str) and result[-1:] != "\n"
+    ):
+        sys.stdout.write("\n")
 
 
 def merge(base, head):

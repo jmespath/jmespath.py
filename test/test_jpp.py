@@ -20,20 +20,118 @@ class JPPTest(unittest.TestCase):
         for input_args, input_json, input_expr, expected_output, expected_retval in (
             ((), """{"hello": "world"}""", "@", '{\n  "hello": "world"\n}\n', 0),
             (("-c",), """{"hello": "world"}""", "@", '{"hello":"world"}\n', 0),
-            (("-c",), """{\n  "foo": "bar"\n}{   \n"foo": "x"\n}""", "@", '{"foo":"bar"}\n{"foo":"x"}\n', 0),
-            (("-a", "-c",), """{"foo": ["a"]}{"foo": ["a", "x"]}""", "@", '{"foo":["a","x"]}\n', 0),
-            (("-a", "-c",), """{"foo": ["a"]}{"foo": ["a"]}""", "@", '{"foo":["a"]}\n', 0),
-            (("-a", "-c",), """{"foo": ["a", "a"]}{"foo": ["a"]}""", "@", '{"foo":["a","a"]}\n', 0),
-            (("-a", "-c",), """{"foo": ["a", "a"]}{"foo": ["a", "b"]}""", "@", '{"foo":["a","a","b"]}\n', 0),
-            (("-a", "-c",), """["a"]["x"]""", "@", '["a","x"]\n', 0),
+            (
+                ("-c",),
+                """{\n  "foo": "bar"\n}{   \n"foo": "x"\n}""",
+                "@",
+                '{"foo":"bar"}\n{"foo":"x"}\n',
+                0,
+            ),
+            (
+                (
+                    "-a",
+                    "-c",
+                ),
+                """{"foo": ["a"]}{"foo": ["a", "x"]}""",
+                "@",
+                '{"foo":["a","x"]}\n',
+                0,
+            ),
+            (
+                (
+                    "-a",
+                    "-c",
+                ),
+                """{"foo": ["a"]}{"foo": ["a"]}""",
+                "@",
+                '{"foo":["a"]}\n',
+                0,
+            ),
+            (
+                (
+                    "-a",
+                    "-c",
+                ),
+                """{"foo": ["a", "a"]}{"foo": ["a"]}""",
+                "@",
+                '{"foo":["a","a"]}\n',
+                0,
+            ),
+            (
+                (
+                    "-a",
+                    "-c",
+                ),
+                """{"foo": ["a", "a"]}{"foo": ["a", "b"]}""",
+                "@",
+                '{"foo":["a","a","b"]}\n',
+                0,
+            ),
+            (
+                (
+                    "-a",
+                    "-c",
+                ),
+                """["a"]["x"]""",
+                "@",
+                '["a","x"]\n',
+                0,
+            ),
             (("-a", "-c", "-u"), """["a"]["x"]""", "@", '"a"\n"x"\n', 0),
-            (("-c", "-s",), """"a"\n"x"\n""", "@", '["a","x"]\n', 0),
+            (
+                (
+                    "-c",
+                    "-s",
+                ),
+                """"a"\n"x"\n""",
+                "@",
+                '["a","x"]\n',
+                0,
+            ),
             ((), """{"hello": "world"}""", "@.hello", '"world"\n', 0),
             (("-r",), """{"hello": "world"}""", "@.hello", "world\n", 0),
-            (("-R", "-a", "-c",), "hello world", "@", '"hello world"\n', 0),
-            (("-R", "-r",), "hello world\n", "@", 'hello world\n', 0),
-            (("-R", "-c",), "line 1\nline 2\nline 3\n", "@", '"line 1\\n"\n"line 2\\n"\n"line 3\\n"\n', 0),
-            (("-R", "-s", "-c",), "line 1\nline 2\nline 3\n", "@", '"line 1\\nline 2\\nline 3\\n"\n', 0),
+            (
+                (
+                    "-R",
+                    "-a",
+                    "-c",
+                ),
+                "hello world",
+                "@",
+                '"hello world"\n',
+                0,
+            ),
+            (
+                (
+                    "-R",
+                    "-r",
+                ),
+                "hello world\n",
+                "@",
+                "hello world\n",
+                0,
+            ),
+            (
+                (
+                    "-R",
+                    "-c",
+                ),
+                "line 1\nline 2\nline 3\n",
+                "@",
+                '"line 1\\n"\n"line 2\\n"\n"line 3\\n"\n',
+                0,
+            ),
+            (
+                (
+                    "-R",
+                    "-s",
+                    "-c",
+                ),
+                "line 1\nline 2\nline 3\n",
+                "@",
+                '"line 1\\nline 2\\nline 3\\n"\n',
+                0,
+            ),
         ):
             self._test_inputs(
                 input_args, input_json, input_expr, expected_output, expected_retval
