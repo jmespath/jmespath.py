@@ -8,7 +8,7 @@ from setuptools import (
     setup,
 )
 
-__version__ = "0.1.3.3"
+__version__ = "0.1.3.4"
 
 sys.path.insert(0, "lib")
 from jpipe import (
