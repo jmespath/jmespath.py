@@ -103,9 +103,7 @@ def jpp_main(argv=None):
         action="store_false",
         dest="quoted",
         default=True,
-        help=(
-            "If the final result is a string, it will be printed without quotes."
-        ),
+        help=("If the final result is a string, it will be printed without quotes."),
     )
     parser.add_argument(
         "-R",
@@ -113,9 +111,7 @@ def jpp_main(argv=None):
         action="store_true",
         dest="raw_input",
         default=False,
-        help=(
-            "Read raw string input and box it as JSON strings."
-        ),
+        help=("Read raw string input and box it as JSON strings."),
     )
     parser.add_argument(
         "-s",
@@ -238,15 +234,15 @@ def jpp_main(argv=None):
 
 
 def output_result(args, dump_kwargs, result):
-	if args.quoted or not isinstance(result, str):
-		result = json.dumps(result, **dump_kwargs)
+    if args.quoted or not isinstance(result, str):
+        result = json.dumps(result, **dump_kwargs)
 
-	sys.stdout.write(result)
+    sys.stdout.write(result)
 
-	if args.quoted or (
-		not args.quoted and isinstance(result, str) and result[-1:] != "\n"
-	):
-		sys.stdout.write("\n")
+    if args.quoted or (
+        not args.quoted and isinstance(result, str) and result[-1:] != "\n"
+    ):
+        sys.stdout.write("\n")
 
 
 def merge(base, head):
