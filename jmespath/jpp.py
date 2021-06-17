@@ -109,9 +109,9 @@ def jpp_main(argv=None):
     )
     parser.add_argument(
         "-R",
-        "--read-raw",
+        "--raw-input",
         action="store_true",
-        dest="read_raw",
+        dest="raw_input",
         default=False,
         help=(
             "Read raw string input and box it as JSON strings."
@@ -186,7 +186,7 @@ def jpp_main(argv=None):
     eof = False
 
     with f:
-        if not args.read_raw:
+        if not args.raw_input:
             stream_iter = decode_json_stream(f)
         while True:
             while True:
