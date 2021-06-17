@@ -104,7 +104,7 @@ def jpp_main(argv=None):
         dest="quoted",
         default=True,
         help=(
-            "If the final result is a string, it will be printed without quotes (an alias for unquoted)."
+            "If the final result is a string, it will be printed without quotes."
         ),
     )
     parser.add_argument(
@@ -129,11 +129,13 @@ def jpp_main(argv=None):
     )
     parser.add_argument(
         "-u",
-        "--unquoted",
-        action="store_false",
-        dest="quoted",
-        default=True,
-        help=("If the final result is a string, it will be printed without quotes."),
+        "--unbox",
+        action="store_true",
+        dest="unbox",
+        default=False,
+        help=(
+            "If the final result is a list, unbox it into a stream of output objects that is suitable for consumption by --slurp mode."
+        ),
     )
     parser.add_argument(
         "--ast",
@@ -224,19 +226,27 @@ def jpp_main(argv=None):
             elif eof:
                 break
 
-            if args.quoted or not isinstance(result, str):
-                result = json.dumps(result, **dump_kwargs)
-
-            sys.stdout.write(result)
-
-            if args.quoted or (
-                not args.quoted and isinstance(result, str) and result[-1:] != "\n"
-            ):
-                sys.stdout.write("\n")
+            if args.unbox and isinstance(result, list):
+                for element in result:
+                    output_result(args, dump_kwargs, element)
+            else:
+                output_result(args, dump_kwargs, result)
 
             if eof or args.accumulate or args.slurp:
                 break
     return 0
+
+
+def output_result(args, dump_kwargs, result):
+	if args.quoted or not isinstance(result, str):
+		result = json.dumps(result, **dump_kwargs)
+
+	sys.stdout.write(result)
+
+	if args.quoted or (
+		not args.quoted and isinstance(result, str) and result[-1:] != "\n"
+	):
+		sys.stdout.write("\n")
 
 
 def merge(base, head):
