@@ -99,7 +99,7 @@ def jpp_main(argv=None):
     )
     parser.add_argument(
         "-r",
-        "--raw",
+        "--raw-output",
         action="store_false",
         dest="quoted",
         default=True,
