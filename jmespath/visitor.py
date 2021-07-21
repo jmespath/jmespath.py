@@ -6,34 +6,10 @@ from numbers import Number
 
 
 def _equals(x, y):
-    if _is_special_integer_case(x, y):
+    if type(x) != type(y):
         return False
     else:
         return x == y
-
-
-def _is_special_integer_case(x, y):
-    # We need to special case comparing 0 or 1 to
-    # True/False.  While normally comparing any
-    # integer other than 0/1 to True/False will always
-    # return False.  However 0/1 have this:
-    # >>> 0 == True
-    # False
-    # >>> 0 == False
-    # True
-    # >>> 1 == True
-    # True
-    # >>> 1 == False
-    # False
-    #
-    # Also need to consider that:
-    # >>> 0 in [True, False]
-    # True
-    if type(x) is int and (x == 0 or x == 1):
-        return y is True or y is False
-    elif type(y) is int and (y == 0 or y == 1):
-        return x is True or x is False
-
 
 def _is_comparable(x):
     # The spec doesn't officially support string types yet,
