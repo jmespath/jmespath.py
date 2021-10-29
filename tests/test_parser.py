@@ -40,7 +40,14 @@ class TestParser(unittest.TestCase):
         parsed = self.parser.parse('foo[1]')
         self.assertEqual(
             parsed.search({'foo': ['zero', 'one', 'two']}),
-            'one')
+            'one',
+            "Fail: Index on lists"
+        )
+        self.assertEqual(
+            parsed.search({'foo': ('zero', 'one', 'two')}),
+            'one',
+            "Fail: Index on tuples"
+        )
 
     def test_quoted_subexpression(self):
         self.assert_parsed_ast('"foo"."bar"',
@@ -52,13 +59,27 @@ class TestParser(unittest.TestCase):
         parsed = self.parser.parse('foo[*]')
         self.assertEqual(
             parsed.search({'foo': ['zero', 'one', 'two']}),
-            ['zero', 'one', 'two'])
+            ['zero', 'one', 'two'],
+            "Fail: Wildcard on lists"
+        )
+        self.assertEqual(
+            parsed.search({'foo': ('zero', 'one', 'two')}),
+            ('zero', 'one', 'two'),
+            "Fail: Wildcard on tuples"
+        )
 
     def test_wildcard_with_children(self):
         parsed = self.parser.parse('foo[*].bar')
         self.assertEqual(
             parsed.search({'foo': [{'bar': 'one'}, {'bar': 'two'}]}),
-            ['one', 'two'])
+            ['one', 'two'],
+            "Fail: Wildcard with children on lists"
+        )
+        self.assertEqual(
+            parsed.search({'foo': ({'bar': 'one'}, {'bar': 'two'})}),
+            ('one', 'two'),
+            "Fail: Wildcard with children on tuples"
+        )
 
     def test_or_expression(self):
         parsed = self.parser.parse('foo || bar')
@@ -176,36 +197,77 @@ class TestErrorMessages(unittest.TestCase):
 class TestParserWildcards(unittest.TestCase):
     def setUp(self):
         self.parser = parser.Parser()
-        self.data = {
+        self.data_with_lists = {
             'foo': [
                 {'bar': [{'baz': 'one'}, {'baz': 'two'}]},
                 {'bar': [{'baz': 'three'}, {'baz': 'four'}, {'baz': 'five'}]},
             ]
         }
+        self.data_with_tuples = {
+            'foo': (
+                {'bar': ({'baz': 'one'}, {'baz': 'two'})},
+                {'bar': ({'baz': 'three'}, {'baz': 'four'}, {'baz': 'five'})},
+            )
+        }
+        self.data_with_lists_and_tuples = {
+            'foo': (
+                {'bar': [{'baz': 'one'}, {'baz': 'two'}]},
+                {'bar': ({'baz': 'three'}, {'baz': 'four'}, {'baz': 'five'})},
+            )
+        }
 
     def test_multiple_index_wildcards(self):
         parsed = self.parser.parse('foo[*].bar[*].baz')
-        self.assertEqual(parsed.search(self.data),
-                         [['one', 'two'], ['three', 'four', 'five']])
+        self.assertEqual(parsed.search(self.data_with_lists),
+                         [['one', 'two'], ['three', 'four', 'five']],
+                         "Fail: Multiple index wildcards on lists")
+        self.assertEqual(parsed.search(self.data_with_tuples),
+                         (('one', 'two'), ('three', 'four', 'five')),
+                         "Fail: Multiple index wildcards on tuples")
+        self.assertEqual(parsed.search(self.data_with_lists_and_tuples),
+                         (['one', 'two'], ('three', 'four', 'five')),
+                         "Fail: Multiple index wildcards on lists and tuples")
 
     def test_wildcard_mix_with_indices(self):
         parsed = self.parser.parse('foo[*].bar[0].baz')
-        self.assertEqual(parsed.search(self.data),
-                         ['one', 'three'])
+        self.assertEqual(parsed.search(self.data_with_lists),
+                         ['one', 'three'],
+                         "Fail: Wildcard mix with indices on lists")
+        self.assertEqual(parsed.search(self.data_with_tuples),
+                         ('one', 'three'),
+                         "Fail: Wildcard mix with indices on tuples")
+        self.assertEqual(parsed.search(self.data_with_lists_and_tuples),
+                         ('one', 'three'),
+                         "Fail: Wildcard mix with indices on lists and tuples")
 
     def test_wildcard_mix_last(self):
         parsed = self.parser.parse('foo[0].bar[*].baz')
-        self.assertEqual(parsed.search(self.data),
-                         ['one', 'two'])
+        self.assertEqual(parsed.search(self.data_with_lists),
+                         ['one', 'two'],
+                         "Fail: Wildcard mix last on lists")
+        self.assertEqual(parsed.search(self.data_with_tuples),
+                         ('one', 'two'),
+                         "Fail: Wildcard mix last on tuples")
+        self.assertEqual(parsed.search(self.data_with_lists_and_tuples),
+                         ['one', 'two'],
+                         "Fail: Wildcard mix last on lists and tuples")
 
     def test_indices_out_of_bounds(self):
         parsed = self.parser.parse('foo[*].bar[2].baz')
-        self.assertEqual(parsed.search(self.data),
-                         ['five'])
+        self.assertEqual(parsed.search(self.data_with_lists),
+                         ['five'],
+                         "Fail: Indices out of bounds on lists")
+        self.assertEqual(parsed.search(self.data_with_tuples),
+                         ('five',),
+                         "Fail: Indices out of bounds on tuples")
+        self.assertEqual(parsed.search(self.data_with_lists_and_tuples),
+                         ('five',),
+                         "Fail: Indices out of bounds on lists and tuples")
 
     def test_root_indices(self):
         parsed = self.parser.parse('[0]')
-        self.assertEqual(parsed.search(['one', 'two']), 'one')
+        self.assertEqual(parsed.search(['one', 'two']), 'one', "Fail: Root indices on lists")
+        self.assertEqual(parsed.search(('one', 'two')), 'one', "Fail: Root indices on tuples")
 
     def test_root_wildcard(self):
         parsed = self.parser.parse('*.foo')
@@ -270,28 +332,54 @@ class TestParserWildcards(unittest.TestCase):
 class TestMergedLists(unittest.TestCase):
     def setUp(self):
         self.parser = parser.Parser()
-        self.data = {
+        self.data_with_lists = {
             "foo": [
                 [["one", "two"], ["three", "four"]],
                 [["five", "six"], ["seven", "eight"]],
                 [["nine"], ["ten"]]
             ]
         }
+        self.data_with_tuples = {
+            "foo": (
+                (("one", "two"), ("three", "four")),
+                (("five", "six"), ("seven", "eight")),
+                (("nine",), ("ten",))
+            )
+        }
+        self.data_with_lists_and_tuples = {
+            "foo": [
+                (("one", "two"), ("three", "four")),
+                (("five", "six"), ["seven", "eight"]),
+                [("nine",), ("ten",)]
+            ]
+        }
 
     def test_merge_with_indices(self):
         parsed = self.parser.parse('foo[][0]')
-        match = parsed.search(self.data)
-        self.assertEqual(match, ["one", "three", "five", "seven",
-                                 "nine", "ten"])
+        self.assertEqual(parsed.search(self.data_with_lists),
+                         ["one", "three", "five", "seven", "nine", "ten"],
+                         "Fail: Merge with indices on lists")
+        self.assertEqual(parsed.search(self.data_with_tuples),
+                         ("one", "three", "five", "seven", "nine", "ten"),
+                         "Fail: Merge with indices on tuples")
+        self.assertEqual(parsed.search(self.data_with_lists_and_tuples),
+                         ["one", "three", "five", "seven", "nine", "ten"],
+                         "Fail: Merge with indices on lists and tuples")
 
     def test_trailing_merged_operator(self):
         parsed = self.parser.parse('foo[]')
-        match = parsed.search(self.data)
-        self.assertEqual(
-            match,
-            [["one", "two"], ["three", "four"],
-             ["five", "six"], ["seven", "eight"],
-             ["nine"], ["ten"]])
+        self.assertEqual(parsed.search(self.data_with_lists),
+                         [["one", "two"], ["three", "four"], ["five", "six"],
+                          ["seven", "eight"], ["nine"], ["ten"]],
+                         "Fail: Trailing merged operator on lists")
+        self.assertEqual(parsed.search(self.data_with_tuples),
+                         (("one", "two"), ("three", "four"), ("five", "six"),
+                          ("seven", "eight"), ("nine",), ("ten",)),
+                         "Fail: Trailing merged operator on lists")
+        self.assertEqual(parsed.search(self.data_with_lists_and_tuples),
+                         [("one", "two"), ("three", "four"), ("five", "six"),
+                         ["seven", "eight"], ("nine",), ("ten",)],
+                         "Fail: Trailing merged operator on lists and tuples")
 
 
 class TestParserCaching(unittest.TestCase):
