@@ -1,11 +1,6 @@
-nose==1.2.1
-py==1.10.0
-tox==1.4.2
+pytest==6.2.5
 wheel==0.24.0
-coverage==5.3 ; python_version == '3.9'
-coverage==5.0.3 ; python_version == '3.8'
-coverage==3.7.1 ; python_version < '3.8'
+pytest-cov==3.0.0
 hypothesis==3.1.0 ; python_version < '3.8'
 hypothesis==5.5.4 ; python_version == '3.8'
 hypothesis==5.35.4 ; python_version == '3.9'
-typing<3.7.4 ; python_version == '3.3'
