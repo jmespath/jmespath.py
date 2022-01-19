@@ -25,4 +25,4 @@ jobs:
         pip install dist/*.whl
     - name: Test with pytest
       run: |
-        cd tests/ && nosetests --with-coverage --cover-package jmespath .
+        cd tests/ && py.test --cov jmespath --cov-report term-missing
