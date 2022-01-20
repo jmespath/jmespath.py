@@ -12,6 +12,7 @@
     "empty_list": [],
     "empty_hash": {},
     "objects": {"foo": "bar", "bar": "baz"},
+    "items": [["a", "first"], ["b", "second"], ["c", "third"]],
     "null_key": null
   },
   "cases": [
@@ -176,6 +177,22 @@
       "error": "invalid-type"
     },
     {
+      "expression": "sort_by(items(objects), &[0])",
+      "result": [["bar", "baz"], ["foo", "bar"]]
+    },
+    {
+      "expression": "items(empty_hash)",
+      "result": []
+    },
+    {
+      "expression": "items(numbers)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "from_items(items)",
+      "result": {"a": "first", "b": "second", "c": "third"}
+    },
+    {
       "expression": "length('abc')",
       "result": 3
     },
@@ -189,7 +206,7 @@
     },
     {
       "expression": "length(@)",
-      "result": 12
+      "result": 13
     },
     {
       "expression": "length(strings[0])",
@@ -578,6 +595,18 @@
     {
       "expression": "not_null()",
       "error": "invalid-arity"
+    },
+    {
+      "expression": "zip(strings, numbers)",
+      "result": [["a", -1], ["b", 3], ["c", 4]]
+    },
+    {
+      "expression": "zip(strings, numbers, decimals)",
+      "result": [["a", -1, 1.01], ["b", 3, 1.2], ["c", 4, -1.5]]
+    },
+    {
+      "expression": "zip(str)",
+      "error": "invalid-type"
     },
     {
       "description": "function projection on single arg function",
