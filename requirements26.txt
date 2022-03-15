@@ -1,4 +1,0 @@
-# For the python2.6 tests, we need ordered dict.
-ordereddict==1.1
-unittest2==0.5.1
-simplejson==3.6.5
