@@ -152,7 +152,7 @@ class TestRegexLexer(unittest.TestCase):
             tokens = list(self.lexer.tokenize('^foo[0]'))
 
     def test_unknown_character_with_identifier(self):
-        with self.assertRaisesRegexp(LexerError, "Unknown token"):
+        with self.assertRaisesRegex(LexerError, "Unknown token"):
             list(self.lexer.tokenize('foo-bar'))
 
 

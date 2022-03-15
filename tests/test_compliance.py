@@ -3,7 +3,7 @@ from pprint import pformat
 from tests import OrderedDict
 from tests import json
 
-from nose.tools import assert_equal
+import pytest
 
 from jmespath.visitor import Options
 
@@ -15,7 +15,7 @@ NOT_SPECIFIED = object()
 OPTIONS = Options(dict_cls=OrderedDict)
 
 
-def test_compliance():
+def _compliance_tests(requested_test_type):
     for full_path in _walk_files():
         if full_path.endswith('.json'):
             for given, test_type, test_data in load_cases(full_path):
@@ -23,11 +23,11 @@ def test_compliance():
                 # Benchmark tests aren't run as part of the normal
                 # test suite, so we only care about 'result' and
                 # 'error' test_types.
-                if test_type == 'result':
-                    yield (_test_expression, given, t['expression'],
+                if test_type == 'result' and test_type == requested_test_type:
+                    yield (given, t['expression'],
                            t['result'], os.path.basename(full_path))
-                elif test_type == 'error':
-                    yield (_test_error_expression, given, t['expression'],
+                elif test_type == 'error' and test_type == requested_test_type:
+                    yield (given, t['expression'],
                            t['error'], os.path.basename(full_path))
 
 
@@ -63,7 +63,11 @@ def load_cases(full_path):
             yield (given, test_type, case)
 
 
-def _test_expression(given, expression, expected, filename):
+@pytest.mark.parametrize(
+    'given, expression, expected, filename',
+    _compliance_tests('result')
+)
+def test_expression(given, expression, expected, filename):
     import jmespath.parser
     try:
         parsed = jmespath.compile(expression)
@@ -80,10 +84,14 @@ def _test_expression(given, expression, expected, filename):
                      actual_repr, pformat(parsed.parsed),
                      json.dumps(given, indent=4)))
     error_msg = error_msg.replace(r'\n', '\n')
-    assert_equal(actual, expected, error_msg)
+    assert actual == expected, error_msg
 
 
-def _test_error_expression(given, expression, error, filename):
+@pytest.mark.parametrize(
+    'given, expression, error, filename',
+    _compliance_tests('error')
+)
+def test_error_expression(given, expression, error, filename):
     import jmespath.parser
     if error not in ('syntax', 'invalid-type',
                      'unknown-function', 'invalid-arity', 'invalid-value'):

@@ -3,7 +3,7 @@ import json
 
 from jmespath import exceptions
 from jmespath.compat import string_type as STRING_TYPE
-from jmespath.compat import get_methods, with_metaclass
+from jmespath.compat import get_methods
 
 
 # python types -> jmespath types
@@ -64,7 +64,7 @@ class FunctionRegistry(type):
         cls.FUNCTION_TABLE = function_table
 
 
-class Functions(with_metaclass(FunctionRegistry, object)):
+class Functions(metaclass=FunctionRegistry):
 
     FUNCTION_TABLE = {
     }

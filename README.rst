@@ -6,14 +6,6 @@ JMESPath
    :target: https://gitter.im/jmespath/chat
 
 
-.. image:: https://travis-ci.org/jmespath/jmespath.py.svg?branch=develop
-    :target: https://travis-ci.org/jmespath/jmespath.py
-
-
-.. image:: https://codecov.io/github/jmespath/jmespath.py/coverage.svg?branch=develop
-    :target: https://codecov.io/github/jmespath/jmespath.py?branch=develop
-
-
 JMESPath (pronounced "james path") allows you to declaratively specify how to
 extract elements from a JSON document.
 
