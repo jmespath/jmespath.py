@@ -1,7 +1,7 @@
 from jmespath import parser
 from jmespath.visitor import Options
 
-__version__ = '0.10.0'
+__version__ = '1.0.0'
 
 
 def compile(expression):
