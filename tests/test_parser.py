@@ -169,7 +169,7 @@ class TestErrorMessages(unittest.TestCase):
         error_message = re.compile(
             r'Bad jmespath expression: '
             r'Invalid \\uXXXX escape.*\\uAZ12', re.DOTALL)
-        with self.assertRaisesRegexp(exceptions.LexerError, error_message):
+        with self.assertRaisesRegex(exceptions.LexerError, error_message):
             self.parser.parse(r'"\uAZ12"')
 
 
