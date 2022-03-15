@@ -6,7 +6,6 @@ import os
 import sys
 import numbers
 
-from nose.plugins.skip import SkipTest
 from hypothesis import given, settings, assume, HealthCheck
 import hypothesis.strategies as st
 
