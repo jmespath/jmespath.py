@@ -23,7 +23,9 @@ Motivation
 
 A useful feature that is common in other expression languages is the
 ability to sort a JSON object based on a particular key.  For example,
-given a JSON object::
+given a JSON object:
+
+.. code:: json
 
   {
     "people": [
@@ -46,7 +48,9 @@ would be evaluated against.  In the simplest case, this expression would just
 be an ``identifier``, but more complex expressions could be used such as
 ``foo.bar.baz``.
 
-A simple way to accomplish this might be to create a function like this::
+A simple way to accomplish this might be to create a function like this:
+
+.. code:: python
 
     sort_by(array arg1, expression)
 
@@ -56,7 +60,9 @@ A simple way to accomplish this might be to create a function like this::
     sort_by(people, to_number(age_str))
 
 However, there's a problem with the ``sort_by`` function as defined above.
-If we follow the function argument resolution process we get::
+If we follow the function argument resolution process we get:
+
+.. code:: python
 
     sort_by(people, age)
 
@@ -107,7 +113,9 @@ expression.  Similarly how arrays can specify a type within a list using the
 ``expression->type`` syntax.
 
 Note that any valid expression is allowed after ``&``, so the following
-expressions are valid::
+expressions are valid:
+
+.. code:: python
 
     sort_by(people, &foo.bar.baz)
     sort_by(people, &foo.bar[0].baz)
