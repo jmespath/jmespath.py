@@ -1,3 +1,10 @@
+1.0.0
+=====
+
+* Drop support for Python versions less than 3.7 (including Python 2).
+  (`issue 268 <https://github.com/jmespath/jmespath.py/issues/268>`__)
+
+
 0.10.0
 ======
 
