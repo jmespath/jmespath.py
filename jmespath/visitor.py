@@ -29,10 +29,22 @@ def _is_special_integer_case(x, y):
     # Also need to consider that:
     # >>> 0 in [True, False]
     # True
-    if type(x) is int and (x == 0 or x == 1):
-        return y is True or y is False
-    elif type(y) is int and (y == 0 or y == 1):
-        return x is True or x is False
+    if _is_boolean_int(x):
+        return isinstance(y, bool)
+    elif _is_boolean_int(y):
+        return isinstance(x, bool)
+
+def _is_boolean_int(num):
+    """
+    For backwards compatibility, Python considers bool to be an int.
+    This causes issues when doing type comparison with isinstance(x, int).
+    This function ensures the value is an actual int respresenting a boolean.
+    """
+    return (
+        not isinstance(num, bool)
+        and isinstance(num, int)
+        and num in (0, 1)
+    )
 
 
 def _is_comparable(x):
