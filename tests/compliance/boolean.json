@@ -76,7 +76,8 @@
       "False": false,
       "Number": 5,
       "EmptyList": [],
-      "Zero": 0
+      "Zero": 0,
+      "ZeroFloat": 0.0
     },
     "cases": [
       {
@@ -198,6 +199,14 @@
       {
         "expression": "!!Zero",
         "result": true
+      },
+      {
+        "expression": "Zero || Number",
+        "result": 0
+      },
+      {
+        "expression": "ZeroFloat || Number",
+        "result": 0.0
       }
     ]
   },
