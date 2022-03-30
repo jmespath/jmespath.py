@@ -1,3 +1,4 @@
+import re
 from tests import unittest
 
 from jmespath import lexer
@@ -107,6 +108,22 @@ class TestRegexLexer(unittest.TestCase):
     def test_literal_with_empty_string(self):
         tokens = list(self.lexer.tokenize('``'))
         self.assert_tokens(tokens, [{'type': 'literal', 'value': ''}])
+
+    def test_literal_regex(self):
+        tokens = list(self.lexer.tokenize('/foo/'))
+        self.assert_tokens(tokens, [
+            {'type': 'literal', 'value': re.compile('foo')},
+        ])
+
+    def test_literal_regex_with_flags(self):
+        tokens = list(self.lexer.tokenize('/foo/im'))
+        self.assert_tokens(tokens, [
+            {'type': 'literal', 'value': re.compile('foo', re.I | re.M)},
+        ])
+
+    def test_literal_invalid_regex(self):
+        with self.assertRaises(LexerError):
+            list(self.lexer.tokenize('/*/'))
 
     def test_position_information(self):
         tokens = list(self.lexer.tokenize('foo'))
