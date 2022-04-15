@@ -6,13 +6,13 @@ from numbers import Number
 
 
 def _equals(x, y):
-    if _is_special_integer_case(x, y):
+    if _is_special_number_case(x, y):
         return False
     else:
         return x == y
 
 
-def _is_special_integer_case(x, y):
+def _is_special_number_case(x, y):
     # We need to special case comparing 0 or 1 to
     # True/False.  While normally comparing any
     # integer other than 0/1 to True/False will always
@@ -29,22 +29,10 @@ def _is_special_integer_case(x, y):
     # Also need to consider that:
     # >>> 0 in [True, False]
     # True
-    if _is_boolean_int(x):
+    if _is_actual_number(x) and x in (0, 1):
         return isinstance(y, bool)
-    elif _is_boolean_int(y):
+    elif _is_actual_number(y) and y in (0, 1):
         return isinstance(x, bool)
-
-def _is_boolean_int(num):
-    """
-    For backwards compatibility, Python considers bool to be an int.
-    This causes issues when doing type comparison with isinstance(x, int).
-    This function ensures the value is an actual int respresenting a boolean.
-    """
-    return (
-        not isinstance(num, bool)
-        and isinstance(num, int)
-        and num in (0, 1)
-    )
 
 
 def _is_comparable(x):
@@ -63,7 +51,7 @@ def _is_actual_number(x):
     # True
     # >>> isinstance(True, int)
     # True
-    if x is True or x is False:
+    if isinstance(x, bool):
         return False
     return isinstance(x, Number)
 
@@ -269,7 +257,7 @@ class TreeInterpreter(Visitor):
 
     def visit_not_expression(self, node, value):
         original_result = self.visit(node['children'][0], value)
-        if type(original_result) is int and original_result == 0:
+        if _is_actual_number(original_result) and original_result == 0:
             # Special case for 0, !0 should be false, not true.
             # 0 is not a special cased integer in jmespath.
             return False

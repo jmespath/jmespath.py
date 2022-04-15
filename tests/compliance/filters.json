@@ -266,6 +266,88 @@
     ]
   },
   {
+    "given": {"foo": [
+      {"key": true},
+      {"key": false},
+      {"key": 0},
+      {"key": 0.0},
+      {"key": 1},
+      {"key": 1.0},
+      {"key": [0]},
+      {"key": null},
+      {"key": [1]},
+      {"key": []},
+      {"key": {}},
+      {"key": {"a":2}}
+    ]},
+    "cases": [
+      {
+        "expression": "foo[?key == `true`]",
+        "result": [{"key": true}]
+      },
+      {
+        "expression": "foo[?key == `false`]",
+        "result": [{"key": false}]
+      },
+      {
+        "expression": "foo[?key]",
+        "result": [
+          {"key": true},
+          {"key": 0},
+          {"key": 0.0},
+          {"key": 1},
+          {"key": 1.0},
+          {"key": [0]},
+          {"key": [1]},
+          {"key": {"a": 2}}
+        ]
+      },
+      {
+        "expression": "foo[? !key]",
+        "result": [
+          {"key": false},
+          {"key": null},
+          {"key": []},
+          {"key": {}}
+        ]
+      },
+      {
+        "expression": "foo[? !!key]",
+        "result": [
+          {"key": true},
+          {"key": 0},
+          {"key": 0.0},
+          {"key": 1},
+          {"key": 1.0},
+          {"key": [0]},
+          {"key": [1]},
+          {"key": {"a": 2}}
+        ]
+      },
+      {
+        "expression": "foo[? `true`]",
+        "result": [
+          {"key": true},
+          {"key": false},
+          {"key": 0},
+          {"key": 0.0},
+          {"key": 1},
+          {"key": 1.0},
+          {"key": [0]},
+          {"key": null},
+          {"key": [1]},
+          {"key": []},
+          {"key": {}},
+          {"key": {"a":2}}
+        ]
+      },
+      {
+        "expression": "foo[? `false`]",
+        "result": []
+      }
+    ]
+  },
+  {
     "given": {"reservations": [
       {"instances": [
         {"foo": 1, "bar": 2}, {"foo": 1, "bar": 3},
