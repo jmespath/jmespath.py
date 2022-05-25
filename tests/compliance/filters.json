@@ -81,6 +81,50 @@
     ]
   },
   {
+    "given": {"foo": [{"weight": 33.3},
+      {"weight": 44.4},
+      {"weight": 55.5}]},
+    "cases": [
+      {
+        "comment": "Greater than with a number",
+        "expression": "foo[?weight > `44.4`]",
+        "result": [{"weight": 55.5}]
+      },
+      {
+        "expression": "foo[?weight >= `44.4`]",
+        "result": [{"weight": 44.4}, {"weight": 55.5}]
+      },
+      {
+        "comment": "Greater than with a number",
+        "expression": "foo[?weight > `55.5`]",
+        "result": []
+      },
+      {
+        "comment": "Greater than with a number",
+        "expression": "foo[?weight < `44.4`]",
+        "result": [{"weight": 33.3}]
+      },
+      {
+        "comment": "Greater than with a number",
+        "expression": "foo[?weight <= `44.4`]",
+        "result": [{"weight": 33.3}, {"weight": 44.4}]
+      },
+      {
+        "comment": "Greater than with a number",
+        "expression": "foo[?weight < `33.3`]",
+        "result": []
+      },
+      {
+        "expression": "foo[?weight == `33.3`]",
+        "result": [{"weight": 33.3}]
+      },
+      {
+        "expression": "foo[?weight != `33.3`]",
+        "result": [{"weight": 44.4}, {"weight": 55.5}]
+      }
+    ]
+  },
+  {
     "given": {"foo": [{"top": {"name": "a"}},
       {"top": {"name": "b"}}]},
     "cases": [

@@ -7,6 +7,10 @@
       "result": null
     },
     {
+      "expression": "foo",
+      "result": null
+    },
+    {
       "expression": "foo.1",
       "error": "syntax"
     },
@@ -414,6 +418,16 @@
       {
         "comment": "Not a key-value pair",
         "expression": "a.{foo}",
+        "error": "syntax"
+      },
+      {
+        "comment": "Missing value",
+        "expression": "a.{foo:}",
+        "error": "syntax"
+      },
+      {
+        "comment": "Missing value with trailing comma",
+        "expression": "a.{foo: ,}",
         "error": "syntax"
       },
       {
