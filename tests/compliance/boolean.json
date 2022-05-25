@@ -189,6 +189,10 @@
         "result": true
       },
       {
+        "expression": "!True && False",
+        "result": false
+      },
+      {
         "expression": "!(True && False)",
         "result": true
       },
