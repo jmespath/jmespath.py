@@ -3,10 +3,8 @@
 # can a) be run separately and b) allow for customization
 # via env var for longer runs in travis.
 import os
-import sys
 import numbers
 
-from nose.plugins.skip import SkipTest
 from hypothesis import given, settings, assume, HealthCheck
 import hypothesis.strategies as st
 
@@ -14,11 +12,6 @@ from jmespath import lexer
 from jmespath import parser
 from jmespath import exceptions
 from jmespath.functions import Functions
-
-
-if sys.version_info[:2] == (2, 6):
-    raise RuntimeError("Hypothesis tests are not supported on python2.6. "
-                       "Use python2.7, or python3.3 and greater.")
 
 
 JSON_NUMBERS = (st.integers() | st.floats(allow_nan=False,
