@@ -1,3 +1,16 @@
+1.0.1
+=====
+
+* Add support for Python 3.11
+  (`issue #285 <https://github.com/jmespath/jmespath.py/issues/285>`__)
+* Fix boolean correctness for floats
+  (`issue #281 <https://github.com/jmespath/jmespath.py/issues/281>`__)
+* Fix Python 3.9 warning about random sampling used in parser cache.
+  (`issue #216 <https://github.com/jmespath/jmespath.py/issues/216>`__)
+* Fix Python 3.8 warning for type comparisons
+  (`issue #210 <https://github.com/jmespath/jmespath.py/issues/268>`__)
+
+
 1.0.0
 =====
 
