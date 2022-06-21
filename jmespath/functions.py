@@ -259,6 +259,34 @@ class Functions(metaclass=FunctionRegistry):
         else:
             return None
 
+    @signature({'types': ['object'], "variadic": True}, {'types': ['boolean']})
+    def _func_remove_null(self, obj, recursive):
+        if recursive:
+            return self._func_remove_recursive(obj, None)
+        else:
+            return self._func_remove(obj, None)
+
+    @signature({'types': ['object'], "variadic": True}, {'types': ['boolean']})
+    def _func_remove_empty(self, obj, recursive):
+        if recursive:
+            return self._func_remove_recursive(obj, None, '')
+        else:
+            return self._func_remove(obj, None, '')
+
+    def _func_remove(self, obj, *args):
+        return {k: v for k, v in obj.items() if not v in list(args)}
+
+    def _func_remove_recursive(self, obj, *args):
+        ret_dict = {}
+        for k in obj:
+            if not obj[k] in list(args):
+                ret_dict[k] = obj[k]
+
+            if isinstance(obj[k], dict):
+                ret_dict[k] = self._func_remove_recursive(obj[k], *args)
+
+        return ret_dict
+
     @signature({"types": ["object"], "variadic": True})
     def _func_merge(self, *arguments):
         merged = {}
