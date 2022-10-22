@@ -3,6 +3,7 @@ import re
 import random
 import string
 import threading
+from jmespath.ast import arithmetic
 from tests import unittest, OrderedDict
 
 from jmespath import parser
@@ -76,6 +77,55 @@ class TestParser(unittest.TestCase):
     def test_or_repr(self):
         self.assert_parsed_ast('foo || bar', ast.or_expression(ast.field('foo'),
                                                                ast.field('bar')))
+
+    def test_arithmetic_expressions(self):
+        operations = {
+            '+': 'plus',
+            '-': 'minus',
+            '//': 'div',
+            '/': 'divide',
+            '%': 'modulo',
+            u'\u2212': 'minus',
+            u'\u00d7': 'multiply',
+            u'\u00f7': 'divide',
+        }
+        for sign in operations:
+            operation = operations[sign]
+            expression = 'foo {} bar'.format(sign)
+            print(expression)
+            self.assert_parsed_ast(
+                expression,
+                ast.arithmetic(
+                    operation,
+                    ast.field('foo'),
+                    ast.field('bar')
+                ))
+
+    def test_arithmetic_unary(self):
+        operations = {
+            '+': 'plus',
+            '-': 'minus',
+            u'\u2212': 'minus',
+        }
+        for sign in operations:
+            operation = operations[sign]
+            expression = '{} foo'.format(sign)
+            print(expression)
+            self.assert_parsed_ast(
+                expression,
+                ast.arithmetic_unary(
+                    operation,
+                    ast.field('foo'),
+                ))
+
+    def test_arithmetic_multiplication(self):
+        self.assert_parsed_ast(
+            'foo * bar',
+            ast.arithmetic(
+                'multiply',
+                ast.field('foo'),
+                ast.field('bar')
+            ))
 
     def test_unicode_literals_escaped(self):
         self.assert_parsed_ast(r'`"\u2713"`', ast.literal(u'\u2713'))
