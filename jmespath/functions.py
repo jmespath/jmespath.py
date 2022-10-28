@@ -81,22 +81,28 @@ class Functions(metaclass=FunctionRegistry):
         return function(self, *resolved_args)
 
     def _validate_arguments(self, args, signature, function_name):
-        if signature and signature[-1].get('variadic'):
+        required_arguments_count = len([param for param in signature if not param.get('optional') or not param['optional']])
+        optional_arguments_count = len([param for param in signature if param.get('optional') and param['optional']])
+        has_variadic = signature[-1].get('variadic') if signature != None else False
+        if has_variadic:
             if len(args) < len(signature):
                 raise exceptions.VariadictArityError(
                     len(signature), len(args), function_name)
-        elif len(args) != len(signature):
+        elif optional_arguments_count > 0:
+            if len(args) < required_arguments_count or len(args) > (required_arguments_count + optional_arguments_count):
+                raise exceptions.ArityError(
+                    len(signature), len(args), function_name)
+        elif len(args) != required_arguments_count:
             raise exceptions.ArityError(
                 len(signature), len(args), function_name)
         return self._type_check(args, signature, function_name)
 
     def _type_check(self, actual, signature, function_name):
-        for i in range(len(signature)):
-            allowed_types = signature[i]['types']
+        for i in range(min(len(signature), len(actual))):
+            allowed_types = self._get_allowed_types_from_signature(signature[i])
             if allowed_types:
                 self._type_check_single(actual[i], allowed_types,
                                         function_name)
-
     def _type_check_single(self, current, types, function_name):
         # Type checking involves checking the top level type,
         # and in the case of arrays, potentially checking the types
@@ -119,6 +125,13 @@ class Functions(metaclass=FunctionRegistry):
         if allowed_subtypes:
             self._subtype_check(current, allowed_subtypes,
                                 types, function_name)
+
+    ## signature supports monotype {'type': 'type-name'}
+    ## or multiple types {'types': ['type1-name', 'type2-name']}
+    def _get_allowed_types_from_signature(self, spec):
+        if spec.get('type'):
+            spec.update({'types': [spec.get('type')]})
+        return spec.get('types')
 
     def _get_allowed_pytypes(self, types):
         allowed_types = []
