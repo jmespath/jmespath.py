@@ -347,16 +347,54 @@ class Functions(metaclass=FunctionRegistry):
         {'type': 'string'},
         {'type': 'number', 'optional': True})
     def _func_replace(self, text, search, replacement, count = None):
-        if count != None: 
-            if int(count) != count or int(count) < 0:
-                raise exceptions.JMESPathError(
-                    'syntax-error: replace() expects $count to be a '
-                    'non-negative integer, but received {} instead.'
-                    .format(count))
+        self._ensure_non_negative_optional_integer(
+            'replace',
+            'count',
+            count)
 
         if count != None:
             return text.replace(search, replacement, int(count))
         return text.replace(search, replacement)
+
+    @signature(
+        {'type': 'string'},
+        {'type': 'string'},
+        {'type': 'number', 'optional': True})
+    def _func_split(self, text, search, count = None):
+        self._ensure_non_negative_optional_integer(
+            'split',
+            'count',
+            count)
+
+        if len(search) == 0:
+            chars = list(text)
+            if count == None:
+                return chars
+
+            head = [c for c in chars[:count]]
+            tail =  [''.join(chars[count:])]
+            return head + tail
+
+        if count != None:
+            return text.split(search, count)
+        return text.split(search)
+    
+    def _ensure_non_negative_optional_integer(
+        self,
+        func_name,
+        param_name,
+        param_value):
+
+        if param_value != None: 
+            if int(param_value) != param_value or int(param_value) < 0:
+                raise exceptions.JMESPathError(
+                    'syntax-error: replace() expects ${} to be a '
+                    'non-negative integer, but received {} instead.'
+                    .format(
+                        func_name,
+                        param_name,
+                        param_name
+                    ))
 
     @signature({'type': 'string'}, {'type': 'string', 'optional': True})
     def _func_trim(self, text, chars = None):
