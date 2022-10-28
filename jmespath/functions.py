@@ -310,6 +310,28 @@ class Functions(metaclass=FunctionRegistry):
 
     @signature(
         {'type': 'string'},
+        {'type': 'number'},
+        {'type': 'string', 'optional': True})
+    def _func_pad_left(self, text, width, padding = ' '):
+        return self._pad_impl(lambda : text.rjust(width, padding), padding)
+
+    @signature(
+        {'type': 'string'},
+        {'type': 'number'},
+        {'type': 'string', 'optional': True})
+    def _func_pad_right(self, text, width, padding = ' '):
+        return self._pad_impl(lambda : text.ljust(width, padding), padding)
+
+    def _pad_impl(self, func, padding):
+        if len(padding) != 1:
+            raise exceptions.JMESPathError(
+                'syntax-error: pad_right() expects $padding to have a '
+                'single character, but received `{}` instead.'
+                .format(padding))
+        return func()
+
+    @signature(
+        {'type': 'string'},
         {'type': 'string'},
         {'type': 'string'},
         {'type': 'number', 'optional': True})
