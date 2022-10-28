@@ -32,6 +32,7 @@
       { "expression": "find_first(string, 'string', `9`)", "result": null },
       { "expression": "find_first(string, 's')", "result": 0 },
       { "expression": "find_first(string, 's', `1`)", "result": 8 },
+      { "expression": "find_first(string, '')", "result": null },
 
       { "expression": "find_last(string, 'string')", "result": 8 },
       { "expression": "find_last(string, 'string', `8`)", "result": 8 },

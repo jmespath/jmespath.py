@@ -314,6 +314,8 @@ class Functions(metaclass=FunctionRegistry):
         {'type': 'number', 'optional': True},
         {'type': 'number', 'optional': True})
     def _func_find_first(self, text, search, start = 0, end = -1):
+        if len(search) == 0:
+            return None
         if end == -1:
             end = len(text)
         pos = text.find(search, start, end)
