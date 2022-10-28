@@ -358,6 +358,24 @@ class Functions(metaclass=FunctionRegistry):
             return text.replace(search, replacement, int(count))
         return text.replace(search, replacement)
 
+    @signature({'type': 'string'}, {'type': 'string', 'optional': True})
+    def _func_trim(self, text, chars = None):
+        if chars == None or len(chars) == 0:
+            return text.strip()
+        return text.strip(chars)
+
+    @signature({'type': 'string'}, {'type': 'string', 'optional': True})
+    def _func_trim_left(self, text, chars = None):
+        if chars == None or len(chars) == 0:
+            return text.lstrip()
+        return text.lstrip(chars)
+
+    @signature({'type': 'string'}, {'type': 'string', 'optional': True})
+    def _func_trim_right(self, text, chars = None):
+        if chars == None or len(chars) == 0:
+            return text.rstrip()
+        return text.rstrip(chars)
+
     @signature({"types": ['object']})
     def _func_values(self, arg):
         return list(arg.values())
