@@ -72,13 +72,13 @@ class Options(object):
 
 
 class _Expression(object):
-    def __init__(self, expression, interpreter):
+    def __init__(self, expression, interpreter, context):
         self.expression = expression
         self.interpreter = interpreter
+        self.context = context
 
     def visit(self, node, *args, **kwargs):
         return self.interpreter.visit(node, *args, **kwargs)
-
 
 class Visitor(object):
     def __init__(self):
@@ -95,7 +95,6 @@ class Visitor(object):
 
     def default_visit(self, node, *args, **kwargs):
         raise NotImplementedError("default_visit")
-
 
 class TreeInterpreter(Visitor):
     COMPARATOR_FUNC = {
@@ -131,11 +130,31 @@ class TreeInterpreter(Visitor):
             result = self.visit(node, result)
         return result
 
-    def visit_field(self, node, value):
+    def visit_field(self, node, value, *args, **kwargs):
+
+        identifier = node['value']
+
+        ## inner function to retrieve the given
+        ## value from the scopes stack
+        
+        def get_value_from_current_context_or_scopes():
+            ##try:
+            ##    return getattr(value, identifier)
+            ##except AttributeError:
+            if 'scopes' in kwargs:
+                return kwargs['scopes'].getValue(identifier) 
+            return None
+
+        ## search for identifier value
+
         try:
-            return value.get(node['value'])
+            result = value.get(identifier) 
+            if result == None:
+                result = get_value_from_current_context_or_scopes()
+            return result
         except AttributeError:
-                return None
+            return get_value_from_current_context_or_scopes()
+
 
     def visit_comparator(self, node, value):
         # Common case: comparator is == or !=
@@ -161,14 +180,14 @@ class TreeInterpreter(Visitor):
         return value
 
     def visit_expref(self, node, value):
-        return _Expression(node['children'][0], self)
+        return _Expression(node['children'][0], self, value)
 
-    def visit_function_expression(self, node, value):
+    def visit_function_expression(self, node, value, *args, **kwargs):
         resolved_args = []
         for child in node['children']:
             current = self.visit(child, value)
             resolved_args.append(current)
-        return self._functions.call_function(node['value'], resolved_args)
+        return self._functions.call_function(node['value'], resolved_args, scopes = kwargs.get('scopes'))
 
     def visit_filter_projection(self, node, value):
         base = self.visit(node['children'][0], value)
@@ -353,7 +372,10 @@ class ScopedInterpreter(TreeInterpreter):
 
     def visit(self, node, *args, **kwargs):
         node_type = node['type']
-        if (node_type == 'field'):
+        if (node_type in ['field', 'function_expression']):
             kwargs.update({'scopes': self._scopes})
+        else:
+            if 'scopes' in kwargs:
+                kwargs.pop('scopes')
 
         return super().visit(node, *args, **kwargs)

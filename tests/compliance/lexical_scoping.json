@@ -1,0 +1,170 @@
+[
+	{
+		"given": {
+			"search_for": "foo",
+			"people": [
+				{
+					"name": "a"
+				},
+				{
+					"name": "b"
+				},
+				{
+					"name": "c"
+				},
+				{
+					"name": "foo"
+				},
+				{
+					"name": "bar"
+				},
+				{
+					"name": "baz"
+				},
+				{
+					"name": "qux"
+				},
+				{
+					"name": "x"
+				},
+				{
+					"name": "y"
+				},
+				{
+					"name": "z"
+				}
+			]
+		},
+		"cases": [
+			{
+				"description": "Let function with filters",
+				"expression": "let({search_for: search_for}, &people[?name==search_for].name | [0])",
+				"result": "foo"
+			}
+		]
+	},
+	{
+		"given": {
+			"a": {
+				"mylist": [
+					{
+						"l1": "1",
+						"result": "foo"
+					},
+					{
+						"l2": "2",
+						"result": "bar"
+					},
+					{
+						"l1": "8",
+						"l2": "9"
+					},
+					{
+						"l1": "8",
+						"l2": "9"
+					}
+				],
+				"level2": "2"
+			},
+			"level1": "1",
+			"nested": {
+				"a": {
+					"b": {
+						"c": {
+							"fourth": "fourth"
+						},
+						"third": "third"
+					},
+					"second": "second"
+				},
+				"first": "first"
+			},
+			"precedence": {
+				"a": {
+					"b": {
+						"c": {
+							"variable": "fourth"
+						},
+						"variable": "third",
+						"other": "y"
+					},
+					"variable": "second",
+					"other": "x"
+				},
+				"variable": "first",
+				"other": "w"
+			}
+		},
+		"cases": [
+			{
+				"description": "Basic let from scope",
+				"expression": "let({level1: level1}, &a.[level2, level1])",
+				"result": [
+					"2",
+					"1"
+				]
+			},
+			{
+				"description": "Current object has precedence",
+				"expression": "let({level1: `\"other\"`}, &level1)",
+				"result": "1"
+			},
+			{
+				"description": "No scope specified using literal hash",
+				"expression": "let(`{}`, &a.level2)",
+				"result": "2"
+			},
+			{
+				"description": "Arbitrary variable added",
+				"expression": "let({foo: `\"anything\"`}, &[level1, foo])",
+				"result": [
+					"1",
+					"anything"
+				]
+			},
+			{
+				"description": "Basic let from current object",
+				"expression": "let({other: level1}, &level1)",
+				"result": "1"
+			},
+			{
+				"description": "Nested let function with filters",
+				"expression": "let({level1: level1}, &a.[mylist[?l1==level1].result, let({level2: level2}, &mylist[?l2==level2].result)])[]",
+				"result": [
+					"foo",
+					"bar"
+				]
+			},
+			{
+				"description": "Nested let function with filters with literal scope binding",
+				"expression": "let(`{\"level1\": \"1\"}`, &a.[mylist[?l1==level1].result, let({level2: level2}, &mylist[?l2==level2].result)])[]",
+				"result": [
+					"foo",
+					"bar"
+				]
+			},
+			{
+				"description": "Nested let functions",
+				"expression": "nested.let({level1: first}, &a.let({level2: second}, &b.let({level3: third}, &c.{first: level1, second: level2, third: level3, fourth: fourth})))",
+				"result": {
+					"first": "first",
+					"second": "second",
+					"third": "third",
+					"fourth": "fourth"
+				}
+			},
+			{
+				"description": "Precedence of lexical vars from scope object",
+				"expression": "precedence.let({other: other}, &a.let({other: other}, &b.let({other: other}, &c.{other: other})))",
+				"result": {
+					"other": "y"
+				}
+			},
+			{
+				"description": "Precedence of lexical vars from current object",
+				"expression": "precedence.let({variable: variable}, &a.let({variable: variable}, &b.let({variable: variable}, &c.let({variable: `\"override\"`}, &variable))))",
+				"result": "fourth"
+			}
+		]
+	}
+]

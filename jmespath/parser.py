@@ -505,7 +505,7 @@ class ParsedResult(object):
         self.parsed = parsed
 
     def search(self, value, options=None):
-        interpreter = visitor.TreeInterpreter(options)
+        interpreter = visitor.ScopedInterpreter(options)
         result = interpreter.visit(self.parsed, value)
         return result
 
