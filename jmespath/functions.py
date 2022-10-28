@@ -308,6 +308,23 @@ class Functions(metaclass=FunctionRegistry):
         # should we also return the indices of a list?
         return list(arg.keys())
 
+    @signature(
+        {'type': 'string'},
+        {'type': 'string'},
+        {'type': 'string'},
+        {'type': 'number', 'optional': True})
+    def _func_replace(self, text, search, replacement, count = None):
+        if count != None: 
+            if int(count) != count or int(count) < 0:
+                raise exceptions.JMESPathError(
+                    'syntax-error: replace() expects $count to be a '
+                    'non-negative integer, but received {} instead.'
+                    .format(count))
+
+        if count != None:
+            return text.replace(search, replacement, int(count))
+        return text.replace(search, replacement)
+
     @signature({"types": ['object']})
     def _func_values(self, arg):
         return list(arg.values())
