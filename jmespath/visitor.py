@@ -129,6 +129,8 @@ class TreeInterpreter(Visitor):
         result = value
         for node in node['children']:
             result = self.visit(node, result)
+            if (result is None):
+                return None
         return result
 
     def visit_field(self, node, value):
@@ -228,16 +230,12 @@ class TreeInterpreter(Visitor):
         return node['value']
 
     def visit_multi_select_dict(self, node, value):
-        if value is None:
-            return None
         collected = self._dict_cls()
         for child in node['children']:
             collected[child['value']] = self.visit(child, value)
         return collected
 
     def visit_multi_select_list(self, node, value):
-        if value is None:
-            return None
         collected = []
         for child in node['children']:
             collected.append(self.visit(child, value))
