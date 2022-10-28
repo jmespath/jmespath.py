@@ -135,7 +135,7 @@ class TreeInterpreter(Visitor):
         try:
             return value.get(node['value'])
         except AttributeError:
-            return None
+                return None
 
     def visit_comparator(self, node, value):
         # Common case: comparator is == or !=
@@ -326,3 +326,34 @@ class GraphvizVisitor(Visitor):
             self._count += 1
             self._lines.append('  %s -> %s' % (current, child_name))
             self._visit(child, child_name)
+
+
+class Scopes:
+    def __init__(self):
+        self._scopes = []
+
+    def pushScope(self, scope):
+        self._scopes.append(scope)
+
+    def popScope(self):
+        if len(self._scopes) > 0:
+            self._scopes.pop()
+
+    def getValue(self, identifier):
+        for scope in self._scopes[::-1]:
+            if scope.get(identifier) != None:
+                return scope[identifier]
+        return None
+
+
+class ScopedInterpreter(TreeInterpreter):
+    def __init__(self, options = None):
+        super().__init__(options)
+        self._scopes = Scopes()
+
+    def visit(self, node, *args, **kwargs):
+        node_type = node['type']
+        if (node_type == 'field'):
+            kwargs.update({'scopes': self._scopes})
+
+        return super().visit(node, *args, **kwargs)
