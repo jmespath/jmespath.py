@@ -310,6 +310,17 @@ class Functions(metaclass=FunctionRegistry):
 
     @signature(
         {'type': 'string'},
+        {'type': 'string'},
+        {'type': 'number', 'optional': True},
+        {'type': 'number', 'optional': True})
+    def _func_find_first(self, text, search, start = 0, end = -1):
+        if end == -1:
+            end = len(text)
+        pos = text.find(search, start, end)
+        return pos if pos != -1 else None
+
+    @signature(
+        {'type': 'string'},
         {'type': 'number'},
         {'type': 'string', 'optional': True})
     def _func_pad_left(self, text, width, padding = ' '):
