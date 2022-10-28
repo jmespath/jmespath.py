@@ -1,8 +1,8 @@
-import sys
 import inspect
-from itertools import zip_longest
 
+iteritems = dict.items
 
+map = map
 text_type = str
 string_type = str
 
