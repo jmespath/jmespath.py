@@ -1,0 +1,132 @@
+[
+	{
+		"given": {
+			"items": [
+				{
+					"spec": {
+						"nodeNumber": 1,
+						"nodeName": "node_01",
+						"other": "values_01"
+					}
+				},
+				{
+					"spec": {
+						"nodeNumber": 2,
+						"nodeName": "node_02",
+						"other": "values_02"
+					}
+				},
+				{
+					"spec": {
+						"nodeNumber": 3,
+						"nodeName": "node_03",
+						"other": "values_03"
+					}
+				},
+				{
+					"spec": {
+						"nodeNumber": 1,
+						"nodeName": "node_01",
+						"other": "values_04"
+					}
+				}
+			]
+		},
+		"cases": [
+			{
+				"expression": "group_by(@, &`false`)",
+				"error": "invalid-type"
+			},
+			{
+				"expression": "group_by(keys(items[*].spec|[0]), &`false`)",
+				"error": "invalid-type"
+			},
+			{
+				"expression": "group_by(items, spec.nodeName)",
+				"error": "invalid-type"
+			},
+			{
+				"expression": "group_by(items, &spec.nodeName)",
+				"result": {
+					"node_01": [
+						{
+							"spec": {
+								"nodeNumber": 1,
+								"nodeName": "node_01",
+								"other": "values_01"
+							}
+						},
+						{
+							"spec": {
+								"nodeNumber": 1,
+								"nodeName": "node_01",
+								"other": "values_04"
+							}
+						}
+					],
+					"node_02": [
+						{
+							"spec": {
+								"nodeNumber": 2,
+								"nodeName": "node_02",
+								"other": "values_02"
+							}
+						}
+					],
+					"node_03": [
+						{
+							"spec": {
+								"nodeNumber": 3,
+								"nodeName": "node_03",
+								"other": "values_03"
+							}
+						}
+					]
+				}
+			},
+			{
+				"expression": "group_by(items, &to_string(spec.nodeNumber))",
+				"result": {
+					"1": [
+						{
+							"spec": {
+								"nodeNumber": 1,
+								"nodeName": "node_01",
+								"other": "values_01"
+							}
+						},
+						{
+							"spec": {
+								"nodeNumber": 1,
+								"nodeName": "node_01",
+								"other": "values_04"
+							}
+						}
+					],
+					"2": [
+						{
+							"spec": {
+								"nodeNumber": 2,
+								"nodeName": "node_02",
+								"other": "values_02"
+							}
+						}
+					],
+					"3": [
+						{
+							"spec": {
+								"nodeNumber": 3,
+								"nodeName": "node_03",
+								"other": "values_03"
+							}
+						}
+					]
+				}
+			},
+			{
+				"expression": "group_by(items, &spec.nodeNumber)",
+				"error": "invalid-type"
+			}
+		]
+	}
+]

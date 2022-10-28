@@ -1,6 +1,8 @@
 import math
 import json
 
+from collections import OrderedDict
+
 from jmespath import exceptions
 from jmespath.compat import string_type as STRING_TYPE
 from jmespath.compat import get_methods
@@ -343,6 +345,19 @@ class Functions(metaclass=FunctionRegistry):
                                         'max_by')
         if array:
             return max(array, key=keyfunc)
+        else:
+            return None
+
+    @signature({'types': ['array']}, {'types': ['expref']})
+    def _func_group_by(self, array, expref):
+        keyfunc = self._create_key_func(expref, ['null', 'string'], 'group_by')
+        if array:
+            result = OrderedDict()
+            keys = list(dict.fromkeys([keyfunc(item) for item in array if keyfunc(item) != None]))
+            for key in keys:
+                items = [ item for item in array if keyfunc(item) == key ]
+                result.update({key: items})
+            return result
         else:
             return None
 
