@@ -323,6 +323,19 @@ class Functions(metaclass=FunctionRegistry):
 
     @signature(
         {'type': 'string'},
+        {'type': 'string'},
+        {'type': 'number', 'optional': True},
+        {'type': 'number', 'optional': True})
+    def _func_find_last(self, text, search, start = 0, end = -1):
+        if len(search) == 0:
+            return None
+        if end == -1:
+            end = len(text)
+        pos = text[start:end].rfind(search)
+        return start + pos if pos != -1 else None
+
+    @signature(
+        {'type': 'string'},
         {'type': 'number'},
         {'type': 'string', 'optional': True})
     def _func_pad_left(self, text, width, padding = ' '):

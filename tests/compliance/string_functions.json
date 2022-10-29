@@ -36,10 +36,11 @@
 
       { "expression": "find_last(string, 'string')", "result": 8 },
       { "expression": "find_last(string, 'string', `8`)", "result": 8 },
-      { "expression": "find_last(string, 'string', `7`)", "result":	null },
-      { "expression": "find_last(string, 's', `8`)", "result":	8 },
-      { "expression": "find_last(string, 's', `7`)", "result":	0 },
-
+      { "expression": "find_last(string, 'string', `8`, `9`)", "result":	null },
+      { "expression": "find_last(string, 'string', `9`)", "result":	null },
+      { "expression": "find_last(string, 's', `1`)", "result":	8 },
+      { "expression": "find_last(string, 's', `0`, `7`)", "result":	0 },
+      
       { "expression": "lower('STRING')", "result":	"string" },
       { "expression": "upper('string')", "result":	"STRING" },
 
