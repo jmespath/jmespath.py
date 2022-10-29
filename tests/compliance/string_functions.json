@@ -101,6 +101,7 @@
       { "expression": "pad_right('string', `10`, '-')", "result": "string----" },
 
       { "expression": "split('/', '/')", "result": [ "", "" ] },
+      { "expression": "split('', '')", "result": [ ] },
       { "expression": "split('all chars', '')", "result": [ "a", "l", "l", " ", "c", "h", "a", "r", "s" ] },
       { "expression": "split('all chars', '', `3`)", "result": [ "a", "l", "l", " chars" ] },
 
