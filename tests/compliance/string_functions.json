@@ -22,6 +22,14 @@
         "expression": "find_first(string, 'string', `1`, '2')",
         "error": "invalid-type"
       },
+      {
+        "expression": "find_first(string, 'string', `1.3`, '2')",
+        "error": "invalid-type"
+      },
+      {
+        "expression": "find_first(string, 'string', `1`, '2.4')",
+        "error": "invalid-type"
+      },
 
       { "expression": "find_first(string, 'string')", "result": 8 },
       { "expression": "find_first(string, 'string', `0`)", "result": 8 },
@@ -52,7 +60,12 @@
 
       {
         "expression": "replace(abab, 'aa', '-', `0.333333`)",
-        "error": "syntax"
+        "error": "invalid-type"
+      },
+
+      {
+        "expression": "replace(abab, 'aa', '-', `0.001`)",
+        "error": "invalid-type"
       },
 
       { "expression": "replace(abab, 'aa', '-', `0`)", "result": "aabaaabaaaab" },
@@ -96,6 +109,11 @@
         "error": "syntax"
 
       },
+      {
+        "expression": "pad_left('string', '1.4')",
+        "error": "invalid-type"
+
+      },
 
       { "expression": "pad_left('string', `0`)", "result": "string" },
       { "expression": "pad_left('string', `5`)", "result": "string" },
@@ -106,6 +124,11 @@
       { "expression": "pad_right('string', `5`)", "result": "string" },
       { "expression": "pad_right('string', `10`)", "result": "string    " },
       { "expression": "pad_right('string', `10`, '-')", "result": "string----" },
+
+      {
+        "expression": "split('/', '/', `3.7`)",
+        "error": "invalid-type"
+      },
 
       { "expression": "split('/', '/')", "result": [ "", "" ] },
       { "expression": "split('', '')", "result": [ ] },
