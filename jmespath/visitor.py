@@ -138,9 +138,6 @@ class TreeInterpreter(Visitor):
         ## value from the scopes stack
         
         def get_value_from_current_context_or_scopes():
-            ##try:
-            ##    return getattr(value, identifier)
-            ##except AttributeError:
             if 'scopes' in kwargs:
                 return kwargs['scopes'].getValue(identifier) 
             return None
