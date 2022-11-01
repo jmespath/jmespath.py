@@ -46,6 +46,7 @@ class Parser(object):
         'rbrace': 0,
         'number': 0,
         'current': 0,
+        'root': 0,
         'expref': 0,
         'colon': 0,
         'pipe': 1,
@@ -238,6 +239,9 @@ class Parser(object):
 
     def _token_nud_current(self, token):
         return ast.current_node()
+
+    def _token_nud_root(self, token):
+        return ast.root_node()
 
     def _token_nud_expref(self, token):
         expression = self._expression(self.BINDING_POWER['expref'])

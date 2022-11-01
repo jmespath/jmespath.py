@@ -106,6 +106,17 @@ class TestParser(unittest.TestCase):
              'type': 'function_expression',
              'value': 'f'})
 
+    def test_root_node(self):
+        self.assert_parsed_ast(
+            '$[0]',
+            {
+                'type': 'index_expression',
+                'children': [
+                    {'type': 'root', 'children': []},
+                    {'type': 'index', 'value': 0, 'children': []}
+                ]
+            })
+
 
 class TestErrorMessages(unittest.TestCase):
 
