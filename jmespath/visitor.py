@@ -131,27 +131,23 @@ class TreeInterpreter(Visitor):
         return result
 
     def visit_field(self, node, value, *args, **kwargs):
-
         identifier = node['value']
-
-        ## inner function to retrieve the given
-        ## value from the scopes stack
-        
-        def get_value_from_current_context_or_scopes():
-            if 'scopes' in kwargs:
-                return kwargs['scopes'].getValue(identifier) 
-            return None
-
-        ## search for identifier value
+        scopes = kwargs.get('scopes')
 
         try:
             result = value.get(identifier) 
             if result == None:
-                result = get_value_from_current_context_or_scopes()
+                result = self._get_from_scopes(
+                    identifier, *args, scopes=scopes)
             return result
         except AttributeError:
-            return get_value_from_current_context_or_scopes()
+            return self._get_from_scopes(
+                identifier, *args, scopes=scopes)
 
+    def _get_from_scopes(self, identifier, *args, **kwargs):
+        if 'scopes' in kwargs:
+            return kwargs['scopes'].getValue(identifier) 
+        return None
 
     def visit_comparator(self, node, value):
         # Common case: comparator is == or !=
