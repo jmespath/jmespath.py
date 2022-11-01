@@ -2,6 +2,7 @@ import operator
 
 from jmespath import functions
 from jmespath.compat import string_type
+from jmespath.compat import with_str_method
 from numbers import Number
 
 
@@ -172,6 +173,11 @@ class TreeInterpreter(Visitor):
     def visit_current(self, node, value):
         return value
 
+    def visit_root(self, *args, **kwargs):
+        if 'scopes' in kwargs:
+            return kwargs['scopes'].getValue('$')
+        return None
+
     def visit_expref(self, node, value):
         return _Expression(node['children'][0], self, value)
 
@@ -340,6 +346,7 @@ class GraphvizVisitor(Visitor):
             self._visit(child, child_name)
 
 
+@with_str_method
 class Scopes:
     def __init__(self):
         self._scopes = []
@@ -357,15 +364,22 @@ class Scopes:
                 return scope[identifier]
         return None
 
+    def __str__(self):
+        return '{}'.format(self._scopes)
+
 
 class ScopedInterpreter(TreeInterpreter):
     def __init__(self, options = None):
         super().__init__(options)
         self._scopes = Scopes()
 
+    def evaluate(self, ast, root_scope):
+        self._scopes.pushScope({'$': root_scope})
+        return self.visit(ast, root_scope)
+
     def visit(self, node, *args, **kwargs):
-        node_type = node['type']
-        if (node_type in ['field', 'function_expression']):
+        scoped_types = ['field', 'function_expression', 'root']
+        if (node['type'] in scoped_types):
             kwargs.update({'scopes': self._scopes})
         else:
             if 'scopes' in kwargs:

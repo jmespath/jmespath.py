@@ -27,6 +27,7 @@ A few notes on the implementation.
 """
 import random
 
+
 from jmespath import lexer
 from jmespath.compat import with_repr_method
 from jmespath import ast
@@ -509,9 +510,8 @@ class ParsedResult(object):
         self.parsed = parsed
 
     def search(self, value, options=None):
-        interpreter = visitor.ScopedInterpreter(options)
-        result = interpreter.visit(self.parsed, value)
-        return result
+        evaluator = visitor.ScopedInterpreter(options)
+        return evaluator.evaluate(self.parsed, value)
 
     def _render_dot_file(self):
         """Render the parsed AST as a dot file.
@@ -526,6 +526,3 @@ class ParsedResult(object):
         renderer = visitor.GraphvizVisitor()
         contents = renderer.visit(self.parsed)
         return contents
-
-    def __repr__(self):
-        return repr(self.parsed)

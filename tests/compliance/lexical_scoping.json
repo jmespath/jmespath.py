@@ -166,5 +166,40 @@
 				"result": "fourth"
 			}
 		]
+	},
+	{
+		"given": {
+			"first_choice": "WA",
+			"states": [
+				{
+					"name": "WA",
+					"cities": [
+						"Seattle",
+						"Bellevue",
+						"Olympia"
+					]
+				},
+				{
+					"name": "CA",
+					"cities": [
+						"Los Angeles",
+						"San Francisco"
+					]
+				},
+				{
+					"name": "NY",
+					"cities": [
+						"New York City",
+						"Albany"
+					]
+				}
+			]
+		},
+		"cases": [
+			{
+				"expression": "states[?name==$.first_choice].cities[]",
+				"result": ["Seattle", "Bellevue", "Olympia"]
+			}
+		]
 	}
 ]
