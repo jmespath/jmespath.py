@@ -313,25 +313,41 @@ class Functions(metaclass=FunctionRegistry):
         {'type': 'string'},
         {'type': 'number', 'optional': True},
         {'type': 'number', 'optional': True})
-    def _func_find_first(self, text, search, start = 0, end = -1):
-        if len(search) == 0:
-            return None
-        if end == -1:
-            end = len(text)
-        pos = text.find(search, start, end)
-        return pos if pos != -1 else None
+    def _func_find_first(self, text, search, start = 0, end = None):
+        return self._find_impl(
+            text,
+            search,
+            lambda t, s: t.find(s),
+            start, 
+            end
+        )
 
     @signature(
         {'type': 'string'},
         {'type': 'string'},
         {'type': 'number', 'optional': True},
         {'type': 'number', 'optional': True})
-    def _func_find_last(self, text, search, start = 0, end = -1):
+    def _func_find_last(self, text, search, start = 0, end = None):
+        return self._find_impl(
+            text,
+            search,
+            lambda t, s: t.rfind(s),
+            start, 
+            end
+        )
+
+    def _find_impl(self, text, search, func, start, end):
         if len(search) == 0:
             return None
-        if end == -1:
+        if end == None:
             end = len(text)
-        pos = text[start:end].rfind(search)
+
+        pos = func(text[start:end], search)
+        if start < 0:
+            start = start + len(text)
+
+        # restrict resulting range to valid indices
+        start = min(max(start, 0), len(text))
         return start + pos if pos != -1 else None
 
     @signature(
