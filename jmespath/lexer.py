@@ -17,6 +17,7 @@ class Lexer(object):
         ',': 'comma',
         ':': 'colon',
         '@': 'current',
+        '$': 'root',
         '(': 'lparen',
         ')': 'rparen',
         '{': 'lbrace',

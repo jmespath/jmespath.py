@@ -143,6 +143,23 @@ class TestRegexLexer(unittest.TestCase):
              ]
         )
 
+    def test_root_reference(self):
+        tokens = list(self.lexer.tokenize('$[0]'))
+        self.assertEqual(
+            tokens,
+            [{'type': 'root', 'value': '$',
+                'start': 0, 'end': 1},
+            {'type': 'lbracket', 'value':
+                '[', 'start': 1, 'end': 2},
+            {'type': 'number', 'value': 0,
+                'start': 2, 'end': 3},
+            {'type': 'rbracket', 'value': ']',
+                'start': 3, 'end': 4},
+            {'type': 'eof', 'value': '',
+                'start': 4, 'end': 4}
+            ]
+        )
+
     def test_unknown_character(self):
         with self.assertRaises(LexerError) as e:
             tokens = list(self.lexer.tokenize('foo[0^]'))
