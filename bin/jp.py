@@ -42,6 +42,9 @@ def main():
     except exceptions.JMESPathTypeError as e:
         sys.stderr.write("invalid-type: %s\n" % e)
         return 1
+    except exceptions.JMESPathValueError as e:
+        sys.stderr.write("invalid-value: %s\n" % e)
+        return 1
     except exceptions.UnknownFunctionError as e:
         sys.stderr.write("unknown-function: %s\n" % e)
         return 1
