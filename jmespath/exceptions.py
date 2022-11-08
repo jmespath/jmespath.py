@@ -114,18 +114,16 @@ class JMESPathTypeError(JMESPathError):
 
 @with_str_method
 class JMESPathValueError(JMESPathError):
-    def __init__(self, function_name, current_value, actual_value,
-                 expected_types):
+    def __init__(self, function_name, current_value, expected_types):
         self.function_name = function_name
         self.current_value = current_value
-        self.actual_value = actual_value
         self.expected_types = expected_types
 
     def __str__(self):
-        return ('In function %s(), invalid value: %s, '
-                'expected: %s, received: "%s"' % (
+        return ('In function %s(), invalid value: "%s", '
+                'expected: %s"%s"' % (
                     self.function_name, self.current_value,
-                    self.expected_types, self.actual_value))
+                    self.expected_types))
 
 class EmptyExpressionError(JMESPathError):
     def __init__(self):

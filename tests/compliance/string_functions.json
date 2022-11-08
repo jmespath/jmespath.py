@@ -28,7 +28,7 @@
       },
       {
         "expression": "find_first(string, 'string', `1`, '2.4')",
-        "error": "invalid-type"
+        "error": "invalid-value"
       },
 
       { "expression": "find_first(string, 'string')", "result": 8 },
@@ -60,12 +60,12 @@
 
       {
         "expression": "replace(abab, 'aa', '-', `0.333333`)",
-        "error": "invalid-type"
+        "error": "invalid-value"
       },
 
       {
         "expression": "replace(abab, 'aa', '-', `0.001`)",
-        "error": "invalid-type"
+        "error": "invalid-value"
       },
 
       { "expression": "replace(abab, 'aa', '-', `0`)", "result": "aabaaabaaaab" },
@@ -110,8 +110,8 @@
 
       },
       {
-        "expression": "pad_left('string', '1.4')",
-        "error": "invalid-type"
+        "expression": "pad_left('string', `1.4`)",
+        "error": "invalid-value"
 
       },
 
@@ -127,7 +127,7 @@
 
       {
         "expression": "split('/', '/', `3.7`)",
-        "error": "invalid-type"
+        "error": "invalid-value"
       },
 
       { "expression": "split('/', '/')", "result": [ "", "" ] },
