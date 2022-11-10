@@ -108,6 +108,30 @@ class TestRegexLexer(unittest.TestCase):
         tokens = list(self.lexer.tokenize('``'))
         self.assert_tokens(tokens, [{'type': 'literal', 'value': ''}])
 
+    def test_raw_string_literal(self):
+        tokens = list(self.lexer.tokenize("'foo'"))
+        self.assert_tokens(tokens, [
+            {'type': 'literal', 'value': 'foo'}
+        ])
+
+    def test_raw_string_literal_preserve_escape(self):
+        tokens = list(self.lexer.tokenize("'foo\\z'"))
+        self.assert_tokens(tokens, [
+            {'type': 'literal', 'value': 'foo\\z'}
+        ])
+
+    def test_raw_string_literal_escaped_apostrophe(self):
+        tokens = list(self.lexer.tokenize("'foo\\\'bar'"))
+        self.assert_tokens(tokens, [
+            {'type': 'literal', 'value': 'foo\'bar'}
+        ])
+
+    def test_raw_string_literal_escaped_reverse_solidus(self):
+        tokens = list(self.lexer.tokenize("'foo\\\\bar'"))
+        self.assert_tokens(tokens, [
+            {'type': 'literal', 'value': 'foo\\bar'}
+        ])
+
     def test_position_information(self):
         tokens = list(self.lexer.tokenize('foo'))
         self.assertEqual(
