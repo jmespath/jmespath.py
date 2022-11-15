@@ -6,7 +6,6 @@ from jmespath.compat import get_methods
 from jmespath.compat import iteritems
 from jmespath.compat import map
 from jmespath.compat import string_type as STRING_TYPE
-from jmespath.compat import get_methods
 
 
 # python types -> jmespath types
