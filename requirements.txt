@@ -1,4 +1,4 @@
-wheel==0.24.0
+wheel==0.38.1
 pytest==6.2.5
 pytest-cov==3.0.0
 hypothesis==3.1.0 ; python_version < '3.8'
