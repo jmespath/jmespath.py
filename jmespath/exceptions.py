@@ -120,3 +120,9 @@ class EmptyExpressionError(JMESPathError):
 
 class UnknownFunctionError(JMESPathError):
     pass
+
+
+class UndefinedVariable(JMESPathError):
+    def __init__(self, varname):
+        self.varname = varname
+        super().__init__(f"Reference to undefined variable: {self.varname}")
