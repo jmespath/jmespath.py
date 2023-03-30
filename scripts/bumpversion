@@ -3,11 +3,6 @@ import os
 import argparse
 from subprocess import check_call
 
-try:
-    input = raw_input
-except NameError:
-    pass
-
 
 def open_file(filename, mode='r'):
     # relative open a file from the root project dir.
@@ -19,7 +14,6 @@ def open_file(filename, mode='r'):
 
 
 def bump_version(version):
-    update_sphinx_conf(version)
     update_setup_py(version)
     update_jmespath__init__(version)
     show_git_diff()
@@ -35,16 +29,6 @@ def update_setup_py(version):
         if line.startswith('    version='):
             lines[i] = "    version='%s',\n" % version
     with open_file('setup.py', 'w') as f:
-        f.write(''.join(lines))
-
-
-def update_sphinx_conf(version):
-    with open_file('docs/conf.py') as f:
-        lines = f.readlines()
-    for i, line in enumerate(lines):
-        if line.startswith('release = '):
-            lines[i] = "release = '%s'\n" % version
-    with open_file('docs/conf.py', 'w') as f:
         f.write(''.join(lines))
 
 
