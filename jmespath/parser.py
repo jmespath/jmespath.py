@@ -37,6 +37,8 @@ from jmespath import visitor
 class Parser(object):
     BINDING_POWER = {
         'eof': 0,
+        'variable': 0,
+        'assign': 0,
         'unquoted_identifier': 0,
         'quoted_identifier': 0,
         'literal': 0,
@@ -137,8 +139,39 @@ class Parser(object):
     def _token_nud_literal(self, token):
         return ast.literal(token['value'])
 
+    def _token_nud_variable(self, token):
+        return ast.variable_ref(token['value'][1:])
+
     def _token_nud_unquoted_identifier(self, token):
-        return ast.field(token['value'])
+        if token['value'] == 'let' and \
+                self._current_token() == 'variable':
+            return self._parse_let_expression()
+        else:
+            return ast.field(token['value'])
+
+    def _parse_let_expression(self):
+        bindings = []
+        while True:
+            var_token = self._lookahead_token(0)
+            # Strip off the '$'.
+            varname = var_token['value'][1:]
+            self._advance()
+            self._match('assign')
+            assign_expr = self._expression()
+            bindings.append(ast.assign(varname, assign_expr))
+            if self._is_in_keyword(self._lookahead_token(0)):
+                self._advance()
+                break
+            else:
+                self._match('comma')
+        expr = self._expression()
+        return ast.let_expression(bindings, expr)
+
+    def _is_in_keyword(self, token):
+        return (
+            token['type'] == 'unquoted_identifier' and
+            token['value'] == 'in'
+        )
 
     def _token_nud_quoted_identifier(self, token):
         field = ast.field(token['value'])

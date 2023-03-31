@@ -1,0 +1,247 @@
+[
+ {
+  "given": {
+   "foo": {
+    "bar": "baz"
+   }
+  },
+  "cases": [
+   {
+    "expression": "let $foo = foo in $foo",
+    "result": {
+     "bar": "baz"
+    }
+   },
+   {
+    "expression": "let $foo = foo.bar in $foo",
+    "result": "baz"
+   },
+   {
+    "expression": "let $foo = foo.bar in [$foo, $foo]",
+    "result": [
+     "baz",
+     "baz"
+    ]
+   },
+   {
+    "command": "Multiple assignments",
+    "expression": "let $foo = 'foo', $bar = 'bar' in [$foo, $bar]",
+    "result": [
+     "foo",
+     "bar"
+    ]
+   }
+  ]
+ },
+ {
+  "given": {
+   "a": "topval",
+   "b": [
+    {
+     "a": "inner1"
+    },
+    {
+     "a": "inner2"
+    }
+   ]
+  },
+  "cases": [
+   {
+    "expression": "let $a = a in b[*].[a, $a, let $a = 'shadow' in $a]",
+    "result": [
+     [
+      "inner1",
+      "topval",
+      "shadow"
+     ],
+     [
+      "inner2",
+      "topval",
+      "shadow"
+     ]
+    ]
+   },
+   {
+    "comment": "Bindings only visible within expression clause",
+    "expression": "let $a = 'top-a' in let $a = 'in-a', $b = $a in $b",
+    "result": "top-a"
+   }
+  ]
+ },
+ {
+  "given": {
+   "foo": [
+    [
+     0,
+     1
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     4,
+     5
+    ]
+   ]
+  },
+  "cases": [
+   {
+    "comment": "Projection is stopped when bound to variable",
+    "expression": "let $foo = foo[*] in $foo[0]",
+    "result": [
+     0,
+     1
+    ]
+   }
+  ]
+ },
+ {
+  "given": [
+   {
+    "home_state": "WA",
+    "states": [
+     {
+      "name": "WA",
+      "cities": [
+       "Seattle",
+       "Bellevue",
+       "Olympia"
+      ]
+     },
+     {
+      "name": "CA",
+      "cities": [
+       "Los Angeles",
+       "San Francisco"
+      ]
+     },
+     {
+      "name": "NY",
+      "cities": [
+       "New York City",
+       "Albany"
+      ]
+     }
+    ]
+   },
+   {
+    "home_state": "NY",
+    "states": [
+     {
+      "name": "WA",
+      "cities": [
+       "Seattle",
+       "Bellevue",
+       "Olympia"
+      ]
+     },
+     {
+      "name": "CA",
+      "cities": [
+       "Los Angeles",
+       "San Francisco"
+      ]
+     },
+     {
+      "name": "NY",
+      "cities": [
+       "New York City",
+       "Albany"
+      ]
+     }
+    ]
+   }
+  ],
+  "cases": [
+   {
+    "expression": "[*].[let $home_state = home_state in states[? name == $home_state].cities[]][]",
+    "result": [
+     [
+      "Seattle",
+      "Bellevue",
+      "Olympia"
+     ],
+     [
+      "New York City",
+      "Albany"
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "given": {
+   "imageDetails": [
+    {
+     "repositoryName": "org/first-repo",
+     "imageTags": [
+      "latest",
+      "v1.0",
+      "v1.2"
+     ],
+     "imageDigest": "sha256:abcd"
+    },
+    {
+     "repositoryName": "org/second-repo",
+     "imageTags": [
+      "v2.0",
+      "v2.2"
+     ],
+     "imageDigest": "sha256:efgh"
+    }
+   ]
+  },
+  "cases": [
+   {
+    "expression": "imageDetails[].[\n  let $repo = repositoryName,\n      $digest = imageDigest\n  in\n    imageTags[].[@, $digest, $repo]\n][][]\n",
+    "result": [
+     [
+      "latest",
+      "sha256:abcd",
+      "org/first-repo"
+     ],
+     [
+      "v1.0",
+      "sha256:abcd",
+      "org/first-repo"
+     ],
+     [
+      "v1.2",
+      "sha256:abcd",
+      "org/first-repo"
+     ],
+     [
+      "v2.0",
+      "sha256:efgh",
+      "org/second-repo"
+     ],
+     [
+      "v2.2",
+      "sha256:efgh",
+      "org/second-repo"
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "given": {},
+  "cases": [
+   {
+    "expression": "$noexist",
+    "error": "undefined-variable"
+   },
+   {
+    "comment": "Reference out of scope variable",
+    "expression": "[let $scope = 'foo' in [$scope], $scope]",
+    "error": "undefined-variable"
+   },
+   {
+    "comment": "Can't use var ref in RHS of subexpression",
+    "expression": "foo.$bar",
+    "error": "syntax"
+   }
+  ]
+ }
+]

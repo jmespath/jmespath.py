@@ -93,7 +93,7 @@ def test_expression(given, expression, expected, filename):
 )
 def test_error_expression(given, expression, error, filename):
     import jmespath.parser
-    if error not in ('syntax', 'invalid-type',
+    if error not in ('syntax', 'invalid-type', 'undefined-variable',
                      'unknown-function', 'invalid-arity', 'invalid-value'):
         raise RuntimeError("Unknown error type '%s'" % error)
     try:

@@ -2,6 +2,8 @@ import operator
 
 from jmespath import functions
 from jmespath.compat import string_type
+from jmespath.scope import ScopedChainDict
+from jmespath import exceptions
 from numbers import Number
 
 
@@ -121,6 +123,7 @@ class TreeInterpreter(Visitor):
             self._functions = self._options.custom_functions
         else:
             self._functions = functions.Functions()
+        self._scope = ScopedChainDict()
 
     def default_visit(self, node, *args, **kwargs):
         raise NotImplementedError(node['type'])
@@ -279,6 +282,27 @@ class TreeInterpreter(Visitor):
             if current is not None:
                 collected.append(current)
         return collected
+
+    def visit_let_expression(self, node, value):
+        *bindings, expr = node['children']
+        scope = {}
+        for assign in bindings:
+            scope.update(self.visit(assign, value))
+        self._scope.push_scope(scope)
+        result = self.visit(expr, value)
+        self._scope.pop_scope()
+        return result
+
+    def visit_assign(self, node, value):
+        name = node['value']
+        value = self.visit(node['children'][0], value)
+        return {name: value}
+
+    def visit_variable_ref(self, node, value):
+        try:
+            return self._scope[node['value']]
+        except KeyError:
+            raise exceptions.UndefinedVariable(node['value'])
 
     def visit_value_projection(self, node, value):
         base = self.visit(node['children'][0], value)
