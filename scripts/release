@@ -2,7 +2,7 @@
 """Script to manage releases.
 
 * Create release branches
-* Version bump setup.py, docs/conf.py, etc.
+* Version bump setup.py, etc.
 * Tag the releases
 * Merge to master
 * Push everything up to github.
@@ -18,11 +18,6 @@ Usage::
 """
 import argparse
 from subprocess import check_call, check_output
-
-try:
-    input = raw_input
-except NameError:
-    pass
 
 
 def run(command):
