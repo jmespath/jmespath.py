@@ -13,7 +13,7 @@ setup(
     author='James Saryerwinnie',
     author_email='js@jamesls.com',
     url='https://github.com/jmespath/jmespath.py',
-    scripts=['bin/jp.py'],
+    scripts=['bin/jp.py', 'bin/jpp'],
     packages=find_packages(exclude=['tests']),
     license='MIT',
     python_requires='>=3.7',
