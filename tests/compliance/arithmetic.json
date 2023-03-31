@@ -1,0 +1,62 @@
+[
+  {
+    "given": {
+      "a": {
+        "b": 1
+      },
+      "c": {
+        "d": 2
+      }
+    },
+    "cases": [
+      {
+        "expression": "`1` + `2`",
+        "result": 3.0
+      },
+      {
+        "expression": "`1` - `2`",
+        "result": -1.0
+      },
+      {
+        "expression": "`2` * `4`",
+        "result": 8.0
+      },
+      {
+        "expression": "`2` × `4`",
+        "result": 8.0
+      },
+      {
+        "expression": "`2` / `3`",
+        "result": 0.6666666666666666
+      },
+      {
+        "expression": "`2` ÷ `3`",
+        "result": 0.6666666666666666
+      },
+      {
+        "expression": "`10` % `3`",
+        "result": 1.0
+      },
+      {
+        "expression": "`10` // `3`",
+        "result": 3.0
+      },
+      {
+        "expression": "-`1` - + `2`",
+        "result": -3.0
+      },
+      {
+        "expression": "{ ab: a.b, cd: c.d } | ab + cd",
+        "result": 3.0
+      },
+      {
+        "expression": "{ ab: a.b, cd: c.d } | ab + cd × cd",
+        "result": 5.0
+      },
+      {
+        "expression": "{ ab: a.b, cd: c.d } | (ab + cd) × cd",
+        "result": 6.0
+      }
+    ]
+  }
+]

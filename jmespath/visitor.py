@@ -107,6 +107,18 @@ class TreeInterpreter(Visitor):
         'gte': operator.ge
     }
     _EQUALITY_OPS = ['eq', 'ne']
+    _ARITHMETIC_UNARY_FUNC = {
+        'minus': operator.neg,
+        'plus': lambda x: x
+    }
+    _ARITHMETIC_FUNC = {
+        'div': operator.floordiv,
+        'divide': operator.truediv,
+        'minus': operator.sub,
+        'modulo': operator.mod,
+        'multiply': operator.mul,
+        'plus': operator.add,
+    }
     MAP_TYPE = dict
 
     def __init__(self, options=None):
@@ -156,6 +168,19 @@ class TreeInterpreter(Visitor):
                     _is_comparable(right)):
                 return None
             return comparator_func(left, right)
+
+    def visit_arithmetic_unary(self, node, value):
+        operation = self._ARITHMETIC_UNARY_FUNC[node['value']]
+        return operation(
+            self.visit(node['children'][0], value)
+        )
+
+    def visit_arithmetic(self, node, value):
+        operation = self._ARITHMETIC_FUNC[node['value']]
+        return operation(
+            self.visit(node['children'][0], value),
+            self.visit(node['children'][1], value)
+        )
 
     def visit_current(self, node, value):
         return value

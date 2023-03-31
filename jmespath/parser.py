@@ -57,6 +57,12 @@ class Parser(object):
         'gte': 5,
         'lte': 5,
         'ne': 5,
+        'minus': 6,
+        'plus': 6,
+        'div': 7,
+        'divide': 7,
+        'modulo': 7,
+        'multiply': 7,
         'flatten': 9,
         # Everything above stops a projection.
         'star': 20,
@@ -169,6 +175,12 @@ class Parser(object):
         expression = self._expression()
         self._match('rparen')
         return expression
+
+    def _token_nud_minus(self, token):
+        return self._parse_arithmetic_unary(token)
+
+    def _token_nud_plus(self, token):
+        return self._parse_arithmetic_unary(token)
 
     def _token_nud_flatten(self, token):
         left = ast.flatten(ast.identity())
@@ -318,6 +330,27 @@ class Parser(object):
     def _token_led_lte(self, left):
         return self._parse_comparator(left, 'lte')
 
+    def _token_led_div(self, left):
+        return self._parse_arithmetic(left, 'div')
+
+    def _token_led_divide(self, left):
+        return self._parse_arithmetic(left, 'divide')
+
+    def _token_led_minus(self, left):
+        return self._parse_arithmetic(left, 'minus')
+
+    def _token_led_modulo(self, left):
+        return self._parse_arithmetic(left, 'modulo')
+
+    def _token_led_multiply(self, left):
+        return self._parse_arithmetic(left, 'multiply')
+
+    def _token_led_plus(self, left):
+        return self._parse_arithmetic(left, 'plus')
+
+    def _token_led_star(self, left):
+        return self._parse_arithmetic(left, 'multiply')
+
     def _token_led_flatten(self, left):
         left = ast.flatten(left)
         right = self._parse_projection_rhs(
@@ -355,6 +388,14 @@ class Parser(object):
     def _parse_comparator(self, left, comparator):
         right = self._expression(self.BINDING_POWER[comparator])
         return ast.comparator(comparator, left, right)
+
+    def _parse_arithmetic_unary(self, token):
+        expression = self._expression(self.BINDING_POWER[token['type']])
+        return ast.arithmetic_unary(token['type'], expression)
+
+    def _parse_arithmetic(self, left, operator):
+        right = self._expression(self.BINDING_POWER[operator])
+        return ast.arithmetic(operator, left, right)
 
     def _parse_multi_select_list(self):
         expressions = []
