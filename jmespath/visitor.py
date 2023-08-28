@@ -56,7 +56,7 @@ def _is_actual_number(x):
     return isinstance(x, Number)
 
 
-class Options(object):
+class Options:
     """Options to control how a JMESPath function is evaluated."""
     def __init__(self, dict_cls=None, custom_functions=None):
         #: The class to use when creating a dict.  The interpreter
@@ -71,7 +71,7 @@ class Options(object):
         self.custom_functions = custom_functions
 
 
-class _Expression(object):
+class _Expression:
     def __init__(self, expression, interpreter):
         self.expression = expression
         self.interpreter = interpreter
@@ -80,7 +80,7 @@ class _Expression(object):
         return self.interpreter.visit(node, *args, **kwargs)
 
 
-class Visitor(object):
+class Visitor:
     def __init__(self):
         self._method_cache = {}
 
@@ -110,7 +110,7 @@ class TreeInterpreter(Visitor):
     MAP_TYPE = dict
 
     def __init__(self, options=None):
-        super(TreeInterpreter, self).__init__()
+        super().__init__()
         self._dict_cls = self.MAP_TYPE
         if options is None:
             options = Options()
@@ -306,23 +306,23 @@ class TreeInterpreter(Visitor):
 
 class GraphvizVisitor(Visitor):
     def __init__(self):
-        super(GraphvizVisitor, self).__init__()
+        super().__init__()
         self._lines = []
         self._count = 1
 
     def visit(self, node, *args, **kwargs):
         self._lines.append('digraph AST {')
-        current = '%s%s' % (node['type'], self._count)
+        current = '{}{}'.format(node['type'], self._count)
         self._count += 1
         self._visit(node, current)
         self._lines.append('}')
         return '\n'.join(self._lines)
 
     def _visit(self, node, current):
-        self._lines.append('%s [label="%s(%s)"]' % (
+        self._lines.append('{} [label="{}({})"]'.format(
             current, node['type'], node.get('value', '')))
         for child in node.get('children', []):
-            child_name = '%s%s' % (child['type'], self._count)
+            child_name = '{}{}'.format(child['type'], self._count)
             self._count += 1
-            self._lines.append('  %s -> %s' % (current, child_name))
+            self._lines.append('  {} -> {}'.format(current, child_name))
             self._visit(child, child_name)

@@ -53,7 +53,7 @@ class TestRegexLexer(unittest.TestCase):
     def test_json_escaped_value(self):
         tokens = list(self.lexer.tokenize('"\u2713"'))
         self.assert_tokens(tokens, [{'type': 'quoted_identifier',
-                                     'value': u"\u2713"}])
+                                     'value': "\u2713"}])
 
     def test_number_expressions(self):
         tokens = list(self.lexer.tokenize('foo.bar.baz'))

@@ -45,7 +45,7 @@ def signature(*arguments):
 class FunctionRegistry(type):
     def __init__(cls, name, bases, attrs):
         cls._populate_function_table()
-        super(FunctionRegistry, cls).__init__(name, bases, attrs)
+        super().__init__(name, bases, attrs)
 
     def _populate_function_table(cls):
         function_table = {}

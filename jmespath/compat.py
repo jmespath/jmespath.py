@@ -15,5 +15,4 @@ def with_repr_method(cls):
     return cls
 
 def get_methods(cls):
-    for name, method in inspect.getmembers(cls, predicate=inspect.isfunction):
-        yield name, method
+    yield from inspect.getmembers(cls, predicate=inspect.isfunction)

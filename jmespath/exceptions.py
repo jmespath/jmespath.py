@@ -10,7 +10,7 @@ class ParseError(JMESPathError):
     _ERROR_MESSAGE = 'Invalid jmespath expression'
     def __init__(self, lex_position, token_value, token_type,
                  msg=_ERROR_MESSAGE):
-        super(ParseError, self).__init__(lex_position, token_value, token_type)
+        super().__init__(lex_position, token_value, token_type)
         self.lex_position = lex_position
         self.token_value = token_value
         self.token_type = token_type.upper()
@@ -50,15 +50,13 @@ class LexerError(ParseError):
         self.lexer_position = lexer_position
         self.lexer_value = lexer_value
         self.message = message
-        super(LexerError, self).__init__(lexer_position,
-                                         lexer_value,
-                                         message)
+        super().__init__(lexer_position, lexer_value, message)
         # Whatever catches LexerError can set this.
         self.expression = expression
 
     def __str__(self):
         underline = ' ' * self.lexer_position + '^'
-        return 'Bad jmespath expression: %s:\n%s\n%s' % (
+        return 'Bad jmespath expression: {}:\n{}\n{}'.format(
             self.message, self.expression, underline)
 
 
@@ -114,7 +112,7 @@ class JMESPathTypeError(JMESPathError):
 
 class EmptyExpressionError(JMESPathError):
     def __init__(self):
-        super(EmptyExpressionError, self).__init__(
+        super().__init__(
             "Invalid JMESPath expression: cannot be empty.")
 
 

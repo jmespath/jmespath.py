@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-import io
-
 from setuptools import setup, find_packages
 
 
@@ -9,7 +7,7 @@ setup(
     name='jmespath',
     version='1.0.1',
     description='JSON Matching Expressions',
-    long_description=io.open('README.rst', encoding='utf-8').read(),
+    long_description=open('README.rst', encoding='utf-8').read(),
     author='James Saryerwinnie',
     author_email='js@jamesls.com',
     url='https://github.com/jmespath/jmespath.py',

@@ -130,7 +130,7 @@ def load_tests(filename):
         data = json.load(f)
     if isinstance(data, list):
         for i, d in enumerate(data):
-            _add_cases(d, loaded, '%s-%s' % (filename, i))
+            _add_cases(d, loaded, '{}-{}'.format(filename, i))
     else:
         _add_cases(data, loaded, filename)
     return loaded

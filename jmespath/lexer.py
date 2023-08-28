@@ -5,7 +5,7 @@ from json import loads
 from jmespath.exceptions import LexerError, EmptyExpressionError
 
 
-class Lexer(object):
+class Lexer:
     START_IDENTIFIER = set(string.ascii_letters + '_')
     VALID_IDENTIFIER = set(string.ascii_letters + string.digits + '_')
     VALID_NUMBER = set(string.digits)
