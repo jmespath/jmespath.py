@@ -20,7 +20,7 @@ jobs:
         allow-prereleases: true
     - name: Install dependencies
       run: |
-        pip install pip==20.0.2
+        pip install pip==23.2.1
         pip install -r requirements.txt
         python setup.py bdist_wheel
         pip install dist/*.whl
