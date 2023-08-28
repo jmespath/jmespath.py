@@ -22,7 +22,7 @@ jobs:
       run: |
         pip install pip==23.2.1
         pip install -r requirements.txt
-        python setup.py bdist_wheel
+        python -m build --wheel
         pip install dist/*.whl
     - name: Test with pytest
       run: |
