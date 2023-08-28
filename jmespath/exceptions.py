@@ -1,16 +1,12 @@
-from jmespath.compat import with_str_method
-
-
 class JMESPathError(ValueError):
     pass
 
 
-@with_str_method
 class ParseError(JMESPathError):
     _ERROR_MESSAGE = 'Invalid jmespath expression'
     def __init__(self, lex_position, token_value, token_type,
                  msg=_ERROR_MESSAGE):
-        super(ParseError, self).__init__(lex_position, token_value, token_type)
+        super().__init__(lex_position, token_value, token_type)
         self.lex_position = lex_position
         self.token_value = token_value
         self.token_type = token_type.upper()
@@ -28,7 +24,6 @@ class ParseError(JMESPathError):
                 self.expression, underline))
 
 
-@with_str_method
 class IncompleteExpressionError(ParseError):
     def set_expression(self, expression):
         self.expression = expression
@@ -44,25 +39,21 @@ class IncompleteExpressionError(ParseError):
             '"%s"\n%s' % (self.expression, underline))
 
 
-@with_str_method
 class LexerError(ParseError):
     def __init__(self, lexer_position, lexer_value, message, expression=None):
         self.lexer_position = lexer_position
         self.lexer_value = lexer_value
         self.message = message
-        super(LexerError, self).__init__(lexer_position,
-                                         lexer_value,
-                                         message)
+        super().__init__(lexer_position, lexer_value, message)
         # Whatever catches LexerError can set this.
         self.expression = expression
 
     def __str__(self):
         underline = ' ' * self.lexer_position + '^'
-        return 'Bad jmespath expression: %s:\n%s\n%s' % (
+        return 'Bad jmespath expression: {}:\n{}\n{}'.format(
             self.message, self.expression, underline)
 
 
-@with_str_method
 class ArityError(ParseError):
     def __init__(self, expected, actual, name):
         self.expected_arity = expected
@@ -85,7 +76,6 @@ class ArityError(ParseError):
             return word + 's'
 
 
-@with_str_method
 class VariadictArityError(ArityError):
     def __str__(self):
         return ("Expected at least %s %s for function %s(), "
@@ -96,7 +86,6 @@ class VariadictArityError(ArityError):
                     self.actual_arity))
 
 
-@with_str_method
 class JMESPathTypeError(JMESPathError):
     def __init__(self, function_name, current_value, actual_type,
                  expected_types):
@@ -114,7 +103,7 @@ class JMESPathTypeError(JMESPathError):
 
 class EmptyExpressionError(JMESPathError):
     def __init__(self):
-        super(EmptyExpressionError, self).__init__(
+        super().__init__(
             "Invalid JMESPath expression: cannot be empty.")
 
 

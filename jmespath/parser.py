@@ -28,13 +28,12 @@ A few notes on the implementation.
 import random
 
 from jmespath import lexer
-from jmespath.compat import with_repr_method
 from jmespath import ast
 from jmespath import exceptions
 from jmespath import visitor
 
 
-class Parser(object):
+class Parser:
     BINDING_POWER = {
         'eof': 0,
         'unquoted_identifier': 0,
@@ -429,7 +428,7 @@ class Parser(object):
             allowed = ['quoted_identifier', 'unquoted_identifier',
                        'lbracket', 'lbrace']
             msg = (
-                "Expecting: %s, got: %s" % (allowed, t['type'])
+                "Expecting: {}, got: {}".format(allowed, t['type'])
             )
             self._raise_parse_error_for_token(t, msg)
 
@@ -483,8 +482,8 @@ class Parser(object):
         if actual_type == 'eof':
             raise exceptions.IncompleteExpressionError(
                 lex_position, actual_value, actual_type)
-        message = 'Expecting: %s, got: %s' % (expected_type,
-                                              actual_type)
+        message = 'Expecting: {}, got: {}'.format(expected_type,
+                                                  actual_type)
         raise exceptions.ParseError(
             lex_position, actual_value, actual_type, message)
 
@@ -498,8 +497,7 @@ class Parser(object):
         cls._CACHE.clear()
 
 
-@with_repr_method
-class ParsedResult(object):
+class ParsedResult:
     def __init__(self, expression, parsed):
         self.expression = expression
         self.parsed = parsed
