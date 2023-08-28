@@ -1,11 +1,7 @@
-from jmespath.compat import with_str_method
-
-
 class JMESPathError(ValueError):
     pass
 
 
-@with_str_method
 class ParseError(JMESPathError):
     _ERROR_MESSAGE = 'Invalid jmespath expression'
     def __init__(self, lex_position, token_value, token_type,
@@ -28,7 +24,6 @@ class ParseError(JMESPathError):
                 self.expression, underline))
 
 
-@with_str_method
 class IncompleteExpressionError(ParseError):
     def set_expression(self, expression):
         self.expression = expression
@@ -44,7 +39,6 @@ class IncompleteExpressionError(ParseError):
             '"%s"\n%s' % (self.expression, underline))
 
 
-@with_str_method
 class LexerError(ParseError):
     def __init__(self, lexer_position, lexer_value, message, expression=None):
         self.lexer_position = lexer_position
@@ -60,7 +54,6 @@ class LexerError(ParseError):
             self.message, self.expression, underline)
 
 
-@with_str_method
 class ArityError(ParseError):
     def __init__(self, expected, actual, name):
         self.expected_arity = expected
@@ -83,7 +76,6 @@ class ArityError(ParseError):
             return word + 's'
 
 
-@with_str_method
 class VariadictArityError(ArityError):
     def __str__(self):
         return ("Expected at least %s %s for function %s(), "
@@ -94,7 +86,6 @@ class VariadictArityError(ArityError):
                     self.actual_arity))
 
 
-@with_str_method
 class JMESPathTypeError(JMESPathError):
     def __init__(self, function_name, current_value, actual_type,
                  expected_types):

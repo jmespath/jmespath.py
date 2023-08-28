@@ -1,7 +1,6 @@
 import operator
 
 from jmespath import functions
-from jmespath.compat import string_type
 from numbers import Number
 
 
@@ -40,7 +39,7 @@ def _is_comparable(x):
     # but enough people are relying on this behavior that
     # it's been added back.  This should eventually become
     # part of the official spec.
-    return _is_actual_number(x) or isinstance(x, string_type)
+    return _is_actual_number(x) or isinstance(x, str)
 
 
 def _is_actual_number(x):

@@ -1,9 +1,8 @@
+import inspect
 import math
 import json
 
 from jmespath import exceptions
-from jmespath.compat import string_type as STRING_TYPE
-from jmespath.compat import get_methods
 
 
 # python types -> jmespath types
@@ -47,12 +46,13 @@ class FunctionRegistry(type):
         cls._populate_function_table()
         super().__init__(name, bases, attrs)
 
+
     def _populate_function_table(cls):
         function_table = {}
         # Any method with a @signature decorator that also
         # starts with "_func_" is registered as a function.
         # _func_max_by -> max_by function.
-        for name, method in get_methods(cls):
+        for name, method in inspect.getmembers(cls, predicate=inspect.isfunction):
             if not name.startswith('_func_'):
                 continue
             signature = getattr(method, 'signature', None)
@@ -187,7 +187,7 @@ class Functions(metaclass=FunctionRegistry):
 
     @signature({'types': []})
     def _func_to_string(self, arg):
-        if isinstance(arg, STRING_TYPE):
+        if isinstance(arg, str):
             return arg
         else:
             return json.dumps(arg, separators=(',', ':'),
@@ -228,7 +228,7 @@ class Functions(metaclass=FunctionRegistry):
 
     @signature({'types': ['array', 'string']})
     def _func_reverse(self, arg):
-        if isinstance(arg, STRING_TYPE):
+        if isinstance(arg, str):
             return arg[::-1]
         else:
             return list(reversed(arg))
@@ -293,7 +293,7 @@ class Functions(metaclass=FunctionRegistry):
 
     @signature({'types': []})
     def _func_type(self, arg):
-        if isinstance(arg, STRING_TYPE):
+        if isinstance(arg, str):
             return "string"
         elif isinstance(arg, bool):
             return "boolean"

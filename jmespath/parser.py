@@ -28,7 +28,6 @@ A few notes on the implementation.
 import random
 
 from jmespath import lexer
-from jmespath.compat import with_repr_method
 from jmespath import ast
 from jmespath import exceptions
 from jmespath import visitor
@@ -498,7 +497,6 @@ class Parser:
         cls._CACHE.clear()
 
 
-@with_repr_method
 class ParsedResult:
     def __init__(self, expression, parsed):
         self.expression = expression
