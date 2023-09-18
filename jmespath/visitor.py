@@ -10,13 +10,17 @@ def _arraylike_all(arg):
     return arg.__array__().all() if is_array(arg) else arg
 
 
+def _arraylike_to_list(arg):
+    return [_arraylike_to_list(i) for i in arg] if is_arraylike(arg) else arg
+
+
 def _equals(x, y):
     if _is_special_number_case(x, y):
         return False
     elif is_array(x) or is_array(y):
         return _arraylike_all(x == y)
     else:
-        return x == y
+        return _arraylike_to_list(x) == _arraylike_to_list(y)
 
 
 def _is_special_number_case(x, y):

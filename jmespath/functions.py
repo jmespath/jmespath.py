@@ -37,7 +37,7 @@ REVERSE_TYPES_MAP = {
 
 
 def is_array(arg):
-    return hasattr(arg, "__array__")
+    return hasattr(arg, "__array__") and arg.shape != ()
 
 
 def is_arraylike(arg):

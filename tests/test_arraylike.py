@@ -9,35 +9,46 @@ from tests import unittest
 
 @parameterized_class(("name", "data"), [
     ("list", {
-        "a": {
+        "value": {
             "data": [[1,2,3],[4,5,6],[7,8,9]]
         },
-        "b": {
+        "same": {
             "data": [[1,2,3],[4,5,6],[7,8,9]]
         },
-        "c": {
+        "other": {
+            "data": [[2,2,3],[4,5,6],[7,8,9]]
+        }
+    }),
+    ("tuple", {
+        "value": {
+            "data": ((1,2,3),(4,5,6),(7,8,9))
+        },
+        "same": {
+            "data": ([1,2,3],[4,5,6],[7,8,9])
+        },
+        "other": {
             "data": [[2,2,3],[4,5,6],[7,8,9]]
         }
     }),
     ("numpy", {
-        "a": {
+        "value": {
             "data": np.array([[1,2,3],[4,5,6],[7,8,9]])
         },
-        "b": {
-            "data": np.array([[1,2,3],[4,5,6],[7,8,9]], dtype='int16')
+        "same": {
+            "data": (np.array([1,2,3]),np.array([4,5,6]),np.array([7,8,9]))
         },
-        "c": {
+        "other": {
             "data": np.array([[2,2,3],[4,5,6],[7,8,9]])
         }
     }),
     ("xarray", {
-        "a": {
+        "value": {
             "data": xr.DataArray([[1,2,3],[4,5,6],[7,8,9]])
         },
-        "b": {
-            "data": xr.DataArray([[1,2,3],[4,5,6],[7,8,9]])
+        "same": {
+            "data": (xr.DataArray([1,2,3]),xr.DataArray([4,5,6]),xr.DataArray([7,8,9]))
         },
-        "c": {
+        "other": {
             "data": xr.DataArray([[2,2,3],[4,5,6],[7,8,9]])
         }
     })
@@ -45,19 +56,19 @@ from tests import unittest
 class TestArrayNumeric(unittest.TestCase):
     @parameterized.expand([
         ["self", "@", lambda data: data],
-        ["get", "a.data", lambda data: data["a"]["data"]],
-        ["slice_horizontal", "a.data[1][:]", lambda data: np.array(data["a"]["data"])[1,:]],
-        ["slice_horizontal2", "a.data[:3:2][:]", lambda data: np.array(data["a"]["data"])[:3:2,:]],
-        ["slice_vertical", "a.data[:][1]", lambda data: np.array(data["a"]["data"])[:,1]],
-        ["slice_vertical2", "a.data[:][:3:2]", lambda data: np.array(data["a"]["data"])[:,:3:2]],
-        ["flatten", "a.data[]", lambda data: np.array(data["a"]["data"]).flatten()],
-        ["compare_self", "a.data == a.data", lambda _: True],
-        ["compare_same", "a.data == b.data", lambda _: True],
-        ["compare_other", "a.data == c.data", lambda _: False],
-        ["compare_literal_scalar", "a.data[0][0] == `1`", lambda _: True],
-        ["compare_literal_slice", "a.data[1][:] == `[4, 5, 6]`", lambda _: True],
-        ["compare_literal", "a.data == `[[1,2,3],[4,5,6],[7,8,9]]`", lambda _: True],
-        ["compare_flattened", "a.data[] == `[1,2,3,4,5,6,7,8,9]`", lambda _: True],
+        ["get", "value.data", lambda data: data["value"]["data"]],
+        ["slice_horizontal", "value.data[1][:]", lambda data: np.array(data["value"]["data"])[1,:]],
+        ["slice_horizontal2", "value.data[:3:2][:]", lambda data: np.array(data["value"]["data"])[:3:2,:]],
+        ["slice_vertical", "value.data[:][1]", lambda data: np.array(data["value"]["data"])[:,1]],
+        ["slice_vertical2", "value.data[:][:3:2]", lambda data: np.array(data["value"]["data"])[:,:3:2]],
+        ["flatten", "value.data[]", lambda data: np.array(data["value"]["data"]).flatten()],
+        ["compare_self", "value.data == value.data", lambda _: True],
+        ["compare_same", "value.data == same.data", lambda _: True],
+        ["compare_other", "value.data == other.data", lambda _: False],
+        ["compare_literal_scalar", "value.data[0][0] == `1`", lambda _: True],
+        ["compare_literal_slice", "value.data[1][:] == `[4, 5, 6]`", lambda _: True],
+        ["compare_literal", "value.data == `[[1,2,3],[4,5,6],[7,8,9]]`", lambda _: True],
+        ["compare_flattened", "value.data[] == `[1,2,3,4,5,6,7,8,9]`", lambda _: True],
     ])
     def test_search(self, test_name, query, expected):
         result = jmespath.search(query, self.data)
@@ -66,13 +77,13 @@ class TestArrayNumeric(unittest.TestCase):
 
 @parameterized_class(("name", "data"), [
     ("numpy", {
-        "a": { 
+        "value": { 
             "data": np.array([["test", "messages"],["in", "numpy"]])
         },
-        "b": { 
+        "same": { 
             "data": np.array([["test", "messages"],["in", "numpy"]])
         },
-        "c": { 
+        "other": { 
             "data": np.array([["test", "messages"],["other", "numpy"]])
         }
     })
@@ -80,17 +91,17 @@ class TestArrayNumeric(unittest.TestCase):
 class TestArrayStr(unittest.TestCase):
     @parameterized.expand([
         ["self", "@", lambda data: data],
-        ["get", "a.data", lambda data: data["a"]["data"]],
-        ["slice_horizontal", "a.data[1][:]", lambda data: data["a"]["data"][1,:]],
-        ["slice_vertical", "a.data[:][1]", lambda data: data["a"]["data"][:,1]],
-        ["flatten", "a.data[]", lambda data: data["a"]["data"].flatten()],
-        ["compare_self", "a.data == a.data", lambda _: True],
-        ["compare_same", "a.data == b.data", lambda _: True],
-        ["compare_other", "a.data == c.data", lambda _: False],
-        ["compare_literal_scalar", "a.data[0][0] == 'test'", lambda _: True],
-        ["compare_literal_slice", "a.data[1][:] == ['in', 'numpy']", lambda _: True],
-        ["compare_literal", "a.data == [['test', 'messages'],['in', 'numpy']]", lambda _: True],
-        ["compare_flattened", "a.data[] == ['test', 'messages', 'in', 'numpy']", lambda _: True],
+        ["get", "value.data", lambda data: data["value"]["data"]],
+        ["slice_horizontal", "value.data[1][:]", lambda data: data["value"]["data"][1,:]],
+        ["slice_vertical", "value.data[:][1]", lambda data: data["value"]["data"][:,1]],
+        ["flatten", "value.data[]", lambda data: data["value"]["data"].flatten()],
+        ["compare_self", "value.data == value.data", lambda _: True],
+        ["compare_same", "value.data == same.data", lambda _: True],
+        ["compare_other", "value.data == other.data", lambda _: False],
+        ["compare_literal_scalar", "value.data[0][0] == 'test'", lambda _: True],
+        ["compare_literal_slice", "value.data[1][:] == ['in', 'numpy']", lambda _: True],
+        ["compare_literal", "value.data == [['test', 'messages'],['in', 'numpy']]", lambda _: True],
+        ["compare_flattened", "value.data[] == ['test', 'messages', 'in', 'numpy']", lambda _: True],
     ])
     def test_search(self, name, query, expected):
         result = jmespath.search(query, self.data)
