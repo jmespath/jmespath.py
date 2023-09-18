@@ -6,4 +6,5 @@ hypothesis==3.1.0 ; python_version < '3.8'
 hypothesis==5.5.4 ; python_version == '3.8'
 hypothesis==5.35.4 ; python_version == '3.9'
 numpy>=1.15.0
+astropy>=3.1
 xarray>=0.18.0

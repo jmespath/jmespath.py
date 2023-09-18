@@ -1,3 +1,4 @@
+import astropy.units as u
 import numpy as np
 import xarray as xr
 from parameterized import parameterized, parameterized_class
@@ -50,6 +51,17 @@ from tests import unittest
         },
         "other": {
             "data": xr.DataArray([[2,2,3],[4,5,6],[7,8,9]])
+        }
+    }),
+    ("astropy", {
+        "value": {
+            "data": u.Quantity([[1,2,3],[4,5,6],[7,8,9]])
+        },
+        "same": {
+            "data": (u.Quantity([1,2,3]),u.Quantity([4,5,6]),u.Quantity([7,8,9]))
+        },
+        "other": {
+            "data": u.Quantity([[2,2,3],[4,5,6],[7,8,9]])
         }
     })
 ])
