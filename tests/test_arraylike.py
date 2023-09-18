@@ -1,4 +1,5 @@
 import astropy.units as u
+import dask.array as da
 import numpy as np
 import xarray as xr
 from parameterized import parameterized, parameterized_class
@@ -42,6 +43,17 @@ from tests import unittest
             "data": np.array([[2,2,3],[4,5,6],[7,8,9]])
         }
     }),
+    ("dask", {
+        "value": {
+            "data": da.from_array([[1,2,3],[4,5,6],[7,8,9]])
+        },
+        "same": {
+            "data": (da.from_array([1,2,3]),da.from_array([4,5,6]),da.from_array([7,8,9]))
+        },
+        "other": {
+            "data": da.from_array([[2,2,3],[4,5,6],[7,8,9]])
+        }
+    }),
     ("xarray", {
         "value": {
             "data": xr.DataArray([[1,2,3],[4,5,6],[7,8,9]])
@@ -63,7 +75,7 @@ from tests import unittest
         "other": {
             "data": u.Quantity([[2,2,3],[4,5,6],[7,8,9]])
         }
-    })
+    }),
 ])
 class TestArrayNumeric(unittest.TestCase):
     @parameterized.expand([
