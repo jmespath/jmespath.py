@@ -1,3 +1,8 @@
+Unreleased
+==========
+
+* Added support for Arraylike python objects as json arrays.
+
 1.0.1
 =====
 
