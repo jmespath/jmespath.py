@@ -1,8 +1,8 @@
 import operator
+from numbers import Number
 
 from jmespath import functions
 from jmespath.compat import string_type
-from numbers import Number
 
 
 def _equals(x, y):
@@ -58,7 +58,7 @@ def _is_actual_number(x):
 
 class Options(object):
     """Options to control how a JMESPath function is evaluated."""
-    def __init__(self, dict_cls=None, custom_functions=None):
+    def __init__(self, dict_cls=None, custom_functions=None, not_found_value=None):
         #: The class to use when creating a dict.  The interpreter
         #  may create dictionaries during the evaluation of a JMESPath
         #  expression.  For example, a multi-select hash will
@@ -69,6 +69,7 @@ class Options(object):
         #  have predictable key ordering.
         self.dict_cls = dict_cls
         self.custom_functions = custom_functions
+        self.not_found_value = not_found_value
 
 
 class _Expression(object):
@@ -133,9 +134,9 @@ class TreeInterpreter(Visitor):
 
     def visit_field(self, node, value):
         try:
-            return value.get(node['value'])
+            return value.get(node['value'], self._options.not_found_value)
         except AttributeError:
-            return None
+            return self._options.not_found_value
 
     def visit_comparator(self, node, value):
         # Common case: comparator is == or !=
@@ -298,7 +299,7 @@ class TreeInterpreter(Visitor):
         # because the truth/false values are different between
         # python and jmespath.
         return (value == '' or value == [] or value == {} or value is None or
-                value is False)
+                value is False or value == self._options.not_found_value)
 
     def _is_true(self, value):
         return not self._is_false(value)
