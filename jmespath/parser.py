@@ -26,6 +26,7 @@ A few notes on the implementation.
 
 """
 import random
+import threading
 
 from jmespath import lexer
 from jmespath.compat import with_repr_method
@@ -74,6 +75,7 @@ class Parser(object):
     # _CACHE dict.
     _CACHE = {}
     _MAX_SIZE = 128
+    _CACHE_LOCK = threading.Lock()
 
     def __init__(self, lookahead=2):
         self.tokenizer = None
@@ -87,7 +89,7 @@ class Parser(object):
             return cached
         parsed_result = self._do_parse(expression)
         self._CACHE[expression] = parsed_result
-        if len(self._CACHE) > self._MAX_SIZE:
+        if self._is_cache_full():
             self._free_cache_entries()
         return parsed_result
 
@@ -488,9 +490,15 @@ class Parser(object):
         raise exceptions.ParseError(
             lex_position, actual_value, actual_type, message)
 
+    def _is_cache_full(self):
+        return len(self._CACHE) > self._MAX_SIZE
+
     def _free_cache_entries(self):
-        for key in random.sample(list(self._CACHE.keys()), int(self._MAX_SIZE / 2)):
-            self._CACHE.pop(key, None)
+        with self._CACHE_LOCK:
+            if self._is_cache_full():
+                cache_keys = list(self._CACHE.keys())
+                for key in random.sample(cache_keys, int(len(cache_keys)/2)):
+                    self._CACHE.pop(key, None)
 
     @classmethod
     def purge(cls):
