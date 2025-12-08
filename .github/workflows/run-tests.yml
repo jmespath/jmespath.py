@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11-dev"]
+        python-version: ["3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v2
@@ -25,4 +25,4 @@ jobs:
         pip install dist/*.whl
     - name: Test with pytest
       run: |
-        cd tests/ && py.test --cov jmespath --cov-report term-missing
+        cd tests/ && python -m pytest --cov jmespath --cov-report term-missing
