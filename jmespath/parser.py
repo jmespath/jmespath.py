@@ -73,7 +73,7 @@ class Parser(object):
     # The _MAX_SIZE most recent expressions are cached in
     # _CACHE dict.
     _CACHE = {}
-    _MAX_SIZE = 128
+    _MAX_SIZE = 512
 
     def __init__(self, lookahead=2):
         self.tokenizer = None
@@ -489,8 +489,8 @@ class Parser(object):
             lex_position, actual_value, actual_type, message)
 
     def _free_cache_entries(self):
-        for key in random.sample(list(self._CACHE.keys()), int(self._MAX_SIZE / 2)):
-            self._CACHE.pop(key, None)
+        oldest_key = next(iter(self._CACHE))
+        del self._CACHE[oldest_key]
 
     @classmethod
     def purge(cls):
