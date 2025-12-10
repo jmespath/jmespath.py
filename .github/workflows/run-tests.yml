@@ -25,8 +25,8 @@ jobs:
       run: |
         pip install pip==25.1.0
         pip install -r requirements.txt
-        python -m build --wheel
-        pip install dist/*.whl
+        python -m pip install .
     - name: Test with pytest
       run: |
         cd tests/ && python -m pytest --cov jmespath --cov-report term-missing
+
