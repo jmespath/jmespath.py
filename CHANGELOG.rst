@@ -1,3 +1,10 @@
+Next Release (TBD)
+==================
+
+* Fix concurrency issue with cache
+  (`pr #335 <https://github.com/jmespath/jmespath.py/pull/335>`__)
+
+
 1.0.1
 =====
 
