@@ -1,6 +1,12 @@
 Next Release (TBD)
 ==================
 
+* No changes yet.
+
+
+1.1.0
+=====
+
 * Fix concurrency issue with cache
   (`pr #335 <https://github.com/jmespath/jmespath.py/pull/335>`__)
 * Added support for Python 3.12-3.14 (`pr #331 <https://github.com/jmespath/jmespath.py/pull/331>`__)
