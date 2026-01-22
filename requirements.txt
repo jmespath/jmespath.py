@@ -1,4 +1,4 @@
-wheel==0.45.1
+wheel==0.46.2
 pytest==8.4.1
 pytest-cov==3.0.0
 hypothesis==5.35.4
