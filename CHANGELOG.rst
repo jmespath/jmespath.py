@@ -1,3 +1,31 @@
+Next Release (TBD)
+==================
+
+* No changes yet.
+
+
+1.1.0
+=====
+
+* Fix concurrency issue with cache
+  (`pr #335 <https://github.com/jmespath/jmespath.py/pull/335>`__)
+* Added support for Python 3.12-3.14 (`pr #331 <https://github.com/jmespath/jmespath.py/pull/331>`__)
+* Removed support for Python 3.7-3.8 (`pr #335 <https://github.com/jmespath/jmespath.py/pull/335>`__)
+
+
+1.0.1
+=====
+
+* Add support for Python 3.11
+  (`issue #285 <https://github.com/jmespath/jmespath.py/issues/285>`__)
+* Fix boolean correctness for floats
+  (`issue #281 <https://github.com/jmespath/jmespath.py/issues/281>`__)
+* Fix Python 3.9 warning about random sampling used in parser cache.
+  (`issue #216 <https://github.com/jmespath/jmespath.py/issues/216>`__)
+* Fix Python 3.8 warning for type comparisons
+  (`issue #210 <https://github.com/jmespath/jmespath.py/issues/268>`__)
+
+
 1.0.0
 =====
 

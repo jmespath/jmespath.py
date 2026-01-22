@@ -1,3 +1,0 @@
--r requirements.txt
-Sphinx==1.2b3
-guzzle-sphinx-theme==0.3.1
