@@ -87,22 +87,9 @@ class Lexer(object):
             elif self._current == '!':
                 yield self._match_or_else('=', 'ne', 'not')
             elif self._current == '=':
-                if self._next() == '=':
-                    yield {'type': 'eq', 'value': '==',
-                        'start': self._position - 1, 'end': self._position}
-                    self._next()
-                else:
-                    if self._current is None:
-                        # If we're at the EOF, we never advanced
-                        # the position so we don't need to rewind
-                        # it back one location.
-                        position = self._position
-                    else:
-                        position = self._position - 1
-                    raise LexerError(
-                        lexer_position=position,
-                        lexer_value='=',
-                        message="Unknown token '='")
+                yield self._match_or_else('=', 'eq', 'assign')
+            elif self._current == '$':
+                yield self._consume_variable()
             else:
                 raise LexerError(lexer_position=self._position,
                                  lexer_value=self._current,
@@ -116,6 +103,21 @@ class Lexer(object):
         while self._next() in self.VALID_NUMBER:
             buff += self._current
         return buff
+
+    def _consume_variable(self):
+        start = self._position
+        buff = self._current
+        self._next()
+        if self._current not in self.START_IDENTIFIER:
+            raise LexerError(
+                lexer_position=start,
+                lexer_value=self._current,
+                message='Invalid variable starting character %s' % self._current)
+        buff += self._current
+        while self._next() in self.VALID_IDENTIFIER:
+            buff += self._current
+        return {'type': 'variable', 'value': buff,
+                'start': start, 'end': start + len(buff)}
 
     def _initialize_for_expression(self, expression):
         if not expression:

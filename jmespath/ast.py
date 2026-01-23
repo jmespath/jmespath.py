@@ -2,6 +2,10 @@
 # {"type": <node type>", children: [], "value": ""}
 
 
+def assign(name, expr):
+    return {'type': 'assign', 'children': [expr], 'value': name}
+
+
 def comparator(name, first, second):
     return {'type': 'comparator', 'children': [first, second], 'value': name}
 
@@ -46,6 +50,10 @@ def key_val_pair(key_name, node):
     return {"type": "key_val_pair", 'children': [node], "value": key_name}
 
 
+def let_expression(bindings, expr):
+    return {'type': 'let_expression', 'children': [*bindings, expr]}
+
+
 def literal(literal_value):
     return {'type': 'literal', 'value': literal_value, 'children': []}
 
@@ -88,3 +96,7 @@ def slice(start, end, step):
 
 def value_projection(left, right):
     return {'type': 'value_projection', 'children': [left, right]}
+
+
+def variable_ref(name):
+    return {"type": "variable_ref", "children": [], "value": name}
