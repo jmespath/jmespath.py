@@ -21,6 +21,11 @@ class Lexer(object):
         ')': 'rparen',
         '{': 'lbrace',
         '}': 'rbrace',
+        '+': 'plus',
+        '%': 'modulo',
+        u'\u2212': 'minus',
+        u'\u00d7': 'multiply',
+        u'\u00f7': 'divide',
     }
 
     def tokenize(self, expression):
@@ -68,16 +73,30 @@ class Lexer(object):
                 yield {'type': 'number', 'value': int(buff),
                        'start': start, 'end': start + len(buff)}
             elif self._current == '-':
-                # Negative number.
-                start = self._position
-                buff = self._consume_number()
-                if len(buff) > 1:
-                    yield {'type': 'number', 'value': int(buff),
-                           'start': start, 'end': start + len(buff)}
+                if not self._peek_is_next_digit():
+                    self._next()
+                    yield {'type': 'minus', 'value': '-',
+                       'start': self._position - 1, 'end': self._position}
                 else:
-                    raise LexerError(lexer_position=start,
-                                     lexer_value=buff,
-                                     message="Unknown token '%s'" % buff)
+                    # Negative number.
+                    start = self._position
+                    buff = self._consume_number()
+                    if len(buff) > 1:
+                        yield {'type': 'number', 'value': int(buff),
+                            'start': start, 'end': start + len(buff)}
+                    else:
+                        raise LexerError(lexer_position=start,
+                                        lexer_value=buff,
+                                        message="Unknown token '%s'" % buff)
+            elif self._current == '/':
+                self._next()
+                if self._current == '/':
+                    self._next()
+                    yield {'type': 'div', 'value': '//',
+                        'start': self._position - 1, 'end': self._position}
+                else:
+                    yield {'type': 'divide', 'value': '/',
+                        'start': self._position, 'end': self._position + 1}
             elif self._current == '"':
                 yield self._consume_quoted_identifier()
             elif self._current == '<':
@@ -116,6 +135,13 @@ class Lexer(object):
         while self._next() in self.VALID_NUMBER:
             buff += self._current
         return buff
+
+    def _peek_is_next_digit(self):
+        if (self._position == self._length - 1):
+            return False
+        else:
+            next = self._chars[self._position + 1]
+            return next in self.VALID_NUMBER
 
     def _initialize_for_expression(self, expression):
         if not expression:

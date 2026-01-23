@@ -45,6 +45,50 @@ class TestRegexLexer(unittest.TestCase):
         self.assert_tokens(tokens, [{'type': 'number',
                                      'value': -24}])
 
+    def test_plus(self):
+        tokens = list(self.lexer.tokenize('+'))
+        self.assert_tokens(tokens, [{'type': 'plus',
+                                     'value': '+'}])
+
+    def test_minus(self):
+        tokens = list(self.lexer.tokenize('-'))
+        self.assert_tokens(tokens, [{'type': 'minus',
+                                     'value': '-'}])
+    def test_minus_unicode(self):
+        tokens = list(self.lexer.tokenize(u'\u2212'))
+        self.assert_tokens(tokens, [{'type': 'minus',
+                                     'value': u'\u2212'}])
+
+    def test_multiplication(self):
+        tokens = list(self.lexer.tokenize('*'))
+        self.assert_tokens(tokens, [{'type': 'star',
+                                     'value': '*'}])
+
+    def test_multiplication_unicode(self):
+        tokens = list(self.lexer.tokenize(u'\u00d7'))
+        self.assert_tokens(tokens, [{'type': 'multiply',
+                                     'value': u'\u00d7'}])
+
+    def test_division(self):
+        tokens = list(self.lexer.tokenize('/'))
+        self.assert_tokens(tokens, [{'type': 'divide',
+                                     'value': '/'}])
+
+    def test_division_unicode(self):
+        tokens = list(self.lexer.tokenize('÷'))
+        self.assert_tokens(tokens, [{'type': 'divide',
+                                     'value': '÷'}])
+
+    def test_modulo(self):
+        tokens = list(self.lexer.tokenize('%'))
+        self.assert_tokens(tokens, [{'type': 'modulo',
+                                     'value': '%'}])
+
+    def test_integer_division(self):
+        tokens = list(self.lexer.tokenize('//'))
+        self.assert_tokens(tokens, [{'type': 'div',
+                                     'value': '//'}])
+
     def test_quoted_identifier(self):
         tokens = list(self.lexer.tokenize('"foobar"'))
         self.assert_tokens(tokens, [{'type': 'quoted_identifier',
@@ -151,9 +195,17 @@ class TestRegexLexer(unittest.TestCase):
         with self.assertRaises(LexerError):
             tokens = list(self.lexer.tokenize('^foo[0]'))
 
-    def test_unknown_character_with_identifier(self):
-        with self.assertRaisesRegex(LexerError, "Unknown token"):
-            list(self.lexer.tokenize('foo-bar'))
+    def test_arithmetic_expression(self):
+        tokens = list(self.lexer.tokenize('foo-bar'))
+        self.assertEqual(
+            tokens,
+            [
+                {'type': 'unquoted_identifier', 'value': 'foo', 'start': 0, 'end': 3},
+                {'type': 'minus', 'value': '-', 'start': 3, 'end': 4},
+                {'type': 'unquoted_identifier', 'value': 'bar', 'start': 4, 'end': 7},
+                {'type': 'eof', 'value': '', 'start': 7, 'end': 7}
+            ]
+        )
 
 
 if __name__ == '__main__':
