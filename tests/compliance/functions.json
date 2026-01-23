@@ -12,9 +12,38 @@
     "empty_list": [],
     "empty_hash": {},
     "objects": {"foo": "bar", "bar": "baz"},
+    "objectsNull": {"foo": "bar", "bar": null},
+    "objectsEmpty": {"foo": "", "bar": null, "baz": "baz"},
+    "objectsEmptyNested": {"foo": "", "bar": null, "baz": {"foo": "", "bar": "bar", "foe": null}},
+    "objectsNullNested": {"foo": "bar", "bar": null, "baz": { "bar": null, "foo": "foo"}},
     "null_key": null
   },
   "cases": [
+    {
+      "expression": "remove_empty(objectsEmptyNested, `false`)",
+      "result": {"baz": {"foo": "", "bar": "bar", "foe": null}}
+    },
+
+    {
+      "expression": "remove_empty(objectsEmptyNested, `true`)",
+      "result": {"baz": {"bar": "bar"}}
+    },
+    {
+      "expression": "remove_empty(objectsEmpty, `false`)",
+      "result": {"baz": "baz"}
+    },
+    {
+      "expression": "remove_null(objectsNull, `false`)",
+      "result":  {"foo": "bar"}
+    },
+    {
+      "expression": "remove_null(objectsNullNested, `false`)",
+      "result": {"foo": "bar", "baz": { "bar": null, "foo": "foo"}}
+    },
+    {
+      "expression": "remove_null(objectsNullNested, `true`)",
+      "result": {"foo": "bar", "baz": {"foo": "foo"}}
+    },
     {
       "expression": "abs(foo)",
       "result": 1
@@ -189,7 +218,7 @@
     },
     {
       "expression": "length(@)",
-      "result": 12
+      "result": 16
     },
     {
       "expression": "length(strings[0])",
