@@ -56,6 +56,10 @@ def _is_actual_number(x):
     return isinstance(x, Number)
 
 
+def _is_sequence(x):
+    return isinstance(x, (list, tuple))
+
+
 class Options(object):
     """Options to control how a JMESPath function is evaluated."""
     def __init__(self, dict_cls=None, custom_functions=None):
@@ -172,7 +176,7 @@ class TreeInterpreter(Visitor):
 
     def visit_filter_projection(self, node, value):
         base = self.visit(node['children'][0], value)
-        if not isinstance(base, list):
+        if not _is_sequence(base):
             return None
         comparator_node = node['children'][2]
         collected = []
@@ -181,20 +185,20 @@ class TreeInterpreter(Visitor):
                 current = self.visit(node['children'][1], element)
                 if current is not None:
                     collected.append(current)
-        return collected
+        return type(base)(collected)
 
     def visit_flatten(self, node, value):
         base = self.visit(node['children'][0], value)
-        if not isinstance(base, list):
-            # Can't flatten the object if it's not a list.
+        if not _is_sequence(base):
+            # Can't flatten the object if it's not a supported sequence type.
             return None
         merged_list = []
         for element in base:
-            if isinstance(element, list):
+            if _is_sequence(element):
                 merged_list.extend(element)
             else:
                 merged_list.append(element)
-        return merged_list
+        return type(base)(merged_list)
 
     def visit_identity(self, node, value):
         return value
@@ -202,7 +206,7 @@ class TreeInterpreter(Visitor):
     def visit_index(self, node, value):
         # Even though we can index strings, we don't
         # want to support that.
-        if not isinstance(value, list):
+        if not _is_sequence(value):
             return None
         try:
             return value[node['value']]
@@ -216,7 +220,7 @@ class TreeInterpreter(Visitor):
         return result
 
     def visit_slice(self, node, value):
-        if not isinstance(value, list):
+        if not _is_sequence(value):
             return None
         s = slice(*node['children'])
         return value[s]
@@ -271,14 +275,14 @@ class TreeInterpreter(Visitor):
 
     def visit_projection(self, node, value):
         base = self.visit(node['children'][0], value)
-        if not isinstance(base, list):
+        if not _is_sequence(base):
             return None
         collected = []
         for element in base:
             current = self.visit(node['children'][1], element)
             if current is not None:
                 collected.append(current)
-        return collected
+        return type(base)(collected)
 
     def visit_value_projection(self, node, value):
         base = self.visit(node['children'][0], value)
