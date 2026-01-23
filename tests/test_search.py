@@ -62,3 +62,15 @@ class TestPythonSpecificCases(unittest.TestCase):
         result = decimal.Decimal('3')
         self.assertEqual(jmespath.search('[?a >= `1`].a', [{'a': result}]),
                          [result])
+
+
+class TestNotFoundValueOption(unittest.TestCase):
+    opt = jmespath.Options(not_found_value='foo')
+    
+    def test_can_supply_custom_not_found_value(self):
+        value = jmespath.search('b', {'a': 1}, self.opt)
+        self.assertEqual(value, 'foo')
+
+    def test_custom_value_is_treated_as_false(self):
+        value = jmespath.search('b || a', {'a': 1}, self.opt)
+        self.assertEqual(value, 1)
