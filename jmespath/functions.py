@@ -1,6 +1,6 @@
 import math
 import json
-from typing import Sequence
+from collections.abc import Sequence
 
 from jmespath import exceptions
 from jmespath.compat import string_type as STRING_TYPE
