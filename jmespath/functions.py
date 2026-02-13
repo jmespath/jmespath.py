@@ -37,7 +37,9 @@ REVERSE_TYPES_MAP = {
 
 
 def is_array(arg):
-    return hasattr(arg, "__array__") and arg.shape != ()
+    # Is trivially convertible to a non-scalar ndarray via array method. see:
+    # https://numpy.org/doc/stable/user/basics.interoperability.html#the-array-method
+    return hasattr(arg, "__array__") and arg.__array__().shape != ()
 
 
 def is_arraylike(arg):
