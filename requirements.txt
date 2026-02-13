@@ -1,8 +1,14 @@
 wheel==0.45.1
 pytest==8.4.1
 pytest-cov==3.0.0
+parameterized==0.9.0
 hypothesis==5.35.4
 
 # Setuptools is no longer provided by default in Python 3.12+
 setuptools==71.1.0 ; python_version >= '3.12'
 packaging==24.1 ; python_version >= '3.12'
+
+astropy>=3.1
+dask>=2.0.0
+numpy>=1.15.0
+xarray>=0.18.0

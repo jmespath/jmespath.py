@@ -1,7 +1,7 @@
 Next Release (TBD)
 ==================
 
-* No changes yet.
+* Added support for Arraylike python objects as json arrays.
 
 
 1.1.0
