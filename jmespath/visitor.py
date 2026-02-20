@@ -151,9 +151,10 @@ class TreeInterpreter(Visitor):
             # will yield a None value.
             left = self.visit(node['children'][0], value)
             right = self.visit(node['children'][1], value)
-            num_types = (int, float)
-            if not (_is_comparable(left) and
-                    _is_comparable(right)):
+            if not ((_is_actual_number(left) and
+                     _is_actual_number(right)) or
+                    (isinstance(left, string_type) and
+                     isinstance(right, string_type))):
                 return None
             return comparator_func(left, right)
 
