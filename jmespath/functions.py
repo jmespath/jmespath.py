@@ -96,6 +96,12 @@ class Functions(metaclass=FunctionRegistry):
             if allowed_types:
                 self._type_check_single(actual[i], allowed_types,
                                         function_name)
+        if signature and signature[-1].get('variadic'):
+            allowed_types = signature[-1]['types']
+            if allowed_types:
+                for i in range(len(signature), len(actual)):
+                    self._type_check_single(actual[i], allowed_types,
+                                            function_name)
 
     def _type_check_single(self, current, types, function_name):
         # Type checking involves checking the top level type,
