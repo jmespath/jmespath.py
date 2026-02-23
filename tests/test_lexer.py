@@ -1,3 +1,4 @@
+import warnings
 from tests import unittest
 
 from jmespath import lexer
@@ -154,6 +155,52 @@ class TestRegexLexer(unittest.TestCase):
     def test_unknown_character_with_identifier(self):
         with self.assertRaisesRegex(LexerError, "Unknown token"):
             list(self.lexer.tokenize('foo-bar'))
+
+    def test_raw_string_literal(self):
+        tokens = list(self.lexer.tokenize("'foo'"))
+        self.assert_tokens(tokens, [{'type': 'literal', 'value': 'foo'}])
+
+    def test_raw_string_literal_with_spaces(self):
+        tokens = list(self.lexer.tokenize("'  foo  '"))
+        self.assert_tokens(tokens, [{'type': 'literal', 'value': '  foo  '}])
+
+    def test_raw_string_literal_escaped_quote(self):
+        # A backslash-escaped single quote inside a raw literal becomes a
+        # plain single quote in the result value.
+        tokens = list(self.lexer.tokenize(r"'foo\'bar'"))
+        self.assert_tokens(tokens, [{'type': 'literal', 'value': "foo'bar"}])
+
+    def test_raw_string_literal_backslash_not_before_quote(self):
+        # A backslash not followed by a single quote is kept as-is.
+        tokens = list(self.lexer.tokenize(r"'\z'"))
+        self.assert_tokens(tokens, [{'type': 'literal', 'value': r'\z'}])
+
+    def test_lone_dash_raises_lexer_error(self):
+        # A bare '-' with no digits following it is not a valid token.
+        with self.assertRaises(LexerError):
+            list(self.lexer.tokenize('-'))
+
+    def test_single_equals_raises_lexer_error(self):
+        # '=' is only valid as part of '=='; a lone '=' should error.
+        with self.assertRaises(LexerError):
+            list(self.lexer.tokenize('foo=bar'))
+
+    def test_equals_at_eof_raises_lexer_error(self):
+        # '=' at the very end of the expression (no following char) also
+        # has a separate position-calculation branch that should still raise.
+        with self.assertRaises(LexerError):
+            list(self.lexer.tokenize('='))
+
+    def test_deprecated_backtick_string_emits_warning(self):
+        # A bare word inside backticks is invalid JSON; the lexer falls back
+        # to wrapping it in quotes (deprecated JEP-12 syntax) and must emit
+        # a PendingDeprecationWarning.
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            list(self.lexer.tokenize('`foobar`'))
+        self.assertEqual(len(caught), 1)
+        self.assertTrue(issubclass(caught[0].category, PendingDeprecationWarning))
+        self.assertIn("deprecated", str(caught[0].message).lower())
 
 
 if __name__ == '__main__':
