@@ -32,5 +32,6 @@ setup(
         'Programming Language :: Python :: 3.14',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
+        'Programming Language :: Python :: Free Threading :: 2 - Beta',
     ],
 )
