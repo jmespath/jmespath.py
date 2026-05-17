@@ -62,3 +62,33 @@ class TestPythonSpecificCases(unittest.TestCase):
         result = decimal.Decimal('3')
         self.assertEqual(jmespath.search('[?a >= `1`].a', [{'a': result}]),
                          [result])
+
+    def test_literal_empty_list_changes_do_not_propagate(self):
+        first = jmespath.search('`[]`', {})
+        first.extend([1, 2, 3])
+        second = jmespath.search('`[]`', {})
+        self.assertEqual(second, [])
+
+    def test_literal_list_changes_do_not_propagate(self):
+        first = jmespath.search('`[1, 2, 3]`', {})
+        first.append(99)
+        second = jmespath.search('`[1, 2, 3]`', {})
+        self.assertEqual(second, [1, 2, 3])
+
+    def test_literal_nested_dict_changes_do_not_propagate(self):
+        first = jmespath.search('`{"key": [1, 2, 3]}`', {})
+        first['key'].append(99)
+        second = jmespath.search('`{"key": [1, 2, 3]}`', {})
+        self.assertEqual(second, {'key': [1, 2, 3]})
+
+    def test_literal_dict_added_key_does_not_propagate(self):
+        first = jmespath.search('`{"a": 1}`', {})
+        first['new_key'] = 99
+        second = jmespath.search('`{"a": 1}`', {})
+        self.assertEqual(second, {'a': 1})
+
+    def test_literal_dict_overwritten_key_does_not_propagate(self):
+        first = jmespath.search('`{"a": 1}`', {})
+        first['a'] = 99
+        second = jmespath.search('`{"a": 1}`', {})
+        self.assertEqual(second, {'a': 1})
