@@ -1,3 +1,4 @@
+import copy
 import operator
 
 from jmespath import functions
@@ -225,7 +226,7 @@ class TreeInterpreter(Visitor):
         return self.visit(node['children'][0], value)
 
     def visit_literal(self, node, value):
-        return node['value']
+        return copy.deepcopy(node['value'])
 
     def visit_multi_select_dict(self, node, value):
         if value is None:
