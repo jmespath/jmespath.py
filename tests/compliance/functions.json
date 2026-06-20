@@ -116,6 +116,18 @@
       "result": false
     },
     {
+      "expression": "contains('foobar', `123`)",
+      "result": false
+    },
+    {
+      "expression": "contains('foobar', `true`)",
+      "result": false
+    },
+    {
+      "expression": "contains('foobar', `null`)",
+      "result": false
+    },
+    {
       "expression": "contains(`false`, 'd')",
       "error": "invalid-type"
     },
