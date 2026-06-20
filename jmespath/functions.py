@@ -212,6 +212,14 @@ class Functions(metaclass=FunctionRegistry):
 
     @signature({'types': ['array', 'string']}, {'types': []})
     def _func_contains(self, subject, search):
+        # A non-string can never be a substring of a string. The array case
+        # already returns False for a non-matching search of any type, but
+        # ``search in subject`` raises TypeError when subject is a string and
+        # search is not, so guard it explicitly (spec: contains('foobar', 123)
+        # -> false).
+        if (isinstance(subject, STRING_TYPE)
+                and not isinstance(search, STRING_TYPE)):
+            return False
         return search in subject
 
     @signature({'types': ['string', 'array', 'object']})
