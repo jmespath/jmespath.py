@@ -91,8 +91,14 @@ class Functions(metaclass=FunctionRegistry):
         return self._type_check(args, signature, function_name)
 
     def _type_check(self, actual, signature, function_name):
-        for i in range(len(signature)):
-            allowed_types = signature[i]['types']
+        for i in range(len(actual)):
+            if i < len(signature):
+                allowed_types = signature[i]['types']
+            else:
+                # Variadic function: every trailing argument is described
+                # by the final signature entry, so keep validating against
+                # it instead of leaving the extra args unchecked.
+                allowed_types = signature[-1]['types']
             if allowed_types:
                 self._type_check_single(actual[i], allowed_types,
                                         function_name)

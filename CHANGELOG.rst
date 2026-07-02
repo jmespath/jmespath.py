@@ -1,7 +1,10 @@
 Next Release (TBD)
 ==================
 
-* No changes yet.
+* Fix ``merge()`` and other variadic functions leaking a raw Python
+  ``TypeError``/``ValueError`` instead of a ``JMESPathTypeError`` when an
+  argument after the first had an invalid type
+  (`issue #329 <https://github.com/jmespath/jmespath.py/issues/329>`__)
 
 
 1.1.0
