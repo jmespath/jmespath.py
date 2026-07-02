@@ -268,6 +268,23 @@
       "result": {"a": 2, "b": 2, "c": 3, "d": 4}
     },
     {
+      "comment": "variadic argument after the first must also be type checked",
+      "expression": "merge(`{\"a\": 1}`, `null`)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "merge(`{\"a\": 1}`, null_key)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "merge(`{\"a\": 1}`, `{\"b\": 2}`, `5`)",
+      "error": "invalid-type"
+    },
+    {
+      "expression": "merge(`{\"a\": 1}`, str)",
+      "error": "invalid-type"
+    },
+    {
       "expression": "min(numbers)",
       "result": -1
     },
