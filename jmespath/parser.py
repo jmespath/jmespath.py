@@ -72,18 +72,36 @@ class Parser(object):
     # _CACHE dict.
     _CACHE = {}
     _MAX_SIZE = 512
+    # Per-class nud/led dispatch tables ({token_type: function}),
+    # built once per class on first instantiation.  Keyed by class so
+    # subclasses overriding or adding token handlers work correctly.
+    _DISPATCH_CACHE = {}
 
     def __init__(self, lookahead=2):
         self.tokenizer = None
         self._tokens = [None] * lookahead
         self._buffer_size = lookahead
         self._index = 0
+        cls = type(self)
+        dispatch = Parser._DISPATCH_CACHE.get(cls)
+        if dispatch is None:
+            nud = {}
+            led = {}
+            for name in dir(cls):
+                if name.startswith('_token_nud_'):
+                    nud[name[11:]] = getattr(cls, name)
+                elif name.startswith('_token_led_'):
+                    led[name[11:]] = getattr(cls, name)
+            dispatch = (nud, led)
+            Parser._DISPATCH_CACHE[cls] = dispatch
+        self._NUD_DISPATCH, self._LED_DISPATCH = dispatch
 
     def parse(self, expression):
-        try:
-            return self._CACHE[expression]
-        except KeyError:
-            pass
+        # .get() rather than try/except KeyError: a raised exception
+        # costs far more than the parse-cache lookup itself.
+        parsed_result = self._CACHE.get(expression)
+        if parsed_result is not None:
+            return parsed_result
         parsed_result = self._do_parse(expression)
         if len(self._CACHE) >= self._MAX_SIZE:
             try:
@@ -116,8 +134,10 @@ class Parser(object):
             raise
 
     def _parse(self, expression):
-        self.tokenizer = lexer.Lexer().tokenize(expression)
-        self._tokens = list(self.tokenizer)
+        self.tokenizer = None
+        # The lexer returns a fully materialized token list, which we
+        # can use directly for our two tokens of lookahead.
+        self._tokens = lexer.Lexer().tokenize(expression)
         self._index = 0
         parsed = self._expression(binding_power=0)
         if not self._current_token() == 'eof':
@@ -127,51 +147,69 @@ class Parser(object):
         return ParsedResult(expression, parsed)
 
     def _expression(self, binding_power=0):
-        left_token = self._lookahead_token(0)
-        self._advance()
-        nud_function = getattr(
-            self, '_token_nud_%s' % left_token['type'],
-            self._error_nud_token)
-        left = nud_function(left_token)
-        current_token = self._current_token()
-        while binding_power < self.BINDING_POWER[current_token]:
-            led = getattr(self, '_token_led_%s' % current_token, None)
+        # This is the hot path of the parser, so the token stream
+        # accesses (self._lookahead_token/_advance/_current_token) are
+        # inlined and the nud/led handlers are resolved through the
+        # precomputed dispatch tables built at the bottom of this
+        # module rather than per-token getattr calls.
+        tokens = self._tokens
+        index = self._index
+        left_token = tokens[index]
+        self._index = index + 1
+        nud_function = self._NUD_DISPATCH.get(left_token['type'])
+        if nud_function is None:
+            # No nud handler exists for this token type, so it cannot
+            # start an expression.  The error handler is resolved on the
+            # concrete class so a subclass override is honored.
+            nud_function = type(self)._error_nud_token
+        left = nud_function(self, left_token)
+        binding_power_table = self.BINDING_POWER
+        led_dispatch = self._LED_DISPATCH
+        current_token = tokens[self._index]['type']
+        while binding_power < binding_power_table[current_token]:
+            led = led_dispatch.get(current_token)
             if led is None:
-                error_token = self._lookahead_token(0)
-                self._error_led_token(error_token)
+                # No led handler for a token the binding power let us
+                # enter on: it can't continue an expression.
+                self._error_led_token(tokens[self._index])
             else:
-                self._advance()
-                left = led(left)
-                current_token = self._current_token()
+                self._index += 1
+                left = led(self, left)
+                current_token = tokens[self._index]['type']
         return left
 
+    # The ast.* factory calls are inlined as dict literals in the
+    # token handlers below: at a few hundred thousand nodes per
+    # second the function call per node is a measurable share of the
+    # parse time.
+
     def _token_nud_literal(self, token):
-        return ast.literal(token['value'])
+        return {'type': 'literal', 'value': token['value'], 'children': []}
 
     def _token_nud_unquoted_identifier(self, token):
-        return ast.field(token['value'])
+        return {'type': 'field', 'children': [], 'value': token['value']}
 
     def _token_nud_quoted_identifier(self, token):
-        field = ast.field(token['value'])
+        field = {'type': 'field', 'children': [], 'value': token['value']}
         # You can't have a quoted identifier as a function
         # name.
-        if self._current_token() == 'lparen':
-            t = self._lookahead_token(0)
+        if self._tokens[self._index]['type'] == 'lparen':
+            t = self._tokens[self._index]
             raise exceptions.ParseError(
                 0, t['value'], t['type'],
                 'Quoted identifier not allowed for function names.')
         return field
 
     def _token_nud_star(self, token):
-        left = ast.identity()
-        if self._current_token() == 'rbracket':
-            right = ast.identity()
+        left = {'type': 'identity', 'children': []}
+        if self._tokens[self._index]['type'] == 'rbracket':
+            right = {'type': 'identity', 'children': []}
         else:
             right = self._parse_projection_rhs(self.BINDING_POWER['star'])
-        return ast.value_projection(left, right)
+        return {'type': 'value_projection', 'children': [left, right]}
 
     def _token_nud_filter(self, token):
-        return self._token_led_filter(ast.identity())
+        return self._token_led_filter({'type': 'identity', 'children': []})
 
     def _token_nud_lbrace(self, token):
         return self._parse_multi_select_hash()
@@ -182,29 +220,33 @@ class Parser(object):
         return expression
 
     def _token_nud_flatten(self, token):
-        left = ast.flatten(ast.identity())
+        left = {'type': 'flatten',
+                'children': [{'type': 'identity', 'children': []}]}
         right = self._parse_projection_rhs(
             self.BINDING_POWER['flatten'])
-        return ast.projection(left, right)
+        return {'type': 'projection', 'children': [left, right]}
 
     def _token_nud_not(self, token):
         expr = self._expression(self.BINDING_POWER['not'])
-        return ast.not_expression(expr)
+        return {'type': 'not_expression', 'children': [expr]}
 
     def _token_nud_lbracket(self, token):
-        if self._current_token() in ['number', 'colon']:
+        current_token = self._tokens[self._index]['type']
+        if current_token in ('number', 'colon'):
             right = self._parse_index_expression()
             # We could optimize this and remove the identity() node.
             # We don't really need an index_expression node, we can
             # just use emit an index node here if we're not dealing
             # with a slice.
-            return self._project_if_slice(ast.identity(), right)
-        elif self._current_token() == 'star' and \
-                self._lookahead(1) == 'rbracket':
-            self._advance()
-            self._advance()
+            return self._project_if_slice(
+                {'type': 'identity', 'children': []}, right)
+        elif current_token == 'star' and \
+                self._tokens[self._index + 1]['type'] == 'rbracket':
+            self._index += 2
             right = self._parse_projection_rhs(self.BINDING_POWER['star'])
-            return ast.projection(ast.identity(), right)
+            return {'type': 'projection',
+                    'children': [{'type': 'identity', 'children': []},
+                                 right]}
         else:
             return self._parse_multi_select_list()
 
@@ -213,13 +255,14 @@ class Parser(object):
         # [<current>
         #  ^
         #  | current token
-        if (self._lookahead(0) == 'colon' or
-                self._lookahead(1) == 'colon'):
+        if (self._tokens[self._index]['type'] == 'colon' or
+                self._tokens[self._index + 1]['type'] == 'colon'):
             return self._parse_slice_expression()
         else:
             # Parse the syntax [number]
-            node = ast.index(self._lookahead_token(0)['value'])
-            self._advance()
+            node = {'type': 'index', 'children': [],
+                    'value': self._tokens[self._index]['value']}
+            self._index += 1
             self._match('rbracket')
             return node
 
@@ -248,38 +291,38 @@ class Parser(object):
         return ast.slice(*parts)
 
     def _token_nud_current(self, token):
-        return ast.current_node()
+        return {'type': 'current', 'children': []}
 
     def _token_nud_expref(self, token):
         expression = self._expression(self.BINDING_POWER['expref'])
-        return ast.expref(expression)
+        return {'type': 'expref', 'children': [expression]}
 
     def _token_led_dot(self, left):
-        if not self._current_token() == 'star':
+        if not self._tokens[self._index]['type'] == 'star':
             right = self._parse_dot_rhs(self.BINDING_POWER['dot'])
             if left['type'] == 'subexpression':
                 left['children'].append(right)
                 return left
             else:
-                return ast.subexpression([left, right])
+                return {'type': 'subexpression', 'children': [left, right]}
         else:
             # We're creating a projection.
-            self._advance()
+            self._index += 1
             right = self._parse_projection_rhs(
                 self.BINDING_POWER['dot'])
-            return ast.value_projection(left, right)
+            return {'type': 'value_projection', 'children': [left, right]}
 
     def _token_led_pipe(self, left):
         right = self._expression(self.BINDING_POWER['pipe'])
-        return ast.pipe(left, right)
+        return {'type': 'pipe', 'children': [left, right]}
 
     def _token_led_or(self, left):
         right = self._expression(self.BINDING_POWER['or'])
-        return ast.or_expression(left, right)
+        return {'type': 'or_expression', 'children': [left, right]}
 
     def _token_led_and(self, left):
         right = self._expression(self.BINDING_POWER['and'])
-        return ast.and_expression(left, right)
+        return {'type': 'and_expression', 'children': [left, right]}
 
     def _token_led_lparen(self, left):
         if left['type'] != 'field':
@@ -292,24 +335,26 @@ class Parser(object):
                 "Invalid function name '%s'" % prev_t['value'])
         name = left['value']
         args = []
-        while not self._current_token() == 'rparen':
+        tokens = self._tokens
+        while not tokens[self._index]['type'] == 'rparen':
             expression = self._expression()
-            if self._current_token() == 'comma':
-                self._match('comma')
+            if tokens[self._index]['type'] == 'comma':
+                self._index += 1
             args.append(expression)
         self._match('rparen')
-        function_node = ast.function_expression(name, args)
-        return function_node
+        return {'type': 'function_expression', 'children': args,
+                'value': name}
 
     def _token_led_filter(self, left):
         # Filters are projections.
         condition = self._expression(0)
         self._match('rbracket')
-        if self._current_token() == 'flatten':
-            right = ast.identity()
+        if self._tokens[self._index]['type'] == 'flatten':
+            right = {'type': 'identity', 'children': []}
         else:
             right = self._parse_projection_rhs(self.BINDING_POWER['filter'])
-        return ast.filter_projection(left, right, condition)
+        return {'type': 'filter_projection',
+                'children': [left, right, condition]}
 
     def _token_led_eq(self, left):
         return self._parse_comparator(left, 'eq')
@@ -330,14 +375,14 @@ class Parser(object):
         return self._parse_comparator(left, 'lte')
 
     def _token_led_flatten(self, left):
-        left = ast.flatten(left)
+        left = {'type': 'flatten', 'children': [left]}
         right = self._parse_projection_rhs(
             self.BINDING_POWER['flatten'])
-        return ast.projection(left, right)
+        return {'type': 'projection', 'children': [left, right]}
 
     def _token_led_lbracket(self, left):
-        token = self._lookahead_token(0)
-        if token['type'] in ['number', 'colon']:
+        token = self._tokens[self._index]
+        if token['type'] in ('number', 'colon'):
             right = self._parse_index_expression()
             if left['type'] == 'index_expression':
                 # Optimization: if the left node is an index expr,
@@ -352,37 +397,42 @@ class Parser(object):
             self._match('star')
             self._match('rbracket')
             right = self._parse_projection_rhs(self.BINDING_POWER['star'])
-            return ast.projection(left, right)
+            return {'type': 'projection', 'children': [left, right]}
 
     def _project_if_slice(self, left, right):
-        index_expr = ast.index_expression([left, right])
+        index_expr = {'type': 'index_expression', 'children': [left, right]}
         if right['type'] == 'slice':
-            return ast.projection(
-                index_expr,
-                self._parse_projection_rhs(self.BINDING_POWER['star']))
+            return {'type': 'projection',
+                    'children': [
+                        index_expr,
+                        self._parse_projection_rhs(
+                            self.BINDING_POWER['star'])]}
         else:
             return index_expr
 
     def _parse_comparator(self, left, comparator):
         right = self._expression(self.BINDING_POWER[comparator])
-        return ast.comparator(comparator, left, right)
+        return {'type': 'comparator', 'children': [left, right],
+                'value': comparator}
 
     def _parse_multi_select_list(self):
         expressions = []
+        tokens = self._tokens
         while True:
             expression = self._expression()
             expressions.append(expression)
-            if self._current_token() == 'rbracket':
+            if tokens[self._index]['type'] == 'rbracket':
                 break
             else:
                 self._match('comma')
         self._match('rbracket')
-        return ast.multi_select_list(expressions)
+        return {'type': 'multi_select_list', 'children': expressions}
 
     def _parse_multi_select_hash(self):
         pairs = []
+        tokens = self._tokens
         while True:
-            key_token = self._lookahead_token(0)
+            key_token = tokens[self._index]
             # Before getting the token value, verify it's
             # an identifier.
             self._match_multiple_tokens(
@@ -390,29 +440,32 @@ class Parser(object):
             key_name = key_token['value']
             self._match('colon')
             value = self._expression(0)
-            node = ast.key_val_pair(key_name=key_name, node=value)
+            node = {'type': 'key_val_pair', 'children': [value],
+                    'value': key_name}
             pairs.append(node)
-            if self._current_token() == 'comma':
-                self._match('comma')
-            elif self._current_token() == 'rbrace':
-                self._match('rbrace')
+            if tokens[self._index]['type'] == 'comma':
+                self._index += 1
+            elif tokens[self._index]['type'] == 'rbrace':
+                self._index += 1
                 break
-        return ast.multi_select_dict(nodes=pairs)
+        return {'type': 'multi_select_dict', 'children': pairs}
 
     def _parse_projection_rhs(self, binding_power):
         # Parse the right hand side of the projection.
-        if self.BINDING_POWER[self._current_token()] < self._PROJECTION_STOP:
+        current_token = self._tokens[self._index]['type']
+        if self.BINDING_POWER[current_token] < self._PROJECTION_STOP:
             # BP of 10 are all the tokens that stop a projection.
-            right = ast.identity()
-        elif self._current_token() == 'lbracket':
+            right = {'type': 'identity', 'children': []}
+        elif current_token == 'lbracket':
             right = self._expression(binding_power)
-        elif self._current_token() == 'filter':
+        elif current_token == 'filter':
             right = self._expression(binding_power)
-        elif self._current_token() == 'dot':
-            self._match('dot')
+        elif current_token == 'dot':
+            # inline'd self._match('dot'): the type was just checked.
+            self._index += 1
             right = self._parse_dot_rhs(binding_power)
         else:
-            self._raise_parse_error_for_token(self._lookahead_token(0),
+            self._raise_parse_error_for_token(self._tokens[self._index],
                                               'syntax error')
         return right
 
@@ -425,18 +478,18 @@ class Parser(object):
         #                  *
         # In terms of tokens that means that after a '.',
         # you can have:
-        lookahead = self._current_token()
+        lookahead = self._tokens[self._index]['type']
         # Common case "foo.bar", so first check for an identifier.
-        if lookahead in ['quoted_identifier', 'unquoted_identifier', 'star']:
+        if lookahead in ('quoted_identifier', 'unquoted_identifier', 'star'):
             return self._expression(binding_power)
         elif lookahead == 'lbracket':
-            self._match('lbracket')
+            self._index += 1
             return self._parse_multi_select_list()
         elif lookahead == 'lbrace':
-            self._match('lbrace')
+            self._index += 1
             return self._parse_multi_select_hash()
         else:
-            t = self._lookahead_token(0)
+            t = self._tokens[self._index]
             allowed = ['quoted_identifier', 'unquoted_identifier',
                        'lbracket', 'lbrace']
             msg = (
@@ -454,19 +507,18 @@ class Parser(object):
         self._raise_parse_error_for_token(token, 'invalid token')
 
     def _match(self, token_type=None):
-        # inline'd self._current_token()
-        if self._current_token() == token_type:
-            # inline'd self._advance()
-            self._advance()
+        # inline'd self._current_token() and self._advance()
+        if self._tokens[self._index]['type'] == token_type:
+            self._index += 1
         else:
             self._raise_parse_error_maybe_eof(
-                token_type, self._lookahead_token(0))
+                token_type, self._tokens[self._index])
 
     def _match_multiple_tokens(self, token_types):
-        if self._current_token() not in token_types:
+        if self._tokens[self._index]['type'] not in token_types:
             self._raise_parse_error_maybe_eof(
-                token_types, self._lookahead_token(0))
-        self._advance()
+                token_types, self._tokens[self._index])
+        self._index += 1
 
     def _advance(self):
         self._index += 1
@@ -512,7 +564,17 @@ class ParsedResult(object):
         self.parsed = parsed
 
     def search(self, value, options=None):
-        interpreter = visitor.TreeInterpreter(options)
+        if options is None:
+            # A TreeInterpreter with default options is stateless
+            # across searches, so a shared instance is used rather
+            # than constructing an interpreter (and its Options and
+            # Functions instances) on every search.  Its method cache
+            # is fully pre-populated (see below) so concurrent default
+            # searches only read from it -- no mutation, hence safe on
+            # free-threaded builds.
+            interpreter = _DEFAULT_INTERPRETER
+        else:
+            interpreter = visitor.TreeInterpreter(options)
         result = interpreter.visit(self.parsed, value)
         return result
 
@@ -532,3 +594,20 @@ class ParsedResult(object):
 
     def __repr__(self):
         return repr(self.parsed)
+
+
+_DEFAULT_INTERPRETER = visitor.TreeInterpreter()
+
+
+def _prewarm_default_interpreter():
+    # Resolve every visit_* handler up front so the shared interpreter's
+    # method cache is fully populated at import time and never written
+    # to during a search.  A read-only cache lets concurrent default
+    # searches share the interpreter safely, including on free-threaded
+    # (no-GIL) CPython builds.
+    for name in dir(visitor.TreeInterpreter):
+        if name.startswith('visit_'):
+            _DEFAULT_INTERPRETER._resolve_method(name[len('visit_'):])
+
+
+_prewarm_default_interpreter()
