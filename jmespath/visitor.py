@@ -82,9 +82,19 @@ class _Expression(object):
 
 class Visitor(object):
     def __init__(self):
+        # Caches the resolved visit_* method per node type so repeated
+        # nodes of the same type skip getattr resolution.  The cache
+        # holds unbound functions, called with the instance passed
+        # explicitly (self), which avoids allocating a bound method per
+        # lookup.
         self._method_cache = {}
 
     def visit(self, node, *args, **kwargs):
+        # Base dispatch resolves visit_* as a bound method via
+        # getattr(self, ...), which honors instance-level handlers and
+        # staticmethods on Visitor subclasses.  TreeInterpreter
+        # overrides this with a faster unbound-dispatch version for the
+        # evaluation hot path.
         node_type = node['type']
         method = self._method_cache.get(node_type)
         if method is None:
@@ -92,6 +102,16 @@ class Visitor(object):
                 self, 'visit_%s' % node['type'], self.default_visit)
             self._method_cache[node_type] = method
         return method(node, *args, **kwargs)
+
+    def _resolve_method(self, node_type):
+        # Cold path of TreeInterpreter's dispatch: resolve the visit_*
+        # method for a node type on the concrete class (as an unbound
+        # function, called with self passed explicitly) and cache it.
+        method = getattr(
+            type(self), 'visit_%s' % node_type,
+            type(self).default_visit)
+        self._method_cache[node_type] = method
+        return method
 
     def default_visit(self, node, *args, **kwargs):
         raise NotImplementedError("default_visit")
@@ -106,7 +126,7 @@ class TreeInterpreter(Visitor):
         'lte': operator.le,
         'gte': operator.ge
     }
-    _EQUALITY_OPS = ['eq', 'ne']
+    _EQUALITY_OPS = frozenset(['eq', 'ne'])
     MAP_TYPE = dict
 
     def __init__(self, options=None):
@@ -125,13 +145,32 @@ class TreeInterpreter(Visitor):
     def default_visit(self, node, *args, **kwargs):
         raise NotImplementedError(node['type'])
 
+    def visit(self, node, value):
+        # Overrides the base visit with a fixed two-argument signature:
+        # this is by far the hottest call in evaluation and avoiding
+        # *args/**kwargs packing per node is a measurable win.  Child
+        # nodes are dispatched back through self.visit() (not the
+        # method cache directly) so that subclasses overriding visit()
+        # still observe every node.
+        node_type = node['type']
+        method = self._method_cache.get(node_type)
+        if method is None:
+            method = self._resolve_method(node_type)
+        return method(self, node, value)
+
     def visit_subexpression(self, node, value):
         result = value
-        for node in node['children']:
-            result = self.visit(node, result)
+        visit = self.visit
+        for child in node['children']:
+            result = visit(child, result)
         return result
 
     def visit_field(self, node, value):
+        # Missing paths commonly propagate None through a chain of
+        # fields; short-circuit instead of raising AttributeError for
+        # every remaining field in the chain.
+        if value is None:
+            return None
         try:
             return value.get(node['value'])
         except AttributeError:
@@ -139,19 +178,17 @@ class TreeInterpreter(Visitor):
 
     def visit_comparator(self, node, value):
         # Common case: comparator is == or !=
-        comparator_func = self.COMPARATOR_FUNC[node['value']]
-        if node['value'] in self._EQUALITY_OPS:
-            return comparator_func(
-                self.visit(node['children'][0], value),
-                self.visit(node['children'][1], value)
-            )
+        node_value = node['value']
+        comparator_func = self.COMPARATOR_FUNC[node_value]
+        children = node['children']
+        left = self.visit(children[0], value)
+        right = self.visit(children[1], value)
+        if node_value in self._EQUALITY_OPS:
+            return comparator_func(left, right)
         else:
             # Ordering operators are only valid for numbers.
             # Evaluating any other type with a comparison operator
             # will yield a None value.
-            left = self.visit(node['children'][0], value)
-            right = self.visit(node['children'][1], value)
-            num_types = (int, float)
             if not (_is_comparable(left) and
                     _is_comparable(right)):
                 return None
@@ -164,23 +201,26 @@ class TreeInterpreter(Visitor):
         return _Expression(node['children'][0], self)
 
     def visit_function_expression(self, node, value):
-        resolved_args = []
-        for child in node['children']:
-            current = self.visit(child, value)
-            resolved_args.append(current)
+        visit = self.visit
+        resolved_args = [visit(child, value) for child in node['children']]
         return self._functions.call_function(node['value'], resolved_args)
 
     def visit_filter_projection(self, node, value):
-        base = self.visit(node['children'][0], value)
+        children = node['children']
+        base = self.visit(children[0], value)
         if not isinstance(base, list):
             return None
-        comparator_node = node['children'][2]
+        comparator_node = children[2]
+        right = children[1]
+        visit = self.visit
+        is_true = self._is_true
         collected = []
+        append = collected.append
         for element in base:
-            if self._is_true(self.visit(comparator_node, element)):
-                current = self.visit(node['children'][1], element)
+            if is_true(visit(comparator_node, element)):
+                current = visit(right, element)
                 if current is not None:
-                    collected.append(current)
+                    append(current)
         return collected
 
     def visit_flatten(self, node, value):
@@ -211,8 +251,9 @@ class TreeInterpreter(Visitor):
 
     def visit_index_expression(self, node, value):
         result = value
-        for node in node['children']:
-            result = self.visit(node, result)
+        visit = self.visit
+        for child in node['children']:
+            result = visit(child, result)
         return result
 
     def visit_slice(self, node, value):
@@ -230,30 +271,31 @@ class TreeInterpreter(Visitor):
     def visit_multi_select_dict(self, node, value):
         if value is None:
             return None
+        visit = self.visit
         collected = self._dict_cls()
         for child in node['children']:
-            collected[child['value']] = self.visit(child, value)
+            collected[child['value']] = visit(child, value)
         return collected
 
     def visit_multi_select_list(self, node, value):
         if value is None:
             return None
-        collected = []
-        for child in node['children']:
-            collected.append(self.visit(child, value))
-        return collected
+        visit = self.visit
+        return [visit(child, value) for child in node['children']]
 
     def visit_or_expression(self, node, value):
-        matched = self.visit(node['children'][0], value)
+        children = node['children']
+        matched = self.visit(children[0], value)
         if self._is_false(matched):
-            matched = self.visit(node['children'][1], value)
+            matched = self.visit(children[1], value)
         return matched
 
     def visit_and_expression(self, node, value):
-        matched = self.visit(node['children'][0], value)
+        children = node['children']
+        matched = self.visit(children[0], value)
         if self._is_false(matched):
             return matched
-        return self.visit(node['children'][1], value)
+        return self.visit(children[1], value)
 
     def visit_not_expression(self, node, value):
         original_result = self.visit(node['children'][0], value)
@@ -265,19 +307,23 @@ class TreeInterpreter(Visitor):
 
     def visit_pipe(self, node, value):
         result = value
-        for node in node['children']:
-            result = self.visit(node, result)
+        visit = self.visit
+        for child in node['children']:
+            result = visit(child, result)
         return result
 
     def visit_projection(self, node, value):
         base = self.visit(node['children'][0], value)
         if not isinstance(base, list):
             return None
+        right = node['children'][1]
+        visit = self.visit
         collected = []
+        append = collected.append
         for element in base:
-            current = self.visit(node['children'][1], element)
+            current = visit(right, element)
             if current is not None:
-                collected.append(current)
+                append(current)
         return collected
 
     def visit_value_projection(self, node, value):
@@ -286,19 +332,23 @@ class TreeInterpreter(Visitor):
             base = base.values()
         except AttributeError:
             return None
+        right = node['children'][1]
+        visit = self.visit
         collected = []
+        append = collected.append
         for element in base:
-            current = self.visit(node['children'][1], element)
+            current = visit(right, element)
             if current is not None:
-                collected.append(current)
+                append(current)
         return collected
 
     def _is_false(self, value):
         # This looks weird, but we're explicitly using equality checks
         # because the truth/false values are different between
-        # python and jmespath.
-        return (value == '' or value == [] or value == {} or value is None or
-                value is False)
+        # python and jmespath.  The identity checks are first purely
+        # because they are the cheapest.
+        return (value is None or value is False or value == '' or
+                value == [] or value == {})
 
     def _is_true(self, value):
         return not self._is_false(value)
