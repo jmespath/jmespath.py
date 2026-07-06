@@ -42,6 +42,36 @@ def signature(*arguments):
     return _record_signature
 
 
+def _resolve_pytypes(types):
+    # Maps a list of jmespath types (e.g. ['array-number']) to the
+    # allowed python type names and, for arrays, the allowed python
+    # type names of the elements.
+    allowed_types = []
+    allowed_subtypes = []
+    for t in types:
+        type_ = t.split('-', 1)
+        if len(type_) == 2:
+            type_, subtype = type_
+            allowed_subtypes.append(REVERSE_TYPES_MAP[subtype])
+        else:
+            type_ = type_[0]
+        allowed_types.extend(REVERSE_TYPES_MAP[type_])
+    return allowed_types, allowed_subtypes
+
+
+def _cache_resolved_pytypes(spec, types):
+    # Resolving jmespath types to python types is much more expensive
+    # than the type check itself, so the result is computed once and
+    # cached on the signature spec.
+    allowed_types, allowed_subtypes = _resolve_pytypes(types)
+    resolved = (
+        frozenset(allowed_types),
+        [frozenset(subtype) for subtype in allowed_subtypes],
+    )
+    spec['_resolved_pytypes'] = resolved
+    return resolved
+
+
 class FunctionRegistry(type):
     def __init__(cls, name, bases, attrs):
         cls._populate_function_table()
@@ -57,6 +87,15 @@ class FunctionRegistry(type):
                 continue
             signature = getattr(method, 'signature', None)
             if signature is not None:
+                # Resolving the jmespath types in a signature to the
+                # allowed python type names is far more expensive than
+                # the per-call type check itself, so it is done once
+                # here and cached on each argument spec for _type_check
+                # to reuse.
+                for spec in signature:
+                    types = spec.get('types')
+                    if types and '_resolved_pytypes' not in spec:
+                        _cache_resolved_pytypes(spec, types)
                 function_table[name[6:]] = {
                     'function': method,
                     'signature': signature,
@@ -92,46 +131,30 @@ class Functions(metaclass=FunctionRegistry):
 
     def _type_check(self, actual, signature, function_name):
         for i in range(len(signature)):
-            allowed_types = signature[i]['types']
+            spec = signature[i]
+            allowed_types = spec['types']
             if allowed_types:
-                self._type_check_single(actual[i], allowed_types,
-                                        function_name)
-
-    def _type_check_single(self, current, types, function_name):
-        # Type checking involves checking the top level type,
-        # and in the case of arrays, potentially checking the types
-        # of each element.
-        allowed_types, allowed_subtypes = self._get_allowed_pytypes(types)
-        # We're not using isinstance() on purpose.
-        # The type model for jmespath does not map
-        # 1-1 with python types (booleans are considered
-        # integers in python for example).
-        actual_typename = type(current).__name__
-        if actual_typename not in allowed_types:
-            raise exceptions.JMESPathTypeError(
-                function_name, current,
-                self._convert_to_jmespath_type(actual_typename), types)
-        # If we're dealing with a list type, we can have
-        # additional restrictions on the type of the list
-        # elements (for example a function can require a
-        # list of numbers or a list of strings).
-        # Arrays are the only types that can have subtypes.
-        if allowed_subtypes:
-            self._subtype_check(current, allowed_subtypes,
-                                types, function_name)
-
-    def _get_allowed_pytypes(self, types):
-        allowed_types = []
-        allowed_subtypes = []
-        for t in types:
-            type_ = t.split('-', 1)
-            if len(type_) == 2:
-                type_, subtype = type_
-                allowed_subtypes.append(REVERSE_TYPES_MAP[subtype])
-            else:
-                type_ = type_[0]
-            allowed_types.extend(REVERSE_TYPES_MAP[type_])
-        return allowed_types, allowed_subtypes
+                resolved = spec.get('_resolved_pytypes')
+                if resolved is None:
+                    # Signatures that didn't pass through the function
+                    # registry are resolved (and cached) on first use.
+                    resolved = _cache_resolved_pytypes(spec, allowed_types)
+                allowed_pytypes, allowed_subtypes = resolved
+                current = actual[i]
+                # We're not using isinstance() on purpose.
+                # The type model for jmespath does not map
+                # 1-1 with python types (booleans are considered
+                # integers in python for example).
+                actual_typename = type(current).__name__
+                if actual_typename not in allowed_pytypes:
+                    raise exceptions.JMESPathTypeError(
+                        function_name, current,
+                        self._convert_to_jmespath_type(actual_typename),
+                        allowed_types)
+                # Arrays are the only types that can have subtypes.
+                if allowed_subtypes:
+                    self._subtype_check(current, allowed_subtypes,
+                                        allowed_types, function_name)
 
     def _subtype_check(self, current, allowed_subtypes, types, function_name):
         if len(allowed_subtypes) == 1:
