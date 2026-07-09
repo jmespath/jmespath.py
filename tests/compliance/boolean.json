@@ -220,7 +220,8 @@
       "two": 2,
       "three": 3,
       "emptylist": [],
-      "boolvalue": false
+      "boolvalue": false,
+      "stringvalue": "2"
     },
     "cases": [
       {
@@ -265,6 +266,26 @@
       },
       {
         "expression": "one < boolvalue",
+        "result": null
+      },
+      {
+        "expression": "one < stringvalue",
+        "result": null
+      },
+      {
+        "expression": "one <= stringvalue",
+        "result": null
+      },
+      {
+        "expression": "one > stringvalue",
+        "result": null
+      },
+      {
+        "expression": "one >= stringvalue",
+        "result": null
+      },
+      {
+        "expression": "stringvalue < one",
         "result": null
       },
       {

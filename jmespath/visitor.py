@@ -35,12 +35,18 @@ def _is_special_number_case(x, y):
         return isinstance(x, bool)
 
 
-def _is_comparable(x):
+def _is_comparable(x, y):
+    # Ordering operators are only valid when both operands
+    # belong to the same comparable category, i.e. both are
+    # numbers or both are strings.  Mixing categories (e.g. a
+    # number and a string) is not comparable and yields null.
+    #
     # The spec doesn't officially support string types yet,
     # but enough people are relying on this behavior that
     # it's been added back.  This should eventually become
     # part of the official spec.
-    return _is_actual_number(x) or isinstance(x, string_type)
+    return ((_is_actual_number(x) and _is_actual_number(y)) or
+            (isinstance(x, string_type) and isinstance(y, string_type)))
 
 
 def _is_actual_number(x):
@@ -151,9 +157,7 @@ class TreeInterpreter(Visitor):
             # will yield a None value.
             left = self.visit(node['children'][0], value)
             right = self.visit(node['children'][1], value)
-            num_types = (int, float)
-            if not (_is_comparable(left) and
-                    _is_comparable(right)):
+            if not _is_comparable(left, right):
                 return None
             return comparator_func(left, right)
 
