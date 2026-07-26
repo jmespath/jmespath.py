@@ -1,7 +1,9 @@
 Next Release (TBD)
 ==================
 
-* No changes yet.
+* Include ``tests/__init__.py`` in source distributions so the bundled test
+  suite can import its shared helpers (`issue #341
+  <https://github.com/jmespath/jmespath.py/issues/341>`__).
 
 
 1.1.0
