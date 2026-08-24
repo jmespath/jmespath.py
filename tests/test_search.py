@@ -1,5 +1,6 @@
 import sys
 import decimal
+import json
 from tests import unittest, OrderedDict
 
 import jmespath
@@ -62,3 +63,39 @@ class TestPythonSpecificCases(unittest.TestCase):
         result = decimal.Decimal('3')
         self.assertEqual(jmespath.search('[?a >= `1`].a', [{'a': result}]),
                          [result])
+
+
+class TestSearchJson(unittest.TestCase):
+    """search_json() takes a JSON string and returns the same value as search()."""
+
+    def test_basic_field(self):
+        self.assertEqual(
+            jmespath.search_json('a.b', '{"a": {"b": "x"}}'),
+            'x')
+
+    def test_projection(self):
+        self.assertEqual(
+            jmespath.search_json('a[*].b', '{"a": [{"b": 1}, {"b": 2}]}'),
+            [1, 2])
+
+    def test_empty_doc(self):
+        self.assertEqual(
+            jmespath.search_json('a', '{}'),
+            None)
+
+    def test_invalid_json_raises(self):
+        with self.assertRaises(ValueError):
+            jmespath.search_json('a', '{not json}')
+
+    def test_matches_search_on_parsed_doc(self):
+        doc = '{"servers": [{"name": "x", "up": true}, {"name": "y", "up": false}]}'
+        expr = 'servers[?up == `true`].name'
+        self.assertEqual(
+            jmespath.search_json(expr, doc),
+            jmespath.search(expr, json.loads(doc)))
+
+    def test_passes_options_through(self):
+        self.assertEqual(
+            jmespath.search_json('a.b', '{"a": {"b": "x"}}',
+                                 options=jmespath.Options()),
+            'x')

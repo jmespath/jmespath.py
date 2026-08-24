@@ -1,7 +1,10 @@
 Next Release (TBD)
 ==================
 
-* No changes yet.
+* Added ``jmespath.search_json()`` to query a JSON document given as a
+  string. When the optional ``aero-jmespath`` native accelerator is installed
+  the whole pipeline runs in native code; otherwise it falls back to
+  ``json.loads()`` + :func:`search`.
 
 
 1.1.0
