@@ -62,3 +62,6 @@ class TestPythonSpecificCases(unittest.TestCase):
         result = decimal.Decimal('3')
         self.assertEqual(jmespath.search('[?a >= `1`].a', [{'a': result}]),
                          [result])
+
+    def test_zero_step_slice_returns_none(self):
+        self.assertIsNone(jmespath.search('[::0]', [1, 2, 3]))
