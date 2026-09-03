@@ -88,10 +88,17 @@ class Visitor(object):
         node_type = node['type']
         method = self._method_cache.get(node_type)
         if method is None:
+            # Looking this up on the class instead of on self means we
+            # cache a plain function rather than a bound method.  A bound
+            # method holds a reference back to the instance it's bound to,
+            # so stashing one in an attribute of that same instance
+            # (self._method_cache) creates a reference cycle, and every
+            # single instance then needs a cyclic GC pass to be collected
+            # instead of going away as soon as its refcount hits zero.
             method = getattr(
-                self, 'visit_%s' % node['type'], self.default_visit)
+                type(self), 'visit_%s' % node['type'], type(self).default_visit)
             self._method_cache[node_type] = method
-        return method(node, *args, **kwargs)
+        return method(self, node, *args, **kwargs)
 
     def default_visit(self, node, *args, **kwargs):
         raise NotImplementedError("default_visit")
