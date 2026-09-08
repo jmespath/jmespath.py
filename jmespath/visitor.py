@@ -6,16 +6,24 @@ from numbers import Number
 
 
 def _equals(x, y):
-    if _is_special_number_case(x, y):
-        return False
-    elif isinstance(x, list) and isinstance(y, list):
-        return len(x) == len(y) and all(
-            _equals(a, b) for a, b in zip(x, y))
-    elif isinstance(x, dict) and isinstance(y, dict):
-        return x.keys() == y.keys() and all(
-            _equals(x[key], y[key]) for key in x)
-    else:
-        return x == y
+    pending = [(x, y)]
+    while pending:
+        x, y = pending.pop()
+        if _is_special_number_case(x, y):
+            return False
+        elif isinstance(x, list) and isinstance(y, list):
+            if len(x) != len(y):
+                return False
+            if x is not y:
+                pending.extend(zip(reversed(x), reversed(y)))
+        elif isinstance(x, dict) and isinstance(y, dict):
+            if x.keys() != y.keys():
+                return False
+            if x is not y:
+                pending.extend((x[key], y[key]) for key in reversed(x))
+        elif not (x == y):
+            return False
+    return True
 
 
 def _is_special_number_case(x, y):

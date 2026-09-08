@@ -1,5 +1,6 @@
 import sys
 import decimal
+import json
 from tests import unittest, OrderedDict
 
 import jmespath
@@ -96,3 +97,18 @@ class TestNestedEquality(unittest.TestCase):
         data = [{'value': [True]}, {'value': [1]}, {'value': [1.0]}]
         self.assertEqual(jmespath.search('[?value == `[1]`]', data),
                          data[1:])
+
+
+    def test_deeply_nested_json_equality(self):
+        for opening, closing in [('[', ']'), ('{"value":', '}')]:
+            for left, right, expected in [
+                    ('1', '1.0', True),
+                    ('true', '1', False),
+                    ('1', '2', False),
+                    ('[]', '{}', False)]:
+                a = json.loads(opening * 600 + left + closing * 600)
+                b = json.loads(opening * 600 + right + closing * 600)
+                self.assertIsNot(a, b)
+                data = {'a': a, 'b': b}
+                self.assertEqual(jmespath.search('a == b', data), expected)
+                self.assertEqual(jmespath.search('a != b', data), not expected)
