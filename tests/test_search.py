@@ -62,3 +62,37 @@ class TestPythonSpecificCases(unittest.TestCase):
         result = decimal.Decimal('3')
         self.assertEqual(jmespath.search('[?a >= `1`].a', [{'a': result}]),
                          [result])
+
+
+class TestNestedEquality(unittest.TestCase):
+    def test_nested_booleans_are_not_numbers(self):
+        for left, right in [
+                ([True], [1]),
+                ([False], [0]),
+                ({'value': True}, {'value': 1}),
+                ({'value': [False]}, {'value': [0]}),
+                ([{'value': True}], [{'value': 1.0}])]:
+            for a, b in [(left, right), (right, left)]:
+                data = {'a': a, 'b': b}
+                self.assertFalse(jmespath.search('a == b', data))
+                self.assertTrue(jmespath.search('a != b', data))
+
+    def test_nested_equality_preserves_json_semantics(self):
+        cases = [
+            ([1], [1.0], True),
+            ({'a': [True, 1]}, {'a': [True, 1.0]}, True),
+            ({'a': 1, 'b': 2}, {'b': 2, 'a': 1}, True),
+            ([1], [1, 2], False),
+            ({'a': None}, {'b': None}, False),
+            ([], {}, False),
+            ([], [], True),
+            ({}, {}, True),
+        ]
+        for a, b, expected in cases:
+            self.assertEqual(jmespath.search('a == b', {'a': a, 'b': b}),
+                             expected)
+
+    def test_filter_rejects_nested_boolean_number_matches(self):
+        data = [{'value': [True]}, {'value': [1]}, {'value': [1.0]}]
+        self.assertEqual(jmespath.search('[?value == `[1]`]', data),
+                         data[1:])
