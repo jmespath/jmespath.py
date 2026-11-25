@@ -1,4 +1,5 @@
 import operator
+from types import MethodType
 
 from jmespath import functions
 from jmespath.compat import string_type
@@ -86,11 +87,19 @@ class Visitor(object):
 
     def visit(self, node, *args, **kwargs):
         node_type = node['type']
-        method = self._method_cache.get(node_type)
-        if method is None:
+        cached = self._method_cache.get(node_type)
+        if cached is None:
             method = getattr(
                 self, 'visit_%s' % node['type'], self.default_visit)
-            self._method_cache[node_type] = method
+            if isinstance(method, MethodType) and method.__self__ is self:
+                # Caching a method bound to self creates a reference cycle.
+                cached = (method.__func__, True)
+            else:
+                cached = (method, False)
+            self._method_cache[node_type] = cached
+        method, needs_self = cached
+        if needs_self:
+            return method(self, node, *args, **kwargs)
         return method(node, *args, **kwargs)
 
     def default_visit(self, node, *args, **kwargs):
