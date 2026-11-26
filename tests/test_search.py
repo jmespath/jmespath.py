@@ -7,6 +7,35 @@ import jmespath.functions
 
 
 class TestSearchOptions(unittest.TestCase):
+    def test_compiled_search_uses_each_calls_dict_class(self):
+        expression = jmespath.compile('{outer: {value: value}}')
+        data = {'value': 'kept'}
+        ordered = jmespath.Options(dict_cls=OrderedDict)
+        for options, expected_type in [(ordered, OrderedDict), (None, dict),
+                                       (ordered, OrderedDict), (None, dict)]:
+            result = expression.search(data, options=options)
+            self.assertIs(type(result), expected_type)
+            self.assertIs(type(result['outer']), expected_type)
+            self.assertEqual(result, {'outer': {'value': 'kept'}})
+
+    def test_compiled_search_keeps_custom_function_instances_separate(self):
+        class CustomFunctions(jmespath.functions.Functions):
+            def __init__(self, value):
+                self.value = value
+
+            @jmespath.functions.signature()
+            def _func_custom_value(self):
+                return self.value
+
+        expression = jmespath.compile('custom_value()')
+        first = jmespath.Options(custom_functions=CustomFunctions('first'))
+        second = jmespath.Options(custom_functions=CustomFunctions('second'))
+        self.assertEqual(expression.search({}, options=first), 'first')
+        self.assertEqual(expression.search({}, options=second), 'second')
+        with self.assertRaises(jmespath.exceptions.UnknownFunctionError):
+            expression.search({})
+        self.assertEqual(expression.search({}, options=first), 'first')
+
     def test_can_provide_dict_cls(self):
         result = jmespath.search(
             '{a: a, b: b, c: c}.*',
@@ -28,7 +57,6 @@ class TestSearchOptions(unittest.TestCase):
             def _func_my_subtract(self, x, y):
                 return x - y
 
-
         options = jmespath.Options(custom_functions=CustomFunctions())
         self.assertEqual(
             jmespath.search('custom_add(`1`, `2`)', {}, options=options),
@@ -43,7 +71,6 @@ class TestSearchOptions(unittest.TestCase):
         self.assertEqual(
             jmespath.search('length(`[1, 2]`)', {}), 2
         )
-
 
 
 class TestPythonSpecificCases(unittest.TestCase):
