@@ -101,7 +101,7 @@ class ComplianceTestRunner(object):
         return True
 
     def _load_test_file(self, test_json_file):
-        with open(test_json_file) as f:
+        with open(test_json_file, 'r', encoding='utf-8') as f:
             loaded_test = json.loads(f.read(), object_pairs_hook=OrderedDict)
         return loaded_test
 
@@ -123,14 +123,18 @@ class ComplianceTestRunner(object):
                     yield test_case
 
     def _run_test(self, test_case):
+        if 'result' not in test_case and 'error' not in test_case:
+            if 'bench' in test_case:
+                return
+            raise RuntimeError(f"Unknown test type: {json.dumps(test_case)}")
         command = shlex.split(self.jp_executable)
         command.append(test_case['expression'])
         process = subprocess.Popen(command, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
-                                   stdin=subprocess.PIPE)
-        process.stdin.write(json.dumps(test_case['given']))
-        process.stdin.flush()
-        stdout, stderr = process.communicate()
+                                   stdin=subprocess.PIPE,
+                                   text=True,
+                                   encoding='utf-8')
+        stdout, stderr = process.communicate(json.dumps(test_case['given']))
         if 'result' in test_case:
             actual = json.loads(stdout)
             expected = test_case['result']
@@ -139,7 +143,7 @@ class ComplianceTestRunner(object):
             else:
                 sys.stdout.write('.')
                 sys.stdout.flush()
-        else:
+        elif 'error' in test_case:
             error_type = test_case['error']
             # For errors, we expect the error type on stderr.
             if error_type not in stderr:
