@@ -1,4 +1,7 @@
 import os
+import shlex
+import subprocess
+import sys
 from pprint import pformat
 from tests import OrderedDict
 from tests import json
@@ -116,3 +119,29 @@ def test_error_expression(given, expression, error, filename):
                          filename, expression, pformat(parsed.parsed)))
         error_msg = error_msg.replace(r'\n', '\n')
         raise AssertionError(error_msg)
+
+
+def test_jp_compliance_benchmarks():
+    repo_root = os.path.dirname(TEST_DIR)
+    jp_compliance = os.path.join(repo_root, 'bin', 'jp-compliance')
+    if not os.path.isfile(jp_compliance):
+        pytest.skip('bin/jp-compliance is not present')
+    jp_py = os.path.join(repo_root, 'bin', 'jp.py')
+    exe = f'{shlex.quote(sys.executable)} {shlex.quote(jp_py)}'
+    env = os.environ.copy()
+    existing_pythonpath = env.get('PYTHONPATH')
+    env['PYTHONPATH'] = (
+        repo_root
+        if not existing_pythonpath
+        else repo_root + os.pathsep + existing_pythonpath
+    )
+    result = subprocess.run(
+        [sys.executable, jp_compliance, '-e', exe, '-t', 'benchmarks'],
+        capture_output=True,
+        text=True,
+        encoding='utf-8',
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    assert 'FAIL' not in result.stdout, result.stdout
+    assert result.stdout.strip() == '.' * 10, result.stdout
